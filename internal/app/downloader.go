@@ -144,11 +144,6 @@ func downloadEntries(
 }
 
 func Run(opts Options, log *logger.Logger) {
-	if !opts.All && opts.RangeMode == 0 {
-		log.Warn("Please use --all or --range to download chapters.")
-		return
-	}
-
 	provider, err := source.New(opts.Source, opts.CustomDomain)
 	if err != nil {
 		log.Error("Failed to initialize source provider: %v\n", err)
@@ -215,6 +210,17 @@ func Run(opts Options, log *logger.Logger) {
 	if len(entries) == 0 {
 		log.Warn("No entries found.")
 		return
+	}
+
+	if !opts.All && opts.RangeMode == RangeNone {
+		chRange, chMode, all, err := PromptChapterRange(len(entries), log)
+		if err != nil {
+			log.Error("Failed to read chapter range: %v\n", err)
+			return
+		}
+		opts.All = all
+		opts.Range = chRange
+		opts.RangeMode = chMode
 	}
 
 	entries = filterEntries(entries, opts, log)
