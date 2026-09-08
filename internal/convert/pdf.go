@@ -100,7 +100,7 @@ func ImagesToPDF(imagesDir, outputPDFPath string, cleanup bool, log *logger.Logg
 		if strings.HasSuffix(lower, ".webp") || strings.HasSuffix(lower, ".jpg") {
 			isWebP, err := IsWebP(imagePath)
 			if err != nil {
-				fmt.Errorf("Failed to check whether %s is WebP: %v", imagePath, err)
+				return fmt.Errorf("Failed to check whether %s is WebP: %v", imagePath, err)
 			}
 			if isWebP {
 				err := WebPToJPG(imagePath, imagePath)
