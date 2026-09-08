@@ -71,8 +71,6 @@ func GetScanInfo(domain, mangaName string, log *logger.Logger) (*ScanInfo, error
 
 	sort.Ints(chapters)
 
-	log.Info("Found %d chapters\n", len(chapters))
-
 	return &ScanInfo{
 		MangaName: mangaName,
 		Chapters:  chapters,

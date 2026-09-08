@@ -1,8 +1,6 @@
-# goweeb-sama
+**French** | [English](README_EN.md)
 
-> [!NOTE]
-> English below but kind of useless since this utility is intended to dynamically download
-> manga scans in **french** on a **french** website :)
+# goweeb-sama
 
 ![goweeb TUI demo](./assets/demo.gif)
 
@@ -72,7 +70,6 @@ goweeb [options] "nom-du-manga"
 | Option | Raccourci | Description |
 |--------|-----------|-------------|
 | `--all` | `-a` | Télécharge tous les chapitres disponibles |
-| `--range <plage>` | `-r` | Spécifie une plage de chapitres (ex: `10-77`, `4` chapitre 4 uniquement, `14-` du chapitre 14 jusqu'à la fin, `-5` pour les 5 derniers chapitres par exemple) |
 | `--scan-dir <dossier>` | `-d` | Dossier où sauvegarder les PDF (par défaut : `pdf`) |
 | `--keep-images` | `-k` | Garde les images après la création du PDF |
 | `--domain <url>` | `-u` | Remplace le domaine anime-sama (ex: `https://anime-sama.tv`) |
@@ -89,19 +86,9 @@ goweeb -a "jujutsu kaisen"
 ```
 
 #### Télécharger une plage de chapitres
-```bash
-# Chapitres 10 à 77
-goweeb --range 10-77 "jujutsu kaisen"
 
-# Raccourci
-goweeb -r 10-50 "one piece"
-
-# Du chapitre 14 jusqu'au dernier disponible
-goweeb -r 14- "chainsaw man"
-
-# Les 3 derniers chapitres
-goweeb -r -3 "ao ashi"
-```
+Lorsque le manga a été choisi, il **te sera demandé** d'entrer une plage de chapitres à télécharger.
+Suit simplement les instructions et choisit la plage de chapitres que tu souhaites.
 
 #### Spécifier un dossier de destination
 ```bash
@@ -109,10 +96,10 @@ goweeb -r -3 "ao ashi"
 goweeb -d mes-mangas --all "naruto"
 
 # Ou avec le chemin complet (sous linux)
-goweeb --scan-dir ~/Documents/Mangas -r 1-100 "one piece"
+goweeb --scan-dir ~/Documents/Mangas "one piece"
 
 # Pareil mais sur Windows
-goweeb --scan-dir C:\Users\<nom-de-ton-utilisateur>\Documents\Mangas -r 1-100 "one piece"
+goweeb --scan-dir C:\Users\<nom-de-ton-utilisateur>\Documents\Mangas "one piece"
 ```
 
 #### Spécifier un domaine personnalisé
@@ -138,7 +125,7 @@ goweeb -u https://anime-sama.fr --all --ebook-friendly "one piece"
 ```bash
 # Télécharge les chapitres 1 à 50 de One Piece, dans le dossier "scans" sur Windows 
 # en spécifiant un domaine anime-sama personnalisé
-goweeb -r 1-50 -d 'C:\Users\<nom-de-ton-utilisateur>\scans' -u https://anime-sama.tv "one piece"
+goweeb -d 'C:\Users\<nom-de-ton-utilisateur>\scans' -u https://anime-sama.tv "one piece"
 ```
 
 ### Conseils
@@ -150,151 +137,6 @@ goweeb -r 1-50 -d 'C:\Users\<nom-de-ton-utilisateur>\scans' -u https://anime-sam
 
 > [!WARNING] 
 > Garde bien en tête que le domaine d'anime-sama change pour des raisons évidentes... donc n'hésite pas à vérifier [anime-sama.pw](https://anime-sama.pw) pour vérifier quel domaine est actif. Tu peux ensuite le spécifier avec l'argument `-u` comme présenté ci-dessus.
-
----
-
-## 🇬🇧 English Version
-
-**goweeb-sama** is a fast tool to download manga scans from the French website **anime-sama** (which does an excellent job by the way, thanks to them).
-
-## Installation
-
-Installation is very simple, just go to the **Releases** tab on the right side of the GitHub interface and download the latest **TUI** version of the tool for your operating system.
-
-### Windows
-1. Download the Windows archive
-2. Place it in a folder of your choice
-3. Open a terminal (PowerShell or CMD) in that folder and use the tool
-
-### Linux / macOS
-1. Download the archive corresponding to your system (*darwin* for macos)
-2. Make it executable: `chmod +x goweeb`
-3. (Optional) Move it to `/usr/local/bin` to use it from anywhere
-
-## Usage
-
-**goweeb-sama** is available in two versions:
-
-### Graphical Interface (TUI) - Recommended for beginners
-
-Simply launch the TUI executable:
-
-```bash
-# Linux / macOS
-./goweeb
-
-# Windows
-goweeb.exe
-```
-
-Let the interactive interface guide you!
-
-- Enter the manga name you're searching for
-- Choose from the search results
-- Select the version (color/black and white, VF/VA)
-- Configure your download options
-- Start downloading and follow the progress in real-time
-
-### Command Line (CLI) - For advanced users
-
-### Manga name format
-
-
-**Important**: The manga name must be entered **in quotes**. You can use any search term (French, English, or Japanese title).
-
-Examples:
-- `"one piece"`
-- `"jujutsu kaisen"`
-- `"chainsaw man"`
-- `"attack on titan"`
-
-If multiple results match your search, the tool will let you choose the correct manga from an interactive list.
-
-### Basic syntax
-
-```bash
-goweeb [options] "manga-name"
-```
-
-### Available options
-
-| Option | Shortcut | Description |
-|--------|----------|-------------|
-| `--all` | `-a` | Download all available chapters |
-| `--range <range>` | `-r` | Specify a range of chapters (e.g., `10-77`, `14-`) |
-| `--scan-dir <folder>` | `-d` | Folder to save PDF files (default: `pdf`) |
-| `--keep-images` | `-k` | Keep images after PDF creation |
-| `--domain <url>` | `-u` | Override anime-sama domain (e.g., `https://anime-sama.tv`) |
-| `--ebook-friendly ` | none | Download chapters as images in separated subfolders (e.g. Chapter 001/, Chapter 002/). Compatible with [Kindle Comic Converter](https://github.com/ciromattia/kcc). |
-| `--debug ` | none | Enable debug mode to display more logs (CLI only) |
-
-### Usage examples
-
-#### Download all chapters of a manga
-```bash
-goweeb --all "one piece"
-# or
-goweeb -a "jujutsu kaisen"
-```
-
-#### Download a range of chapters
-```bash
-# Chapters 10 to 77
-goweeb --range 10-77 "jujutsu kaisen"
-
-# Shortcut
-goweeb -r 10-50 "one piece"
-
-# From chapter 14 to the last available
-goweeb -r 14- "chainsaw man"
-```
-
-#### Specify a destination folder
-```bash
-# PDFs will be saved in the "my-mangas" folder
-goweeb -d my-mangas --all "naruto"
-
-# Or with the full path
-goweeb --scan-dir ~/Documents/Mangas -r 1-100 "one piece"
-```
-
-#### Specify a custom domain
-```bash
-# If the anime-sama domain changes
-goweeb -u https://anime-sama.fr --all "one piece"
-```
-
-#### Download as an e-reader friendly structure
-
-> [!WARNING]
-> It's not about downloading in EPUB format, but rather downloading manga
-> following a certain structure used by third party softwares to format manga for e-ink readers.
-
-For example, this mode is very usedful when it comes to convert the downloaded manga with [Kindle Comic Converter](https://github.com/ciromattia/kcc)
-and then upload it to your kindle, kobo or other e-reader.
-
-```bash
-goweeb -u https://anime-sama.fr --all --ebook-friendly "one piece"
-```
-
-#### Combining options
-```bash
-# Download chapters 1 to 50 of One Piece, in the "scans" folder on Windows
-# while specifying a custom anime-sama domain
-goweeb -r 1-50 -d 'C:\Users\<your-username>\scans' -u https://anime-sama.tv "one piece"
-```
-
-### Tips
-
-> [!TIP]
-> - The search uses anime-sama's search engine directly, so you can use any name (French, English, Japanese)
-> - If multiple scan versions exist (e.g., color/black and white), the tool will ask which one to download
-> - Don't forget the quotes around the manga name!
-
-> [!WARNING] 
-> Keep in mind that the anime-sama domain changes for obvious reasons... so don't hesitate to check [anime-sama.pw](https://anime-sama.pw) to verify which domain is active. You can then specify it with the `-u` argument as shown above.
-
----
 
 ## Crédits
 
