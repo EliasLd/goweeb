@@ -72,7 +72,6 @@ goweeb [options] "nom-du-manga"
 | Option | Raccourci | Description |
 |--------|-----------|-------------|
 | `--all` | `-a` | Télécharge tous les chapitres disponibles |
-| `--range <plage>` | `-r` | Spécifie une plage de chapitres (ex: `10-77`, `4` chapitre 4 uniquement, `14-` du chapitre 14 jusqu'à la fin, `-5` pour les 5 derniers chapitres par exemple) |
 | `--scan-dir <dossier>` | `-d` | Dossier où sauvegarder les PDF (par défaut : `pdf`) |
 | `--keep-images` | `-k` | Garde les images après la création du PDF |
 | `--domain <url>` | `-u` | Remplace le domaine anime-sama (ex: `https://anime-sama.tv`) |
@@ -89,19 +88,9 @@ goweeb -a "jujutsu kaisen"
 ```
 
 #### Télécharger une plage de chapitres
-```bash
-# Chapitres 10 à 77
-goweeb --range 10-77 "jujutsu kaisen"
 
-# Raccourci
-goweeb -r 10-50 "one piece"
-
-# Du chapitre 14 jusqu'au dernier disponible
-goweeb -r 14- "chainsaw man"
-
-# Les 3 derniers chapitres
-goweeb -r -3 "ao ashi"
-```
+Lorsque le manga a été choisi, il **te sera demandé** d'entrer une plage de chapitres à télécharger.
+Suit simplement les instructions et choisit la plage de chapitres que tu souhaites.
 
 #### Spécifier un dossier de destination
 ```bash
@@ -109,10 +98,10 @@ goweeb -r -3 "ao ashi"
 goweeb -d mes-mangas --all "naruto"
 
 # Ou avec le chemin complet (sous linux)
-goweeb --scan-dir ~/Documents/Mangas -r 1-100 "one piece"
+goweeb --scan-dir ~/Documents/Mangas "one piece"
 
 # Pareil mais sur Windows
-goweeb --scan-dir C:\Users\<nom-de-ton-utilisateur>\Documents\Mangas -r 1-100 "one piece"
+goweeb --scan-dir C:\Users\<nom-de-ton-utilisateur>\Documents\Mangas "one piece"
 ```
 
 #### Spécifier un domaine personnalisé
@@ -138,7 +127,7 @@ goweeb -u https://anime-sama.fr --all --ebook-friendly "one piece"
 ```bash
 # Télécharge les chapitres 1 à 50 de One Piece, dans le dossier "scans" sur Windows 
 # en spécifiant un domaine anime-sama personnalisé
-goweeb -r 1-50 -d 'C:\Users\<nom-de-ton-utilisateur>\scans' -u https://anime-sama.tv "one piece"
+goweeb -d 'C:\Users\<nom-de-ton-utilisateur>\scans' -u https://anime-sama.tv "one piece"
 ```
 
 ### Conseils
@@ -221,7 +210,6 @@ goweeb [options] "manga-name"
 | Option | Shortcut | Description |
 |--------|----------|-------------|
 | `--all` | `-a` | Download all available chapters |
-| `--range <range>` | `-r` | Specify a range of chapters (e.g., `10-77`, `14-`) |
 | `--scan-dir <folder>` | `-d` | Folder to save PDF files (default: `pdf`) |
 | `--keep-images` | `-k` | Keep images after PDF creation |
 | `--domain <url>` | `-u` | Override anime-sama domain (e.g., `https://anime-sama.tv`) |
@@ -238,16 +226,9 @@ goweeb -a "jujutsu kaisen"
 ```
 
 #### Download a range of chapters
-```bash
-# Chapters 10 to 77
-goweeb --range 10-77 "jujutsu kaisen"
 
-# Shortcut
-goweeb -r 10-50 "one piece"
-
-# From chapter 14 to the last available
-goweeb -r 14- "chainsaw man"
-```
+After selecting the manga you want to download, the program will **ask you** to enter a range of chapter that you want to download.
+Just follow the instruction and choose the range that suits you.
 
 #### Specify a destination folder
 ```bash
@@ -255,7 +236,7 @@ goweeb -r 14- "chainsaw man"
 goweeb -d my-mangas --all "naruto"
 
 # Or with the full path
-goweeb --scan-dir ~/Documents/Mangas -r 1-100 "one piece"
+goweeb --scan-dir ~/Documents/Mangas "one piece"
 ```
 
 #### Specify a custom domain
@@ -281,7 +262,7 @@ goweeb -u https://anime-sama.fr --all --ebook-friendly "one piece"
 ```bash
 # Download chapters 1 to 50 of One Piece, in the "scans" folder on Windows
 # while specifying a custom anime-sama domain
-goweeb -r 1-50 -d 'C:\Users\<your-username>\scans' -u https://anime-sama.tv "one piece"
+goweeb -d 'C:\Users\<your-username>\scans' -u https://anime-sama.tv "one piece"
 ```
 
 ### Tips
