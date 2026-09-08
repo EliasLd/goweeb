@@ -29,6 +29,7 @@ const (
 	StateForm AppState = iota
 	StateMangaSelection
 	StateScanSelection
+	StateRangeSelection
 	StateDownloading
 )
 
@@ -58,9 +59,10 @@ type Model struct {
 	SelectionModel SelectionModel
 
 	// Temporary data for multi-step workflow
-	SelectedMangaURL  string
-	SelectedScanPath  string
-	SelectedMangaName string
+	SelectedMangaURL string
+	SelectedScanPath string
+
+	DiscoveredEntries int
 }
 
 func getDefaultScanDir() string {
