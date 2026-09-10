@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/EliasLd/scan-scraper/internal/source/animesama"
+	"github.com/EliasLd/scan-scraper/internal/source/mangafreak"
 	sourcetypes "github.com/EliasLd/scan-scraper/internal/source/types"
 )
 
@@ -12,8 +13,8 @@ func New(name, customDomain string) (sourcetypes.Provider, error) {
 	switch strings.ToLower(strings.TrimSpace(name)) {
 	case "animesama":
 		return animesama.New(customDomain), nil
-	case "sushiscan":
-		return nil, fmt.Errorf("provider sushiscan not implemented yet")
+	case "mangafreak":
+		return mangafreak.New(customDomain), nil
 	default:
 		return nil, fmt.Errorf("unknown provider: %s", name)
 	}
