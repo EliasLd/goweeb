@@ -19,8 +19,8 @@ const (
 )
 
 var handledProviders = map[string]struct{}{
-	"animesama": {},
-	"sushiscan": {},
+	"animesama":  {},
+	"mangafreak": {},
 }
 
 func isValidProvider(name string) bool {
@@ -59,7 +59,7 @@ func ParseFlags() Options {
 	allFlag := flag.Bool("all", false, "Download all available chapters")
 	allShort := flag.Bool("a", false, "Shortand for --all)")
 
-	sourceFlag := flag.String("source", "animesama", "Source provider: animesama, sushiscan")
+	sourceFlag := flag.String("source", "animesama", "Source provider: animesama, mangas-origines")
 
 	rangeFlag := flag.String("range", "", "Range of chapters to download, e.g., 10-77, 14-")
 	rangeShort := flag.String("r", "", "Shorthand for --range")
