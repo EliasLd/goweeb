@@ -56,33 +56,62 @@ func (p *Provider) Search(
 	return out, nil
 }
 
-// TODO: Implement this
+// MangaFreak has a single chapter list and no scan/version selection.
 func (p *Provider) ListScanPaths(
 	workURL string,
 	log *logger.Logger,
 ) ([]common.SelectableItem, error) {
-	return nil, fmt.Errorf(
-		"mangafreak: ListScanPaths not implemented yet",
-	)
+	return []common.SelectableItem{
+		{
+			Label: "MangaFreak",
+			Value: workURL,
+		},
+	}, nil
 }
 
-// TODO: Implement this
 func (p *Provider) ListEntries(
 	workURL string,
 	scanPath string,
 	log *logger.Logger,
 ) (sourcetypes.Work, []sourcetypes.Entry, error) {
-	return sourcetypes.Work{}, nil, fmt.Errorf(
-		"mangafreak: ListEntries not implemented yet",
-	)
+	scanInfo, err := mangafreakscraper.GetScanInfo(workURL, log)
+	if err != nil {
+		return sourcetypes.Work{}, nil, fmt.Errorf(
+			"failed to get scan info: %w",
+			err,
+		)
+	}
+
+	entries := make([]sourcetypes.Entry, 0, len(scanInfo.Chapters))
+
+	for _, chapter := range scanInfo.Chapters {
+		entries = append(entries, sourcetypes.Entry{
+			Number: chapter.Number,
+			Label:  chapter.Label,
+			URL:    chapter.URL,
+		})
+	}
+
+	return sourcetypes.Work{
+		Title: scanInfo.MangaName,
+		Kind:  sourcetypes.ItemChapter,
+	}, entries, nil
 }
 
-// TODO: Implement this
 func (p *Provider) GetPageImageURLs(
 	entryURL string,
 	log *logger.Logger,
 ) ([]string, error) {
-	return nil, fmt.Errorf(
-		"mangafreak: GetPageImageURLs not implemented yet",
+	imageURLs, err := mangafreakscraper.GetPageImageURLs(
+		entryURL,
+		log,
 	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to get MangaFreak page images: %w",
+			err,
+		)
+	}
+
+	return imageURLs, nil
 }
