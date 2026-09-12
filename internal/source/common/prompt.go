@@ -18,7 +18,6 @@ func PromptUserToSelect(items []SelectableItem, title string, prompt string, log
 	}
 
 	if len(items) == 1 {
-		log.Debug("Only one result found: %s\n", items[0].Label)
 		log.Debug("Auto-selecting: %s\n", items[0].Value)
 		return items[0].Value, nil
 	}

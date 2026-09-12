@@ -162,6 +162,12 @@ func Run(opts Options, log *logger.Logger) {
 		return
 	}
 
+	if len(searchResults) == 1 {
+		log.Info("Found: %s\n", searchResults[0].Title)
+	} else {
+		log.Info("Found %d results.\n", len(searchResults))
+	}
+
 	mangaURL, err := common.PromptUserToSelect(
 		toSelectableManga(searchResults),
 		"Multiple results found:",

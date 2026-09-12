@@ -40,7 +40,6 @@ func SearchCatalog(domain, query string, log *logger.Logger) ([]MangaResult, err
 		})
 	}
 
-	log.Info("Found %d result(s)\n", len(results))
 	return results, nil
 }
 

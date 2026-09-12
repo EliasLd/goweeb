@@ -45,7 +45,5 @@ func SearchCatalog(
 		})
 	}
 
-	log.Info("Found %d result(s)\n", len(results))
-
 	return results, nil
 }
