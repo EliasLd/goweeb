@@ -3,6 +3,7 @@ package app
 import (
 	"flag"
 	"fmt"
+	"github.com/EliasLd/scan-scraper/internal/source"
 	"log"
 	"os"
 	"sort"
@@ -18,22 +19,21 @@ const (
 	RangeLastN
 )
 
-var handledProviders = map[string]struct{}{
-	"animesama":  {},
-	"mangafreak": {},
-}
-
 func isValidProvider(name string) bool {
-	_, ok := handledProviders[name]
-	return ok
+	return source.IsSupported(name)
 }
 
 func supportedProvidersList() string {
-	names := make([]string, 0, len(handledProviders))
-	for p := range handledProviders {
-		names = append(names, p)
+	providers := source.AvailableProviders()
+
+	names := make([]string, 0, len(providers))
+
+	for _, provider := range providers {
+		names = append(names, provider.ID)
 	}
+
 	sort.Strings(names)
+
 	return strings.Join(names, ", ")
 }
 
@@ -59,7 +59,7 @@ func ParseFlags() Options {
 	allFlag := flag.Bool("all", false, "Download all available chapters")
 	allShort := flag.Bool("a", false, "Shortand for --all)")
 
-	sourceFlag := flag.String("source", "animesama", "Source provider: animesama, mangas-origines")
+	sourceFlag := flag.String("source", "", "Source provider...")
 
 	rangeFlag := flag.String("range", "", "Range of chapters to download, e.g., 10-77, 14-")
 	rangeShort := flag.String("r", "", "Shorthand for --range")
@@ -74,7 +74,7 @@ func ParseFlags() Options {
 	keepImagesShort := flag.Bool("k", false, "Shorthand for --keep-images")
 
 	var customDomain string
-	flag.StringVar(&customDomain, "domain", "", "Override anime-sama domain (e.g., https://anime-sama.tv)")
+	flag.StringVar(&customDomain, "domain", "", "Override the provider's default domain")
 	flag.StringVar(&customDomain, "u", "", "Shorthand for --domain")
 
 	debugFlag := flag.Bool("debug", false, "Enable verbose debug logging")
@@ -93,9 +93,16 @@ func ParseFlags() Options {
 	// Resolve final values
 	all := *allFlag || *allShort
 
-	source := strings.ToLower(strings.TrimSpace(*sourceFlag))
-	if !isValidProvider(source) {
-		fmt.Printf("Unsupported source provider: %q\n", source)
+	sourceName := strings.ToLower(strings.TrimSpace(*sourceFlag))
+
+	if sourceName == "" {
+		fmt.Println("Missing required option: --source")
+		fmt.Printf("Supported providers: %s\n", supportedProvidersList())
+		os.Exit(1)
+	}
+
+	if !isValidProvider(sourceName) {
+		fmt.Printf("Unsupported source provider: %q\n", sourceName)
 		fmt.Printf("Supported providers: %s\n", supportedProvidersList())
 		os.Exit(1)
 	}
@@ -183,7 +190,7 @@ func ParseFlags() Options {
 	return Options{
 		Slug:          slug,
 		All:           all,
-		Source:        source,
+		Source:        sourceName,
 		Range:         chapterRange,
 		ScanDir:       dir,
 		RangeMode:     rangeMode,
