@@ -19,6 +19,10 @@ var (
 )
 
 func View(m Model) string {
+	if m.State == StateProviderSelection {
+		return m.ProviderSelectionModel.View()
+	}
+
 	if m.State == StateMangaSelection || m.State == StateScanSelection {
 		return m.SelectionModel.View()
 	}
@@ -54,13 +58,30 @@ func viewForm(m Model) string {
 	}
 	form.WriteString("\n\n")
 
-	form.WriteString(labelStyle.Render("Anime-sama domain (optional)"))
+	form.WriteString(labelStyle.Render("Provider"))
 	form.WriteString("\n\n")
-	if m.Cursor == 2 {
-		form.WriteString(m.DomainInput.View())
-	} else {
-		form.WriteString(lipgloss.NewStyle().Faint(true).Render(m.DomainInput.View()))
+
+	providerButton := "[ Select provider ]"
+
+	if m.SelectedProviderLabel != "" {
+		providerButton = fmt.Sprintf(
+			"[ Provider: %s ]",
+			m.SelectedProviderLabel,
+		)
 	}
+
+	if m.Cursor == 2 {
+		providerButton = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("226")).
+			Render(providerButton)
+	} else {
+		providerButton = lipgloss.NewStyle().
+			Faint(true).
+			Render(providerButton)
+	}
+
+	form.WriteString(providerButton)
 	form.WriteString("\n\n")
 
 	form.WriteString(m.EbookCheckbox.View(m.Cursor == 3))
@@ -81,7 +102,7 @@ func viewForm(m Model) string {
 	}
 
 	footerStyle := lipgloss.NewStyle().Faint(true)
-	form.WriteString(footerStyle.Render("↑/↓ navigate • Space/Enter toggle • Enter on Search • Ctrl+C/Esc quit"))
+	form.WriteString(footerStyle.Render("↑/↓ navigate • Space/Enter toggle • Enter to select/search • Ctrl+C/Esc quit"))
 
 	var logs strings.Builder
 	const maxLogs = 18
