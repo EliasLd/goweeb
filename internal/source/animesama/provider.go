@@ -12,16 +12,20 @@ import (
 	sourcetypes "github.com/EliasLd/scan-scraper/internal/source/types"
 )
 
+const defaultDomain = "https://anime-sama.to"
+
 type Provider struct {
 	domain string
 }
 
 func New(customDomain string) *Provider {
-	d := customDomain
-	if d == "" {
-		d = fetch.DefaultDomain
+	domain := customDomain
+
+	if domain == "" {
+		domain = defaultDomain
 	}
-	return &Provider{domain: strings.TrimSuffix(d, "/")}
+
+	return &Provider{domain: strings.TrimSuffix(domain, "/")}
 }
 
 func (p *Provider) Name() string { return "animesama" }
