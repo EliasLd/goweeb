@@ -1,0 +1,49 @@
+package mangafreakscraper
+
+import (
+	"github.com/EliasLd/goweeb/internal/logger"
+	"github.com/EliasLd/goweeb/internal/source/common"
+)
+
+type MangaResult struct {
+	Title string
+	URL   string
+}
+
+func SearchCatalog(
+	domain string,
+	query string,
+	log *logger.Logger,
+) ([]MangaResult, error) {
+	items, err := common.SearchHTMLCatalog(
+		common.CatalogSearchConfig{
+			Domain:        domain,
+			EndpointPath:  "/Find/",
+			QueryParam:    "",
+			CardSelector:  "div.manga_search_item",
+			LinkSelector:  "h3 a",
+			TitleSelector: "h3 a",
+		},
+		query,
+		log,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(items) == 0 {
+		log.Warn("No manga found in catalog\n")
+		return nil, nil
+	}
+
+	results := make([]MangaResult, 0, len(items))
+
+	for _, item := range items {
+		results = append(results, MangaResult{
+			Title: item.Label,
+			URL:   item.Value,
+		})
+	}
+
+	return results, nil
+}

@@ -1,8 +1,8 @@
 package animesamascraper
 
 import (
-	"github.com/EliasLd/scan-scraper/internal/logger"
-	"github.com/EliasLd/scan-scraper/internal/source/common"
+	"github.com/EliasLd/goweeb/internal/logger"
+	"github.com/EliasLd/goweeb/internal/source/common"
 )
 
 type MangaResult struct {
@@ -40,7 +40,6 @@ func SearchCatalog(domain, query string, log *logger.Logger) ([]MangaResult, err
 		})
 	}
 
-	log.Info("Found %d result(s)\n", len(results))
 	return results, nil
 }
 

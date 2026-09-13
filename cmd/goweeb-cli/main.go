@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	"github.com/EliasLd/scan-scraper/internal/app"
-	"github.com/EliasLd/scan-scraper/internal/logger"
+	"github.com/EliasLd/goweeb/internal/app"
+	"github.com/EliasLd/goweeb/internal/logger"
 )
 
 func main() {

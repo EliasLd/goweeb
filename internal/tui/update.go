@@ -6,11 +6,11 @@ import (
 	"io"
 	"strings"
 
-	"github.com/EliasLd/scan-scraper/internal/app"
-	"github.com/EliasLd/scan-scraper/internal/logger"
-	"github.com/EliasLd/scan-scraper/internal/source"
-	"github.com/EliasLd/scan-scraper/internal/source/common"
-	sourcetypes "github.com/EliasLd/scan-scraper/internal/source/types"
+	"github.com/EliasLd/goweeb/internal/app"
+	"github.com/EliasLd/goweeb/internal/logger"
+	"github.com/EliasLd/goweeb/internal/source"
+	"github.com/EliasLd/goweeb/internal/source/common"
+	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -41,6 +41,10 @@ type entriesCountResultMsg struct {
 }
 
 func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
+	if m.State == StateProviderSelection {
+		return handleProviderSelectionUpdate(msg, m)
+	}
+
 	if m.State == StateMangaSelection || m.State == StateScanSelection {
 		return handleSelectionUpdate(msg, m)
 	}
@@ -63,8 +67,20 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 		if len(msg.results) == 1 {
 			m.SelectedMangaURL = msg.results[0].URL
-			m.Logs = append(m.Logs, "Manga found. Fetching scan versions...")
-			return m, fetchScanPaths(m.SelectedMangaURL, strings.TrimSpace(m.DomainInput.Value()))
+
+			m.Logs = append(
+				m.Logs,
+				fmt.Sprintf(
+					"Manga found: %s. Fetching scan versions...",
+					msg.results[0].Title,
+				),
+			)
+
+			return m, fetchScanPaths(
+				m.SelectedProvider,
+				m.SelectedMangaURL,
+				strings.TrimSpace(m.DomainInput.Value()),
+			)
 		}
 
 		items := make([]SelectionItem, len(msg.results))
@@ -90,8 +106,18 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 		if len(msg.paths) == 1 {
 			m.SelectedScanPath = msg.paths[0].Value
-			m.Logs = append(m.Logs, "Scan version selected. Fetching chapter count...")
-			return m, fetchEntriesCount(m.SelectedMangaURL, m.SelectedScanPath, strings.TrimSpace(m.DomainInput.Value()))
+
+			m.Logs = append(
+				m.Logs,
+				"Scan version selected. Fetching chapter count...",
+			)
+
+			return m, fetchEntriesCount(
+				m.SelectedProvider,
+				m.SelectedMangaURL,
+				m.SelectedScanPath,
+				strings.TrimSpace(m.DomainInput.Value()),
+			)
 		}
 
 		items := make([]SelectionItem, len(msg.paths))
@@ -168,6 +194,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			if m.Cursor == 0 && !m.AllCheckbox.Checked {
 				var cmd tea.Cmd
 				m.RangeInput, cmd = m.RangeInput.Update(msg)
+				m = updateDownloadReady(m)
 				return m, cmd
 			}
 
@@ -198,26 +225,51 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 				m.MangaInput, cmd = m.MangaInput.Update(msg)
 				return m, cmd
 			}
+
 			switch m.Cursor {
+			case 2:
+				m = openProviderSelection(m)
+				return m, nil
+
 			case 3:
 				m.EbookCheckbox.Toggle()
+
 			case 4:
 				m.KeepCheckbox.Toggle()
 			}
+
 			return m, nil
 
 		case "enter":
 			switch m.Cursor {
+			case 2:
+				m = openProviderSelection(m)
+				return m, nil
+
 			case 3:
 				m.EbookCheckbox.Toggle()
+
 			case 4:
 				m.KeepCheckbox.Toggle()
+
 			case 5:
 				if m.DownloadReady {
-					m.Logs = append(m.Logs, fmt.Sprintf("Searching for: %s...", m.MangaInput.Value()))
-					return m, searchCatalog(m.MangaInput.Value(), m.DomainInput.Value())
+					m.Logs = append(
+						m.Logs,
+						fmt.Sprintf(
+							"Searching for: %s...",
+							m.MangaInput.Value(),
+						),
+					)
+
+					return m, searchCatalog(
+						m.SelectedProvider,
+						m.MangaInput.Value(),
+						m.DomainInput.Value(),
+					)
 				}
 			}
+
 			return m, nil
 		}
 
@@ -225,14 +277,13 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		case 0:
 			var cmd tea.Cmd
 			m.MangaInput, cmd = m.MangaInput.Update(msg)
+			m = updateDownloadReady(m)
 			return m, cmd
+
 		case 1:
 			var cmd tea.Cmd
 			m.ScanDirInput, cmd = m.ScanDirInput.Update(msg)
-			return m, cmd
-		case 2:
-			var cmd tea.Cmd
-			m.DomainInput, cmd = m.DomainInput.Update(msg)
+			m = updateDownloadReady(m)
 			return m, cmd
 		}
 
@@ -269,11 +320,84 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		return m, nil
 	}
 
-	// Main form readiness (manga + destination only)
-	m.DownloadReady = strings.TrimSpace(m.MangaInput.Value()) != "" &&
-		strings.TrimSpace(m.ScanDirInput.Value()) != ""
-
+	// Main form readiness (manga + destination + provider)
+	m = updateDownloadReady(m)
 	return m, nil
+}
+
+func handleProviderSelectionUpdate(
+	msg tea.Msg,
+	m Model,
+) (Model, tea.Cmd) {
+	var cmd tea.Cmd
+
+	providerModel, cmd := m.ProviderSelectionModel.Update(msg)
+	m.ProviderSelectionModel = providerModel.(ProviderSelectionModel)
+
+	if m.ProviderSelectionModel.Confirmed {
+		newProvider := m.ProviderSelectionModel.SelectedID
+		newProviderLabel := m.ProviderSelectionModel.SelectedLabel
+		newDomain := strings.TrimSpace(
+			m.ProviderSelectionModel.DomainInput.Value(),
+		)
+
+		oldProvider := m.SelectedProvider
+		oldDomain := strings.TrimSpace(m.DomainInput.Value())
+
+		m.SelectedProvider = newProvider
+		m.SelectedProviderLabel = newProviderLabel
+		m.DomainInput.SetValue(newDomain)
+
+		// Recompute main form readiness immediately.
+		m = updateDownloadReady(m)
+
+		// Changing provider configuration invalidates anything
+		// previously selected from another provider.
+		if oldProvider != newProvider || oldDomain != newDomain {
+			m.SelectedMangaURL = ""
+			m.SelectedScanPath = ""
+			m.DiscoveredEntries = 0
+		}
+
+		m.State = StateForm
+		m.Cursor = 2
+		m = updateFocus(m)
+
+		m.Logs = append(
+			m.Logs,
+			fmt.Sprintf(
+				"Provider selected: %s",
+				newProviderLabel,
+			),
+		)
+
+		return m, nil
+	}
+
+	if m.ProviderSelectionModel.Cancelled {
+		m.State = StateForm
+		m.Cursor = 2
+		m = updateFocus(m)
+
+		return m, nil
+	}
+
+	return m, cmd
+}
+
+func openProviderSelection(m Model) Model {
+	m.ProviderSelectionModel = NewProviderSelectionModel(
+		source.AvailableProviders(),
+		m.SelectedProvider,
+		strings.TrimSpace(m.DomainInput.Value()),
+	)
+
+	m.ProviderSelectionModel.Width = m.Width
+	m.ProviderSelectionModel.Height = m.Height
+
+	m.State = StateProviderSelection
+
+	return m
 }
 
 func handleSelectionUpdate(msg tea.Msg, m Model) (Model, tea.Cmd) {
@@ -286,12 +410,21 @@ func handleSelectionUpdate(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			m.SelectedMangaURL = m.SelectionModel.Selected
 			m.State = StateForm
 			m.Logs = append(m.Logs, "Manga selected. Fetching scan versions...")
-			return m, fetchScanPaths(m.SelectedMangaURL, strings.TrimSpace(m.DomainInput.Value()))
+			return m, fetchScanPaths(
+				m.SelectedProvider,
+				m.SelectedMangaURL,
+				strings.TrimSpace(m.DomainInput.Value()),
+			)
 		} else if m.State == StateScanSelection {
 			m.SelectedScanPath = m.SelectionModel.Selected
 			m.State = StateForm
 			m.Logs = append(m.Logs, "Scan version selected. Fetching chapter count...")
-			return m, fetchEntriesCount(m.SelectedMangaURL, m.SelectedScanPath, strings.TrimSpace(m.DomainInput.Value()))
+			return m, fetchEntriesCount(
+				m.SelectedProvider,
+				m.SelectedMangaURL,
+				m.SelectedScanPath,
+				strings.TrimSpace(m.DomainInput.Value()),
+			)
 		}
 	}
 
@@ -313,11 +446,11 @@ func updateFocus(m Model) Model {
 	switch m.Cursor {
 	case 0:
 		m.MangaInput.Focus()
+
 	case 1:
 		m.ScanDirInput.Focus()
-	case 2:
-		m.DomainInput.Focus()
 	}
+
 	return m
 }
 
@@ -329,61 +462,118 @@ func updateRangeFocus(m Model) Model {
 	return m
 }
 
-func searchCatalog(query, customDomain string) tea.Cmd {
+func searchCatalog(
+	providerName string,
+	query string,
+	customDomain string,
+) tea.Cmd {
 	return func() tea.Msg {
 		log := logger.New(io.Discard, logger.LevelInfo)
 
-		provider, err := source.New("animesama", strings.TrimSpace(customDomain))
+		provider, err := source.New(
+			providerName,
+			strings.TrimSpace(customDomain),
+		)
 		if err != nil {
-			return catalogSearchResultMsg{results: nil, err: err}
+			return catalogSearchResultMsg{
+				results: nil,
+				err:     err,
+			}
 		}
 
 		results, err := provider.Search(query, log)
-		return catalogSearchResultMsg{results: results, err: err}
+
+		return catalogSearchResultMsg{
+			results: results,
+			err:     err,
+		}
 	}
 }
 
-func fetchScanPaths(mangaURL string, customDomain string) tea.Cmd {
+func fetchScanPaths(
+	providerName string,
+	mangaURL string,
+	customDomain string,
+) tea.Cmd {
 	return func() tea.Msg {
 		log := logger.New(io.Discard, logger.LevelInfo)
 
-		provider, err := source.New("animesama", strings.TrimSpace(customDomain))
+		provider, err := source.New(
+			providerName,
+			strings.TrimSpace(customDomain),
+		)
 		if err != nil {
-			return scanPathResultMsg{paths: nil, err: err}
+			return scanPathResultMsg{
+				paths: nil,
+				err:   err,
+			}
 		}
 
 		paths, err := provider.ListScanPaths(mangaURL, log)
 		if err != nil {
-			return scanPathResultMsg{paths: nil, err: err}
+			return scanPathResultMsg{
+				paths: nil,
+				err:   err,
+			}
 		}
 
-		return scanPathResultMsg{paths: paths, err: nil}
+		return scanPathResultMsg{
+			paths: paths,
+			err:   nil,
+		}
 	}
 }
 
-func fetchEntriesCount(mangaURL, scanPath, customDomain string) tea.Cmd {
+func fetchEntriesCount(
+	providerName string,
+	mangaURL string,
+	scanPath string,
+	customDomain string,
+) tea.Cmd {
 	return func() tea.Msg {
 		log := logger.New(io.Discard, logger.LevelInfo)
 
-		provider, err := source.New("animesama", strings.TrimSpace(customDomain))
+		provider, err := source.New(
+			providerName,
+			strings.TrimSpace(customDomain),
+		)
 		if err != nil {
-			return entriesCountResultMsg{err: err}
+			return entriesCountResultMsg{
+				err: err,
+			}
 		}
 
-		_, entries, err := provider.ListEntries(mangaURL, scanPath, log)
+		_, entries, err := provider.ListEntries(
+			mangaURL,
+			scanPath,
+			log,
+		)
 		if err != nil {
-			return entriesCountResultMsg{err: err}
+			return entriesCountResultMsg{
+				err: err,
+			}
 		}
 
-		return entriesCountResultMsg{count: len(entries)}
+		return entriesCountResultMsg{
+			count: len(entries),
+		}
 	}
+}
+
+func updateDownloadReady(m Model) Model {
+	m.DownloadReady =
+		strings.TrimSpace(m.MangaInput.Value()) != "" &&
+			strings.TrimSpace(m.ScanDirInput.Value()) != "" &&
+			strings.TrimSpace(m.SelectedProvider) != ""
+
+	return m
 }
 
 func startDownload(m Model) tea.Cmd {
 	return func() tea.Msg {
 		opts := app.Options{
 			Slug:          m.MangaInput.Value(),
-			Source:        "animesama",
+			Source:        m.SelectedProvider,
 			All:           m.AllCheckbox.Checked,
 			ScanDir:       m.ScanDirInput.Value(),
 			Cleanup:       !m.KeepCheckbox.Checked,

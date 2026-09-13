@@ -5,29 +5,33 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/EliasLd/scan-scraper/internal/fetch"
-	"github.com/EliasLd/scan-scraper/internal/logger"
-	animescraper "github.com/EliasLd/scan-scraper/internal/source/animesama/scraper"
-	"github.com/EliasLd/scan-scraper/internal/source/common"
-	sourcetypes "github.com/EliasLd/scan-scraper/internal/source/types"
+	"github.com/EliasLd/goweeb/internal/fetch"
+	"github.com/EliasLd/goweeb/internal/logger"
+	animesamascraper "github.com/EliasLd/goweeb/internal/source/animesama/scraper"
+	"github.com/EliasLd/goweeb/internal/source/common"
+	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 )
+
+const defaultDomain = "https://anime-sama.to"
 
 type Provider struct {
 	domain string
 }
 
 func New(customDomain string) *Provider {
-	d := customDomain
-	if d == "" {
-		d = fetch.DefaultDomain
+	domain := customDomain
+
+	if domain == "" {
+		domain = defaultDomain
 	}
-	return &Provider{domain: strings.TrimSuffix(d, "/")}
+
+	return &Provider{domain: strings.TrimSuffix(domain, "/")}
 }
 
 func (p *Provider) Name() string { return "animesama" }
 
 func (p *Provider) Search(query string, log *logger.Logger) ([]sourcetypes.SearchResult, error) {
-	results, err := animescraper.SearchCatalog(p.domain, query, log)
+	results, err := animesamascraper.SearchCatalog(p.domain, query, log)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +44,7 @@ func (p *Provider) Search(query string, log *logger.Logger) ([]sourcetypes.Searc
 }
 
 func (p *Provider) ListScanPaths(workURL string, log *logger.Logger) ([]common.SelectableItem, error) {
-	paths, err := animescraper.GetAllScanPaths(workURL, log)
+	paths, err := animesamascraper.GetAllScanPaths(workURL, log)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get scan paths: %w", err)
 	}
@@ -76,12 +80,12 @@ func (p *Provider) ListEntries(workURL string, scanPath string, log *logger.Logg
 
 	scanPageURL := mangaBase.ResolveReference(scanRef).String()
 
-	mangaName, err := animescraper.ExtractMangaName(scanPageURL, log)
+	mangaName, err := animesamascraper.ExtractMangaName(scanPageURL, log)
 	if err != nil {
 		return sourcetypes.Work{}, nil, fmt.Errorf("failed to extract manga name: %w", err)
 	}
 
-	scanInfo, err := animescraper.GetScanInfo(p.domain, mangaName, log)
+	scanInfo, err := animesamascraper.GetScanInfo(p.domain, mangaName, log)
 	if err != nil {
 		return sourcetypes.Work{}, nil, fmt.Errorf("failed to get scan info: %w", err)
 	}

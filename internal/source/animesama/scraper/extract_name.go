@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/EliasLd/scan-scraper/internal/logger"
+	"github.com/EliasLd/goweeb/internal/logger"
 )
 
 // ExtractMangaName fetches the scan/v* page and extracts the real manga name

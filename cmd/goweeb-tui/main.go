@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/EliasLd/scan-scraper/internal/tui"
+	"github.com/EliasLd/goweeb/internal/tui"
 )
 
 func main() {

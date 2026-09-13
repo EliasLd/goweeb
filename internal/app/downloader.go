@@ -5,12 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/EliasLd/scan-scraper/internal/convert"
-	"github.com/EliasLd/scan-scraper/internal/fetch"
-	"github.com/EliasLd/scan-scraper/internal/logger"
-	"github.com/EliasLd/scan-scraper/internal/source"
-	"github.com/EliasLd/scan-scraper/internal/source/common"
-	sourcetypes "github.com/EliasLd/scan-scraper/internal/source/types"
+	"github.com/EliasLd/goweeb/internal/convert"
+	"github.com/EliasLd/goweeb/internal/fetch"
+	"github.com/EliasLd/goweeb/internal/logger"
+	"github.com/EliasLd/goweeb/internal/source"
+	"github.com/EliasLd/goweeb/internal/source/common"
+	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 )
 
 func chapterDigits(maxChapter int) int {
@@ -160,6 +160,12 @@ func Run(opts Options, log *logger.Logger) {
 	if len(searchResults) == 0 {
 		log.Error("Manga '%s' not found in catalog\n", opts.Slug)
 		return
+	}
+
+	if len(searchResults) == 1 {
+		log.Info("Found: %s\n", searchResults[0].Title)
+	} else {
+		log.Info("Found %d results.\n", len(searchResults))
 	}
 
 	mangaURL, err := common.PromptUserToSelect(

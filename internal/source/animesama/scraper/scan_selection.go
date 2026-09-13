@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/EliasLd/scan-scraper/internal/logger"
-	"github.com/EliasLd/scan-scraper/internal/source/common"
+	"github.com/EliasLd/goweeb/internal/logger"
+	"github.com/EliasLd/goweeb/internal/source/common"
 	"github.com/PuerkitoBio/goquery"
 )
 

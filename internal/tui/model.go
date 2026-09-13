@@ -27,6 +27,7 @@ type AppState int
 
 const (
 	StateForm AppState = iota
+	StateProviderSelection
 	StateMangaSelection
 	StateScanSelection
 	StateRangeSelection
@@ -44,6 +45,11 @@ type Model struct {
 	KeepCheckbox  Checkbox
 	EbookCheckbox Checkbox
 	DomainInput   textinput.Model
+
+	SelectedProvider      string
+	SelectedProviderLabel string
+
+	ProviderSelectionModel ProviderSelectionModel
 
 	Cursor        int
 	Width         int
@@ -76,14 +82,14 @@ func getDefaultScanDir() string {
 
 func InitialModel() Model {
 	manga := textinput.New()
-	manga.Placeholder = "ex: one piece"
+	manga.Placeholder = "e.g. one piece"
 	manga.Focus()
 	manga.Prompt = "> "
 	manga.CharLimit = 100
 	manga.Width = 60
 
 	rangeInput := textinput.New()
-	rangeInput.Placeholder = "ex: 7, 1-30, 30- (30 jusqu'à la fin), -5 (5 derniers)"
+	rangeInput.Placeholder = "e.g. 7, 1-30, 30- (30 to the end), -5 (last 5)"
 	rangeInput.Prompt = "> "
 	rangeInput.Width = 85
 
@@ -94,7 +100,7 @@ func InitialModel() Model {
 	scanDir.Width = 70
 
 	domain := textinput.New()
-	domain.Placeholder = "Optionnel (ex https://anime-sama.tv)"
+	domain.Placeholder = "Optional custom base URL"
 	domain.Prompt = "> "
 	domain.Width = 60
 
@@ -102,12 +108,12 @@ func InitialModel() Model {
 		State:         StateForm,
 		Title:         asciiArt,
 		MangaInput:    manga,
-		AllCheckbox:   Checkbox{Label: "Télécharger tous les chapitres.", Checked: false},
+		AllCheckbox:   Checkbox{Label: "Download all chapters.", Checked: false},
 		RangeInput:    rangeInput,
 		ScanDirInput:  scanDir,
 		DomainInput:   domain,
-		EbookCheckbox: Checkbox{Label: "Mode ebook-friendly (dossiers Chapter XXX pour KCC, sans PDF).", Checked: false},
-		KeepCheckbox:  Checkbox{Label: "Garder les images après conversion (déconseillé).", Checked: false},
+		EbookCheckbox: Checkbox{Label: "Ebook-friendly mode (Chapter XXX folders for KCC, no PDF).", Checked: false},
+		KeepCheckbox:  Checkbox{Label: "Keep images after conversion (not recommended).", Checked: false},
 		Cursor:        0,
 		Width:         0,
 		Height:        0,

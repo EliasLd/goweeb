@@ -12,7 +12,7 @@ import (
 	"github.com/signintech/gopdf"
 	"golang.org/x/image/webp"
 
-	"github.com/EliasLd/scan-scraper/internal/logger"
+	"github.com/EliasLd/goweeb/internal/logger"
 )
 
 // Opens the file at path and checks
