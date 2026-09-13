@@ -5,11 +5,11 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/EliasLd/scan-scraper/internal/fetch"
-	"github.com/EliasLd/scan-scraper/internal/logger"
-	animesamascraper "github.com/EliasLd/scan-scraper/internal/source/animesama/scraper"
-	"github.com/EliasLd/scan-scraper/internal/source/common"
-	sourcetypes "github.com/EliasLd/scan-scraper/internal/source/types"
+	"github.com/EliasLd/goweeb/internal/fetch"
+	"github.com/EliasLd/goweeb/internal/logger"
+	animesamascraper "github.com/EliasLd/goweeb/internal/source/animesama/scraper"
+	"github.com/EliasLd/goweeb/internal/source/common"
+	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 )
 
 const defaultDomain = "https://anime-sama.to"

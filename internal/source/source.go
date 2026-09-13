@@ -5,9 +5,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/EliasLd/scan-scraper/internal/source/animesama"
-	"github.com/EliasLd/scan-scraper/internal/source/mangafreak"
-	sourcetypes "github.com/EliasLd/scan-scraper/internal/source/types"
+	"github.com/EliasLd/goweeb/internal/source/animesama"
+	"github.com/EliasLd/goweeb/internal/source/mangafreak"
+	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 )
 
 type ProviderInfo struct {

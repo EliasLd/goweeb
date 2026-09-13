@@ -3,7 +3,7 @@ package app
 import (
 	"flag"
 	"fmt"
-	"github.com/EliasLd/scan-scraper/internal/source"
+	"github.com/EliasLd/goweeb/internal/source"
 	"log"
 	"os"
 	"sort"

@@ -5,12 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/EliasLd/scan-scraper/internal/convert"
-	"github.com/EliasLd/scan-scraper/internal/fetch"
-	"github.com/EliasLd/scan-scraper/internal/logger"
-	"github.com/EliasLd/scan-scraper/internal/source"
-	"github.com/EliasLd/scan-scraper/internal/source/common"
-	sourcetypes "github.com/EliasLd/scan-scraper/internal/source/types"
+	"github.com/EliasLd/goweeb/internal/convert"
+	"github.com/EliasLd/goweeb/internal/fetch"
+	"github.com/EliasLd/goweeb/internal/logger"
+	"github.com/EliasLd/goweeb/internal/source"
+	"github.com/EliasLd/goweeb/internal/source/common"
+	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 )
 
 func chapterDigits(maxChapter int) int {

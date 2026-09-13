@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/EliasLd/scan-scraper/internal/logger"
-	"github.com/EliasLd/scan-scraper/internal/source/common"
-	mangafreakscraper "github.com/EliasLd/scan-scraper/internal/source/mangafreak/scraper"
-	sourcetypes "github.com/EliasLd/scan-scraper/internal/source/types"
+	"github.com/EliasLd/goweeb/internal/logger"
+	"github.com/EliasLd/goweeb/internal/source/common"
+	mangafreakscraper "github.com/EliasLd/goweeb/internal/source/mangafreak/scraper"
+	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 )
 
 const defaultDomain = "https://ww3.mangafreak.me"

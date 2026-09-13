@@ -1,4 +1,4 @@
-module github.com/EliasLd/scan-scraper
+module github.com/EliasLd/goweeb
 
 go 1.25.0
 

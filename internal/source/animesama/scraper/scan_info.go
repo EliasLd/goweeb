@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/EliasLd/scan-scraper/internal/logger"
+	"github.com/EliasLd/goweeb/internal/logger"
 )
 
 type ScanInfo struct {

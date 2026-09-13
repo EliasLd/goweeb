@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/EliasLd/scan-scraper/internal/logger"
+	"github.com/EliasLd/goweeb/internal/logger"
 )
 
 // Asks user to choose chapters after entries are discovered.

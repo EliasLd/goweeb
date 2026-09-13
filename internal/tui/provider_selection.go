@@ -3,7 +3,7 @@ package tui
 import (
 	"strings"
 
-	"github.com/EliasLd/scan-scraper/internal/source"
+	"github.com/EliasLd/goweeb/internal/source"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"

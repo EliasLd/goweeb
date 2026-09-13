@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/EliasLd/scan-scraper/internal/source/animesama"
-	"github.com/EliasLd/scan-scraper/internal/source/mangafreak"
-	sourcetypes "github.com/EliasLd/scan-scraper/internal/source/types"
+	"github.com/EliasLd/goweeb/internal/source/animesama"
+	"github.com/EliasLd/goweeb/internal/source/mangafreak"
+	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 )
 
 func New(name, customDomain string) (sourcetypes.Provider, error) {
