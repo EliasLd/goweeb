@@ -22,13 +22,13 @@ type providerRegistration struct {
 
 var providers = map[string]providerRegistration{
 	"animesama": {
-		Label: "Anime-Sama",
+		Label: "Anime-Sama (French)",
 		New: func(customDomain string) sourcetypes.Provider {
 			return animesama.New(customDomain)
 		},
 	},
 	"mangafreak": {
-		Label: "MangaFreak",
+		Label: "MangaFreak (English)",
 		New: func(customDomain string) sourcetypes.Provider {
 			return mangafreak.New(customDomain)
 		},
