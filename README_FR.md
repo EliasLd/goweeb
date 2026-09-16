@@ -261,8 +261,9 @@ goweeb prend actuellement en charge les providers suivants :
 
 | Provider   | Site                      |
 | ---------- | ------------------------- |
-| Anime-Sama | https://anime-sama.pw     |
-| MangaFreak | https://ww3.mangafreak.me |
+| Weebcentral (Anglais) | https://weebcentral.com |
+| MangaFreak  (Anglais) | https://ww3.mangafreak.me |
+| Anime-Sama (Français uniquement) | https://anime-sama.pw     |
 
 Les domaines, la structure ou la disponibilité de ces sites peuvent évoluer avec le temps.
 

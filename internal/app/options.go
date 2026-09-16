@@ -65,7 +65,7 @@ func ParseFlags() Options {
 	rangeShort := flag.String("r", "", "Shorthand for --range")
 
 	var scanDir string
-	flag.StringVar(&scanDir, "scan-dir", "pdf", "Directory to save the generated PDF files")
+	flag.StringVar(&scanDir, "scan-dir", "scan", "Directory to save the generated PDF files")
 	flag.StringVar(&scanDir, "d", "pdf", "Shorthand for --scan-dir")
 
 	ebookFlag := flag.Bool("ebook-friendly", false, "Save chapters as image folders, compatible with Kindle Comic Converter (no pdf output)")

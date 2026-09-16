@@ -8,6 +8,7 @@ import (
 	"github.com/EliasLd/goweeb/internal/source/animesama"
 	"github.com/EliasLd/goweeb/internal/source/mangafreak"
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
+	"github.com/EliasLd/goweeb/internal/source/weebcentral"
 )
 
 type ProviderInfo struct {
@@ -31,6 +32,12 @@ var providers = map[string]providerRegistration{
 		Label: "MangaFreak (English)",
 		New: func(customDomain string) sourcetypes.Provider {
 			return mangafreak.New(customDomain)
+		},
+	},
+	"weebcentral": {
+		Label: "WeebCentral (English)",
+		New: func(customDomain string) sourcetypes.Provider {
+			return weebcentral.New(customDomain)
 		},
 	},
 }
