@@ -55,7 +55,7 @@ func filterEntries(entries []sourcetypes.Entry, opts Options, log *logger.Logger
 		if opts.RangeMode == RangeOpenEnded {
 			log.Info("Filtered to %d chapters from %d onwards\n", len(entries), opts.Range[0])
 		} else {
-			log.Info("Filtered to %d chapters (%d-%d)\n", len(entries), opts.Range[0], opts.Range[1])
+			log.Info("Filtered to %d chapter(s) (%d-%d)\n", len(entries), opts.Range[0], opts.Range[1])
 		}
 	}
 	return entries
@@ -68,7 +68,7 @@ func downloadEntries(
 	opts Options,
 	log *logger.Logger,
 ) {
-	log.Info("Downloading %d chapters...\n", len(entries))
+	log.Info("Downloading %d chapter(s)...\n", len(entries))
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
