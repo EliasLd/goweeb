@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -24,6 +25,26 @@ type ChapterInfo struct {
 	URL    string
 }
 
+var chapterLabelPattern = regexp.MustCompile(
+	`(?i)^(?:chapter\s*|#\s*)(\d+)`,
+)
+
+func parseChapterLabel(text string) (int, string, bool) {
+	label := strings.TrimSpace(text)
+
+	match := chapterLabelPattern.FindStringSubmatch(label)
+	if len(match) != 2 {
+		return 0, "", false
+	}
+
+	number, err := strconv.Atoi(match[1])
+	if err != nil {
+		return 0, "", false
+	}
+
+	return number, label, true
+}
+
 func GetScanInfo(
 	domain string,
 	workURL string,
@@ -36,19 +57,33 @@ func GetScanInfo(
 
 	baseURL, err := url.Parse(strings.TrimSuffix(domain, "/"))
 	if err != nil {
-		return nil, fmt.Errorf("invalid WeebCentral domain: %w", err)
+		return nil, fmt.Errorf(
+			"invalid WeebCentral domain: %w",
+			err,
+		)
 	}
 
 	chapterListRef, err := url.Parse(
-		fmt.Sprintf("/series/%s/full-chapter-list", seriesID),
+		fmt.Sprintf(
+			"/series/%s/full-chapter-list",
+			seriesID,
+		),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build chapter list URL: %w", err)
+		return nil, fmt.Errorf(
+			"failed to build chapter list URL: %w",
+			err,
+		)
 	}
 
-	chapterListURL := baseURL.ResolveReference(chapterListRef).String()
+	chapterListURL := baseURL.ResolveReference(
+		chapterListRef,
+	).String()
 
-	log.Debug("Fetching chapter list: %s\n", chapterListURL)
+	log.Debug(
+		"Fetching chapter list: %s\n",
+		chapterListURL,
+	)
 
 	client := &http.Client{
 		Timeout: 15 * time.Second,
@@ -60,18 +95,27 @@ func GetScanInfo(
 		nil,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create chapter list request: %w", err)
+		return nil, fmt.Errorf(
+			"failed to create chapter list request: %w",
+			err,
+		)
 	}
 
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch chapter list: %w", err)
+		return nil, fmt.Errorf(
+			"failed to fetch chapter list: %w",
+			err,
+		)
 	}
 	defer resp.Body.Close()
 
-	log.Debug("Chapter list response status: %d\n", resp.StatusCode)
+	log.Debug(
+		"Chapter list response status: %d\n",
+		resp.StatusCode,
+	)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf(
@@ -82,7 +126,10 @@ func GetScanInfo(
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse chapter list: %w", err)
+		return nil, fmt.Errorf(
+			"failed to parse chapter list: %w",
+			err,
+		)
 	}
 
 	var chapters []ChapterInfo
@@ -94,56 +141,66 @@ func GetScanInfo(
 				return
 			}
 
-			var label string
+			var (
+				chapterNumber int
+				label         string
+				found         bool
+			)
 
-			// Avoid picking up "Last Read" and other nested text.
-			selection.Find("span").EachWithBreak(
+			// The first direct spans inside span.grow may contain:
+			//
+			// "Chapter 100"
+			// "Chapter 100 - Some title"
+			// "# 100"
+			// "#100"
+			//
+			// Other nested spans such as "Last Read" are ignored.
+			selection.Find("span.grow > span").EachWithBreak(
 				func(i int, span *goquery.Selection) bool {
 					text := strings.TrimSpace(span.Text())
 
-					if strings.HasPrefix(text, "Chapter ") {
-						label = text
-						return false
+					number, parsedLabel, ok := parseChapterLabel(text)
+					if !ok {
+						return true
 					}
 
-					return true
+					chapterNumber = number
+					label = parsedLabel
+					found = true
+
+					return false
 				},
 			)
 
-			label = strings.TrimSpace(
-				selection.Find("span.grow > span").First().Text(),
-			)
-
-			if label == "" {
-				return
-			}
-
-			numberPart := strings.TrimSpace(
-				strings.TrimPrefix(label, "Chapter "),
-			)
-
-			fields := strings.Fields(numberPart)
-			if len(fields) == 0 {
-				return
-			}
-
-			chapterNumber, err := strconv.Atoi(fields[0])
-			if err != nil {
+			if !found {
+				log.Debug(
+					"Skipping chapter with unrecognized label: %s\n",
+					strings.TrimSpace(selection.Text()),
+				)
 				return
 			}
 
 			chapterRef, err := url.Parse(href)
 			if err != nil {
+				log.Debug(
+					"Skipping invalid chapter URL: %s\n",
+					href,
+				)
 				return
 			}
 
-			chapterURL := baseURL.ResolveReference(chapterRef).String()
+			chapterURL := baseURL.ResolveReference(
+				chapterRef,
+			).String()
 
-			chapters = append(chapters, ChapterInfo{
-				Number: chapterNumber,
-				Label:  label,
-				URL:    chapterURL,
-			})
+			chapters = append(
+				chapters,
+				ChapterInfo{
+					Number: chapterNumber,
+					Label:  label,
+					URL:    chapterURL,
+				},
+			)
 		},
 	)
 
@@ -166,10 +223,15 @@ func GetScanInfo(
 	}, nil
 }
 
-func extractSeriesInfo(workURL string) (string, string, error) {
+func extractSeriesInfo(
+	workURL string,
+) (string, string, error) {
 	u, err := url.Parse(workURL)
 	if err != nil {
-		return "", "", fmt.Errorf("invalid series URL: %w", err)
+		return "", "", fmt.Errorf(
+			"invalid series URL: %w",
+			err,
+		)
 	}
 
 	parts := strings.Split(
@@ -177,6 +239,8 @@ func extractSeriesInfo(workURL string) (string, string, error) {
 		"/",
 	)
 
+	// Expected:
+	// /series/<ID>/<TITLE>
 	if len(parts) < 3 || parts[0] != "series" {
 		return "", "", fmt.Errorf(
 			"unexpected WeebCentral series URL: %s",
@@ -194,7 +258,11 @@ func extractSeriesInfo(workURL string) (string, string, error) {
 		)
 	}
 
-	mangaName := strings.ReplaceAll(slug, "-", " ")
+	mangaName := strings.ReplaceAll(
+		slug,
+		"-",
+		" ",
+	)
 
 	return seriesID, mangaName, nil
 }
