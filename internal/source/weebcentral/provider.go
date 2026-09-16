@@ -107,14 +107,20 @@ func (p *Provider) ListEntries(
 	}, entries, nil
 }
 
-//TODO: Next step is to implement and test each
-// of the following functions one by one.
-
 func (p *Provider) GetPageImageURLs(
 	entryURL string,
 	log *logger.Logger,
 ) ([]string, error) {
-	return nil, fmt.Errorf(
-		"weebcentral: GetPageImageURLs not implemented yet",
+	imageURLs, err := weebcentralscraper.GetPageImageURLs(
+		entryURL,
+		log,
 	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to get WeebCentral page images: %w",
+			err,
+		)
+	}
+
+	return imageURLs, nil
 }
