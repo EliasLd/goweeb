@@ -1,4 +1,3 @@
-
 **Français** | [English](README.md)
 
 # goweeb
@@ -8,6 +7,14 @@
 **goweeb** est un outil rapide permettant de télécharger des scans de mangas depuis plusieurs sites et dans différentes langues.
 
 Il est disponible à la fois sous forme d'interface interactive dans le terminal (TUI) et d'outil en ligne de commande (CLI).
+
+Actuellement, il est possible de télécharger des manga depuis les sites suivants:
+
+| Provider   | Site                      |
+| ---------- | ------------------------- |
+| Weebcentral (Anglais) | https://weebcentral.com |
+| MangaFreak  (Anglais) | https://ww3.mangafreak.me |
+| Anime-Sama (Français uniquement) | https://anime-sama.pw     |
 
 > [!TIP]
 > De nouveaux sites seront pris en charge au fil du temps.
@@ -255,20 +262,6 @@ goweeb \
   "one piece"
 ```
 
-## Providers pris en charge
-
-goweeb prend actuellement en charge les providers suivants :
-
-| Provider   | Site                      |
-| ---------- | ------------------------- |
-| Weebcentral (Anglais) | https://weebcentral.com |
-| MangaFreak  (Anglais) | https://ww3.mangafreak.me |
-| Anime-Sama (Français uniquement) | https://anime-sama.pw     |
-
-Les domaines, la structure ou la disponibilité de ces sites peuvent évoluer avec le temps.
-
-Si un provider pris en charge change de domaine mais reste compatible avec le scraper existant, vous pouvez remplacer son URL par défaut grâce à l'option `--domain` / `-u` ou au champ de domaine personnalisé disponible dans le TUI.
-
 ## Conseils
 
 > [!TIP]
@@ -279,6 +272,7 @@ Si un provider pris en charge change de domaine mais reste compatible avec le sc
 > * Utilisez `--range` si vous savez déjà exactement quels chapitres vous souhaitez télécharger.
 > * Si vous ne savez pas quels chapitres sont disponibles, omettez `--range` et utilisez la sélection interactive.
 > * Utilisez `--debug` lorsque vous développez ou dépannez un provider.
+> * Si un provider pris en charge change de domaine mais reste compatible avec le scraper existant, vous pouvez remplacer son URL par défaut grâce à l'option `--domain` / `-u` ou au champ de domaine personnalisé disponible dans le TUI.
 
 ## Contribution
 
@@ -291,4 +285,3 @@ L'un des objectifs principaux de l'architecture de goweeb est de faciliter l'ajo
 ## Remerciements
 
 Si cet outil vous plaît, n'hésitez pas à laisser une étoile ⭐. Merci !
-

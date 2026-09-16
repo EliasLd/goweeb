@@ -7,7 +7,15 @@
 
 **goweeb** is a fast manga downloader that can download scans from multiple websites and languages.
 
-It is available both as an interactive terminal interface (TUI) and as a command-line tool (CLI).
+It's available both as an interactive terminal interface (TUI) and as a command-line tool (CLI).
+
+Currently, it can download manga from the following websites:
+
+| Provider   | Website                   |
+| ---------- | ------------------------- |
+| Weebcentral (English) | https://weebcentral.com |
+| MangaFreak (English)| https://ww3.mangafreak.me |
+| Anime-Sama (French only) | https://anime-sama.pw |
 
 > [!TIP]
 > Support for more websites will be added over time.
@@ -255,20 +263,6 @@ goweeb \
   "one piece"
 ```
 
-## Supported providers
-
-goweeb currently supports the following providers:
-
-| Provider   | Website                   |
-| ---------- | ------------------------- |
-| Weebcentral (English) | https://weebcentral.com |
-| MangaFreak (English)| https://ww3.mangafreak.me |
-| Anime-Sama (French only) | https://anime-sama.pw |
-
-Provider websites may change their domain, structure or availability over time.
-
-If a supported provider changes its domain but remains compatible with the existing scraper, you can override the default URL using the `--domain` / `-u` option or the custom domain field in the TUI.
-
 ## Tips
 
 > [!TIP]
@@ -279,6 +273,7 @@ If a supported provider changes its domain but remains compatible with the exist
 > * Use `--range` when you already know exactly which chapters you want to download.
 > * If you are unsure which chapters are available, omit `--range` and use the interactive selection instead.
 > * Use `--debug` when developing or troubleshooting a provider.
+> * If a supported provider changes its domain but remains compatible with the existing scraper, you can override the default URL using the `--domain` / `-u` option or the custom domain field in the TUI.
 
 
 ## Contributing
