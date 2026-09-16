@@ -57,16 +57,17 @@ func (p *Provider) Search(
 	return out, nil
 }
 
-//TODO: Next step is to implement and test each
-// of the following functions one by one.
-
+// WeebCentral doesn't implement different scan versions.
 func (p *Provider) ListScanPaths(
 	workURL string,
 	log *logger.Logger,
 ) ([]common.SelectableItem, error) {
-	return nil, fmt.Errorf(
-		"weebcentral: ListScanPaths not implemented yet",
-	)
+	return []common.SelectableItem{
+		{
+			Label: "WeebCentral",
+			Value: workURL,
+		},
+	}, nil
 }
 
 func (p *Provider) ListEntries(
@@ -74,10 +75,40 @@ func (p *Provider) ListEntries(
 	scanPath string,
 	log *logger.Logger,
 ) (sourcetypes.Work, []sourcetypes.Entry, error) {
-	return sourcetypes.Work{}, nil, fmt.Errorf(
-		"weebcentral: ListEntries not implemented yet",
+	scanInfo, err := weebcentralscraper.GetScanInfo(
+		p.domain,
+		workURL,
+		log,
 	)
+	if err != nil {
+		return sourcetypes.Work{}, nil, fmt.Errorf(
+			"failed to get WeebCentral scan info: %w",
+			err,
+		)
+	}
+
+	entries := make(
+		[]sourcetypes.Entry,
+		0,
+		len(scanInfo.Chapters),
+	)
+
+	for _, chapter := range scanInfo.Chapters {
+		entries = append(entries, sourcetypes.Entry{
+			Number: chapter.Number,
+			Label:  chapter.Label,
+			URL:    chapter.URL,
+		})
+	}
+
+	return sourcetypes.Work{
+		Title: scanInfo.MangaName,
+		Kind:  sourcetypes.ItemChapter,
+	}, entries, nil
 }
+
+//TODO: Next step is to implement and test each
+// of the following functions one by one.
 
 func (p *Provider) GetPageImageURLs(
 	entryURL string,
