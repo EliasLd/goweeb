@@ -56,8 +56,27 @@ func CollectSequentialJPGURLs(chapterURL string, log *logger.Logger) ([]string, 
 	return urls, nil
 }
 
-// Downloads a list of image URLs into destDir as 001.jpg, 002.jpg...
-func DownloadImages(imageURLs []string, destDir string, log *logger.Logger) error {
+// Downloads a list of image URLs using the default request headers.
+func DownloadImages(
+	imageURLs []string,
+	destDir string,
+	log *logger.Logger,
+) error {
+	return DownloadImagesWithHeaders(
+		imageURLs,
+		destDir,
+		nil,
+		log,
+	)
+}
+
+// Downloads a list of image URLs with optional custom request headers.
+func DownloadImagesWithHeaders(
+	imageURLs []string,
+	destDir string,
+	headers map[string]string,
+	log *logger.Logger,
+) error {
 	if len(imageURLs) == 0 {
 		return fmt.Errorf("empty image URL list")
 	}
@@ -67,39 +86,86 @@ func DownloadImages(imageURLs []string, destDir string, log *logger.Logger) erro
 		return fmt.Errorf("failed to create destDir: %w", err)
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 
 	for i, imgURL := range imageURLs {
-		req, err := http.NewRequest("GET", imgURL, nil)
+		req, err := http.NewRequest(
+			http.MethodGet,
+			imgURL,
+			nil,
+		)
 		if err != nil {
-			return fmt.Errorf("failed to create request: %w", err)
+			return fmt.Errorf(
+				"failed to create request: %w",
+				err,
+			)
 		}
-		req.Header.Set("User-Agent", "Mozilla/5.0")
+
+		// Default behaviour used by existing providers.
+		req.Header.Set(
+			"User-Agent",
+			"Mozilla/5.0",
+		)
+
+		// Provider-specific headers override defaults when present.
+		for key, value := range headers {
+			req.Header.Set(key, value)
+		}
 
 		resp, err := client.Do(req)
 		if err != nil {
-			return fmt.Errorf("HTTP GET failed: %w", err)
-		}
-		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
-			return fmt.Errorf("unexpected status %d for %s", resp.StatusCode, imgURL)
+			return fmt.Errorf(
+				"HTTP GET failed: %w",
+				err,
+			)
 		}
 
-		imgPath := filepath.Join(destDir, fmt.Sprintf("%03d.jpg", i+1))
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+
+			return fmt.Errorf(
+				"unexpected status %d for %s",
+				resp.StatusCode,
+				imgURL,
+			)
+		}
+
+		imgPath := filepath.Join(
+			destDir,
+			fmt.Sprintf("%03d.jpg", i+1),
+		)
+
 		outFile, err := os.Create(imgPath)
 		if err != nil {
 			resp.Body.Close()
-			return fmt.Errorf("failed to create image file: %w", err)
+
+			return fmt.Errorf(
+				"failed to create image file: %w",
+				err,
+			)
 		}
 
-		_, err = io.Copy(outFile, resp.Body)
+		_, copyErr := io.Copy(
+			outFile,
+			resp.Body,
+		)
+
 		outFile.Close()
 		resp.Body.Close()
-		if err != nil {
-			return fmt.Errorf("failed to save image: %w", err)
+
+		if copyErr != nil {
+			return fmt.Errorf(
+				"failed to save image: %w",
+				copyErr,
+			)
 		}
 
-		log.Debug("Downloaded page %d\n", i+1)
+		log.Debug(
+			"Downloaded page %d\n",
+			i+1,
+		)
 	}
 
 	return nil

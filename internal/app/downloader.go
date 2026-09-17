@@ -61,6 +61,17 @@ func filterEntries(entries []sourcetypes.Entry, opts Options, log *logger.Logger
 	return entries
 }
 
+func imageRequestHeaders(
+	provider sourcetypes.Provider,
+) map[string]string {
+	configurer, ok := provider.(sourcetypes.ImageRequestConfigurer)
+	if !ok {
+		return nil
+	}
+
+	return configurer.ImageRequestHeaders()
+}
+
 func downloadEntries(
 	provider sourcetypes.Provider,
 	work sourcetypes.Work,
@@ -69,6 +80,8 @@ func downloadEntries(
 	log *logger.Logger,
 ) {
 	log.Info("Downloading %d chapter(s)...\n", len(entries))
+
+	requestHeaders := imageRequestHeaders(provider)
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -107,7 +120,7 @@ func downloadEntries(
 			}
 
 			entryDir := filepath.Join(opts.ScanDir, fmt.Sprintf("%s %0*d", prefix, digits, entry.Number))
-			if err := fetch.DownloadImages(imageURLs, entryDir, log); err != nil {
+			if err := fetch.DownloadImagesWithHeaders(imageURLs, entryDir, requestHeaders, log); err != nil {
 				log.Error("Failed to download %s: %v\n", entry.Label, err)
 				continue
 			}
@@ -117,7 +130,7 @@ func downloadEntries(
 		}
 
 		imageDir := filepath.Join(homeDir, "Images", opts.Slug, chStr)
-		if err := fetch.DownloadImages(imageURLs, imageDir, log); err != nil {
+		if err := fetch.DownloadImagesWithHeaders(imageURLs, imageDir, requestHeaders, log); err != nil {
 			log.Error("Failed to download %s: %v\n", entry.Label, err)
 			continue
 		}
