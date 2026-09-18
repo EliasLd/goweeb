@@ -3,17 +3,18 @@ package app
 import (
 	"flag"
 	"fmt"
-	"github.com/EliasLd/goweeb/internal/source"
 	"log"
 	"os"
 	"sort"
 	"strings"
+
+	"github.com/EliasLd/goweeb/internal/source"
 )
 
 type RangeMode int
 
 const (
-	RangeNone = iota
+	RangeNone RangeMode = iota
 	RangeNormal
 	RangeOpenEnded
 	RangeLastN
@@ -37,15 +38,13 @@ func supportedProvidersList() string {
 	return strings.Join(names, ", ")
 }
 
-// Holds parsed CLI arguments
+// Holds parsed CLI arguments.
 type Options struct {
 	Slug          string
-	All           bool
-	Range         [2]int // [0] = start, [1] = end (0 means open-ended)
-	RangeMode     RangeMode
+	Selection     RangeSelection
 	ScanDir       string
 	Cleanup       bool
-	CustomDomain  string // custom domain override
+	CustomDomain  string
 	Debug         bool
 	EbookFriendly bool
 	Source        string
@@ -54,149 +53,315 @@ type Options struct {
 	ScanPath string
 }
 
+func configureUsage() {
+	flag.Usage = func() {
+		out := flag.CommandLine.Output()
+
+		fmt.Fprintln(out, "goweeb - Fast and lightweight manga downloader")
+		fmt.Fprintln(out)
+
+		fmt.Fprintln(out, "Usage:")
+		fmt.Fprintln(out, `  goweeb [options] "<manga title>"`)
+		fmt.Fprintln(out)
+
+		fmt.Fprintln(out, "Required:")
+		fmt.Fprintln(out, "  --source <provider>")
+		fmt.Fprintln(out, "      Source provider")
+		fmt.Fprintf(
+			out,
+			"      Supported: %s\n",
+			supportedProvidersList(),
+		)
+		fmt.Fprintln(out)
+
+		fmt.Fprintln(out, "Chapter selection:")
+		fmt.Fprintln(out, "  --all")
+		fmt.Fprintln(out, "  -a")
+		fmt.Fprintln(out, "      Download all available chapters")
+		fmt.Fprintln(out)
+
+		fmt.Fprintln(out, "  --range <selection>")
+		fmt.Fprintln(out, "  -r <selection>")
+		fmt.Fprintln(out, "      Select chapters to download")
+		fmt.Fprintln(out, "      Examples:")
+		fmt.Fprintln(out, "        10              chapter 10")
+		fmt.Fprintln(out, "        1-10            chapters 1 through 10")
+		fmt.Fprintln(out, "        10-             chapter 10 onwards")
+		fmt.Fprintln(out, "        -10             last 10 available chapters")
+		fmt.Fprintln(out, "        1-10,20-30      multiple ranges")
+		fmt.Fprintln(out, "        1,5,10          multiple individual chapters")
+		fmt.Fprintln(out)
+
+		fmt.Fprintln(out, "Output:")
+		fmt.Fprintln(out, "  --scan-dir <directory>")
+		fmt.Fprintln(out, "  -d <directory>")
+		fmt.Fprintln(out, "      Output directory (default: scan)")
+		fmt.Fprintln(out)
+
+		fmt.Fprintln(out, "  --ebook-friendly")
+		fmt.Fprintln(out, "      Save chapters as image folders instead of PDF files")
+		fmt.Fprintln(out)
+
+		fmt.Fprintln(out, "  --keep-images")
+		fmt.Fprintln(out, "  -k")
+		fmt.Fprintln(out, "      Keep downloaded images after PDF creation")
+		fmt.Fprintln(out)
+
+		fmt.Fprintln(out, "Provider options:")
+		fmt.Fprintln(out, "  --domain <domain>")
+		fmt.Fprintln(out, "  -u <domain>")
+		fmt.Fprintln(out, "      Override the provider's default domain")
+		fmt.Fprintln(out)
+
+		fmt.Fprintln(out, "Other:")
+		fmt.Fprintln(out, "  --debug")
+		fmt.Fprintln(out, "      Enable verbose debug logging")
+		fmt.Fprintln(out)
+
+		fmt.Fprintln(out, "  --help")
+		fmt.Fprintln(out, "  -h")
+		fmt.Fprintln(out, "      Show this help message")
+	}
+}
+
 func ParseFlags() Options {
-	// Define flags
-	allFlag := flag.Bool("all", false, "Download all available chapters")
-	allShort := flag.Bool("a", false, "Shortand for --all)")
+	configureUsage()
 
-	sourceFlag := flag.String("source", "", "Source provider...")
+	var (
+		all           bool
+		sourceName    string
+		rangeStr      string
+		scanDir       string
+		ebookFriendly bool
+		keepImages    bool
+		customDomain  string
+		debug         bool
+	)
 
-	rangeFlag := flag.String("range", "", "Range of chapters to download, e.g., 10-77, 14-")
-	rangeShort := flag.String("r", "", "Shorthand for --range")
+	// Chapter selection.
+	flag.BoolVar(
+		&all,
+		"all",
+		false,
+		"Download all available chapters",
+	)
+	flag.BoolVar(
+		&all,
+		"a",
+		false,
+		"Shorthand for --all",
+	)
 
-	var scanDir string
-	flag.StringVar(&scanDir, "scan-dir", "scan", "Directory to save the generated PDF files")
-	flag.StringVar(&scanDir, "d", "scan", "Shorthand for --scan-dir")
+	flag.StringVar(
+		&rangeStr,
+		"range",
+		"",
+		"Chapter selection",
+	)
+	flag.StringVar(
+		&rangeStr,
+		"r",
+		"",
+		"Shorthand for --range",
+	)
 
-	ebookFlag := flag.Bool("ebook-friendly", false, "Save chapters as image folders, compatible with Kindle Comic Converter (no pdf output)")
+	// Provider.
+	flag.StringVar(
+		&sourceName,
+		"source",
+		"",
+		"Source provider",
+	)
 
-	keepImagesFlag := flag.Bool("keep-images", false, "Keep images after PDF creation")
-	keepImagesShort := flag.Bool("k", false, "Shorthand for --keep-images")
+	flag.StringVar(
+		&customDomain,
+		"domain",
+		"",
+		"Override the provider's default domain",
+	)
+	flag.StringVar(
+		&customDomain,
+		"u",
+		"",
+		"Shorthand for --domain",
+	)
 
-	var customDomain string
-	flag.StringVar(&customDomain, "domain", "", "Override the provider's default domain")
-	flag.StringVar(&customDomain, "u", "", "Shorthand for --domain")
+	// Output.
+	flag.StringVar(
+		&scanDir,
+		"scan-dir",
+		"scan",
+		"Directory to save generated files",
+	)
+	flag.StringVar(
+		&scanDir,
+		"d",
+		"scan",
+		"Shorthand for --scan-dir",
+	)
 
-	debugFlag := flag.Bool("debug", false, "Enable verbose debug logging")
+	flag.BoolVar(
+		&ebookFriendly,
+		"ebook-friendly",
+		false,
+		"Save chapters as image folders instead of PDF files",
+	)
+
+	flag.BoolVar(
+		&keepImages,
+		"keep-images",
+		false,
+		"Keep images after PDF creation",
+	)
+	flag.BoolVar(
+		&keepImages,
+		"k",
+		false,
+		"Shorthand for --keep-images",
+	)
+
+	// Misc.
+	flag.BoolVar(
+		&debug,
+		"debug",
+		false,
+		"Enable verbose debug logging",
+	)
 
 	flag.Parse()
 
-	// Expecting slug (manga title) as a positional argument
 	args := flag.Args()
+
 	if len(args) < 1 {
-		fmt.Println("Usage: scan-scraper [options] <manga-slug>")
-		flag.PrintDefaults()
-		os.Exit(1)
+		fmt.Fprintln(
+			os.Stderr,
+			"Missing manga title.",
+		)
+		fmt.Fprintln(os.Stderr)
+
+		flag.Usage()
+		os.Exit(2)
 	}
-	slug := args[0]
 
-	// Resolve final values
-	all := *allFlag || *allShort
+	// Allows both:
+	//
+	//   goweeb ... "one piece"
+	//
+	// and:
+	//
+	//   goweeb ... one piece
+	//
+	// as long as the positional arguments come after the flags.
+	slug := strings.TrimSpace(
+		strings.Join(args, " "),
+	)
 
-	sourceName := strings.ToLower(strings.TrimSpace(*sourceFlag))
+	sourceName = strings.ToLower(
+		strings.TrimSpace(sourceName),
+	)
 
 	if sourceName == "" {
-		fmt.Println("Missing required option: --source")
-		fmt.Printf("Supported providers: %s\n", supportedProvidersList())
-		os.Exit(1)
+		fmt.Fprintln(
+			os.Stderr,
+			"Missing required option: --source",
+		)
+
+		fmt.Fprintf(
+			os.Stderr,
+			"Supported providers: %s\n",
+			supportedProvidersList(),
+		)
+
+		os.Exit(2)
 	}
 
 	if !isValidProvider(sourceName) {
-		fmt.Printf("Unsupported source provider: %q\n", sourceName)
-		fmt.Printf("Supported providers: %s\n", supportedProvidersList())
-		os.Exit(1)
+		fmt.Fprintf(
+			os.Stderr,
+			"Unsupported source provider: %q\n",
+			sourceName,
+		)
+
+		fmt.Fprintf(
+			os.Stderr,
+			"Supported providers: %s\n",
+			supportedProvidersList(),
+		)
+
+		os.Exit(2)
 	}
 
-	dir := scanDir
-	keepImages := *keepImagesFlag || *keepImagesShort
-	domain := customDomain
-	debug := *debugFlag
-	ebook := *ebookFlag
+	rangeStr = strings.TrimSpace(rangeStr)
 
-	// Normalize domain (remove trailing slash, ensure https://)
-	if domain != "" {
-		domain = strings.TrimSuffix(domain, "/")
-		if !strings.HasPrefix(domain, "http://") && !strings.HasPrefix(domain, "https://") {
-			domain = "https://" + domain
-		}
+	if all && rangeStr != "" {
+		fmt.Fprintln(
+			os.Stderr,
+			"--all and --range cannot be used together",
+		)
+
+		os.Exit(2)
 	}
 
-	// Parse chapters range
-	rangeStr := *rangeFlag
-	if *rangeShort != "" {
-		rangeStr = *rangeShort
-	}
+	var selection RangeSelection
 
-	var chapterRange [2]int
-	var rangeMode RangeMode = RangeNone
-
-	if rangeStr != "" {
-		// Handle last N chapters
-		if strings.HasPrefix(rangeStr, "-") && len(rangeStr) > 1 {
-			var nLast int
-			n, err := fmt.Sscanf(rangeStr, "-%d", &nLast)
-			if err != nil || n != 1 || nLast <= 0 {
-				fmt.Printf("Invalid range format: %s. Use format <start-end>, <start>- or -<N>\n", rangeStr)
-				os.Exit(1)
-			}
-			chapterRange[0] = 0 // useles for LastN format, filled for compatiblity
-			chapterRange[1] = nLast
-			rangeMode = RangeLastN
-			// Handle open-ended range like "10-"
-		} else if strings.HasSuffix(rangeStr, "-") {
-			var start int
-			trimmed := strings.TrimSuffix(rangeStr, "-")
-			n, err := fmt.Sscanf(trimmed, "%d", &start)
-			if err != nil || n != 1 {
-				fmt.Printf("Invalid range format: %s. Use format: <start>-<end> or <start>-\n", rangeStr)
-				os.Exit(1)
-			}
-			chapterRange[0] = start
-			chapterRange[1] = 0 // 0 means open-ended
-			rangeMode = RangeOpenEnded
-			// Normal range like "10-20"
-		} else {
-			var start, end int
-			n, err := fmt.Sscanf(rangeStr, "%d-%d", &start, &end)
-			if err == nil && n == 2 && start <= end {
-				chapterRange[0] = start
-				chapterRange[1] = end
-				rangeMode = RangeNormal
-			} else {
-				// If only one chapter provided
-				var solo int
-				n, err := fmt.Sscanf(rangeStr, "%d", &solo)
-				if err == nil && n == 1 {
-					chapterRange[0] = solo
-					chapterRange[1] = solo
-					rangeMode = RangeNormal
-				} else {
-					fmt.Printf("Invalid range format: %s. Use format: <start>-<end>, <start>-, -<N> or <chapter>\n", rangeStr)
-					os.Exit(1)
-				}
-			}
-		}
-	}
-
-	// Create scanDir if it doesn't exist
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		const defaultDirPerm = 0755
-		err := os.MkdirAll(dir, defaultDirPerm)
+	if all {
+		selection.All = true
+	} else if rangeStr != "" {
+		parsedSelection, err := ParseRangeExpression(
+			rangeStr,
+		)
 		if err != nil {
-			log.Fatalf("Failed to create scan-dir (%s): %v", dir, err)
+			fmt.Fprintf(
+				os.Stderr,
+				"Invalid chapter selection: %v\n",
+				err,
+			)
+
+			os.Exit(2)
+		}
+
+		selection = parsedSelection
+	}
+
+	customDomain = strings.TrimSpace(
+		customDomain,
+	)
+
+	if customDomain != "" {
+		customDomain = strings.TrimSuffix(
+			customDomain,
+			"/",
+		)
+
+		if !strings.HasPrefix(customDomain, "http://") &&
+			!strings.HasPrefix(customDomain, "https://") {
+			customDomain = "https://" + customDomain
+		}
+	}
+
+	if _, err := os.Stat(scanDir); os.IsNotExist(err) {
+		const defaultDirPerm = 0755
+
+		if err := os.MkdirAll(
+			scanDir,
+			defaultDirPerm,
+		); err != nil {
+			log.Fatalf(
+				"Failed to create scan-dir (%s): %v",
+				scanDir,
+				err,
+			)
 		}
 	}
 
 	return Options{
 		Slug:          slug,
-		All:           all,
+		Selection:     selection,
 		Source:        sourceName,
-		Range:         chapterRange,
-		ScanDir:       dir,
-		RangeMode:     rangeMode,
+		ScanDir:       scanDir,
 		Cleanup:       !keepImages,
-		CustomDomain:  domain,
+		CustomDomain:  customDomain,
 		Debug:         debug,
-		EbookFriendly: ebook,
+		EbookFriendly: ebookFriendly,
 	}
 }
