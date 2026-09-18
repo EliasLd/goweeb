@@ -2,12 +2,13 @@ package tui
 
 import (
 	"bufio"
+	"github.com/EliasLd/goweeb/internal/app"
+	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
+	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
 	"io"
 	"os"
 	"path/filepath"
-
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
 )
 
 var asciiArt string = `
@@ -68,7 +69,10 @@ type Model struct {
 	SelectedMangaURL string
 	SelectedScanPath string
 
-	DiscoveredEntries int
+	DiscoveredEntries   int
+	DiscoveredEntryList []sourcetypes.Entry
+	AvailableRanges     string
+	SelectedRange       app.RangeSelection
 }
 
 func getDefaultScanDir() string {

@@ -13,8 +13,13 @@ Actuellement, il est possible de télécharger des manga depuis les sites suivan
 | Provider   | Site                      |
 | ---------- | ------------------------- |
 | Weebcentral (Anglais) | https://weebcentral.com |
+| Mangadex (Plurilingue) | https://mangadex.org |
 | MangaFreak  (Anglais) | https://ww3.mangafreak.me |
-| Anime-Sama (Français uniquement) | https://anime-sama.pw     |
+| Anime-Sama (Français uniquement) | https://anime-sama.pw |
+
+> [!NOTE]
+> Pour **Mangadex**, seuls les manga directement hebergés sur *mangadex.org* sont disponibles au téléchargement.
+> Les manga hebergés sur des liens externes ne sont pour le moment pas gérés puisqu'ils nécessitent l'implémentation d'un scraper dédié (WIP).
 
 > [!TIP]
 > De nouveaux sites seront pris en charge au fil du temps.

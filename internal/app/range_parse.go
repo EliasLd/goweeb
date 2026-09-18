@@ -5,6 +5,16 @@ import (
 	"strings"
 )
 
+type RangeSpec struct {
+	Range [2]int
+	Mode  RangeMode
+}
+
+type RangeSelection struct {
+	All    bool
+	Ranges []RangeSpec
+}
+
 // Parses:
 // n, n-m, n-, -n
 func ParseRangeString(rangeStr string) ([2]int, RangeMode, error) {
@@ -64,4 +74,55 @@ func ParseRangeString(rangeStr string) ([2]int, RangeMode, error) {
 	}
 
 	return chapterRange, rangeMode, fmt.Errorf("invalid range format: %s. Use 1-10, 10, -10, 10- or all", rangeStr)
+}
+
+func ParseRangeExpression(input string) (RangeSelection, error) {
+	var selection RangeSelection
+
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return selection, fmt.Errorf("invalid range format: empty input")
+	}
+
+	if strings.EqualFold(input, "all") {
+		selection.All = true
+		return selection, nil
+	}
+
+	parts := strings.Split(input, ",")
+
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+
+		if part == "" {
+			return selection, fmt.Errorf(
+				"invalid range expression: %s",
+				input,
+			)
+		}
+
+		chapterRange, mode, err := ParseRangeString(part)
+		if err != nil {
+			return selection, err
+		}
+
+		// "-10" means "last 10 available chapters".
+		// Mixing that with explicit numerical ranges would make
+		// the semantics unnecessarily confusing.
+		if mode == RangeLastN && len(parts) > 1 {
+			return selection, fmt.Errorf(
+				"last-N syntax cannot be combined with other ranges",
+			)
+		}
+
+		selection.Ranges = append(
+			selection.Ranges,
+			RangeSpec{
+				Range: chapterRange,
+				Mode:  mode,
+			},
+		)
+	}
+
+	return selection, nil
 }

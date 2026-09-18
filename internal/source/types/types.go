@@ -28,11 +28,17 @@ type Work struct {
 	Kind  ItemKind
 }
 
+// Optional capability for providers that require specific HTTP headers
+// when downloading page images.
+type ImageRequestConfigurer interface {
+	ImageRequestHeaders() map[string]string
+}
+
 type Provider interface {
 	Name() string
 	Search(query string, log *logger.Logger) ([]SearchResult, error)
 
-	// Returns scan versions when the source exposes them (e.g. anime-sama).
+	// Returns scan versions when the source exposes them (e.g. mangadex, anime-sama...).
 	// For sources without variants, return one implicit default item.
 	ListScanPaths(workURL string, log *logger.Logger) ([]common.SelectableItem, error)
 

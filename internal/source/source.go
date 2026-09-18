@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/EliasLd/goweeb/internal/source/animesama"
+	"github.com/EliasLd/goweeb/internal/source/mangadex"
 	"github.com/EliasLd/goweeb/internal/source/mangafreak"
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 	"github.com/EliasLd/goweeb/internal/source/weebcentral"
@@ -38,6 +39,12 @@ var providers = map[string]providerRegistration{
 		Label: "WeebCentral (English)",
 		New: func(customDomain string) sourcetypes.Provider {
 			return weebcentral.New(customDomain)
+		},
+	},
+	"mangadex": {
+		Label: "MangaDex (Multilingual)",
+		New: func(customDomain string) sourcetypes.Provider {
+			return mangadex.New(customDomain)
 		},
 	},
 }

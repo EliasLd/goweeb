@@ -14,8 +14,13 @@ Currently, it can download manga from the following websites:
 | Provider   | Website                   |
 | ---------- | ------------------------- |
 | Weebcentral (English) | https://weebcentral.com |
+| Mangadex (Multilingual) | https://mangadex.org |
 | MangaFreak (English)| https://ww3.mangafreak.me |
 | Anime-Sama (French only) | https://anime-sama.pw |
+
+> [!NOTE]
+> For **Mangadex**, goweeb currently only handles manga directly hosted at *mangadex.org*.
+> External links are not handled for the moment, as it requires a dedicated scraping logic (I'm working on that).
 
 > [!TIP]
 > Support for more websites will be added over time.
