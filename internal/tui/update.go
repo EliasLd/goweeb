@@ -35,9 +35,9 @@ type scanPathResultMsg struct {
 	err   error
 }
 
-type entriesCountResultMsg struct {
-	count int
-	err   error
+type entriesResultMsg struct {
+	entries []sourcetypes.Entry
+	err     error
 }
 
 func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
@@ -109,10 +109,10 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 			m.Logs = append(
 				m.Logs,
-				"Scan version selected. Fetching chapter count...",
+				"Scan version selected. Fetching chapters...",
 			)
 
-			return m, fetchEntriesCount(
+			return m, fetchEntries(
 				m.SelectedProvider,
 				m.SelectedMangaURL,
 				m.SelectedScanPath,
@@ -131,18 +131,44 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		m.State = StateScanSelection
 		return m, nil
 
-	case entriesCountResultMsg:
+	case entriesResultMsg:
 		if msg.err != nil {
-			m.Logs = append(m.Logs, errorStyle.Render(fmt.Sprintf("[E] Failed to fetch chapter count: %v", msg.err)))
+			m.Logs = append(
+				m.Logs,
+				errorStyle.Render(
+					fmt.Sprintf(
+						"[E] Failed to fetch chapters: %v",
+						msg.err,
+					),
+				),
+			)
+
 			return m, nil
 		}
 
-		m.DiscoveredEntries = msg.count
+		if len(msg.entries) == 0 {
+			m.Logs = append(
+				m.Logs,
+				errorStyle.Render("[E] No chapters found"),
+			)
+
+			return m, nil
+		}
+
+		m.DiscoveredEntries = len(msg.entries)
+		m.DiscoveredEntryList = msg.entries
+		m.AvailableRanges = app.FormatAvailableRanges(
+			msg.entries,
+		)
+
+		m.SelectedRange = app.RangeSelection{}
+
 		m.State = StateRangeSelection
 		m.Cursor = 0
 		m.AllCheckbox.Checked = false
 		m.RangeInput.SetValue("")
 		m.RangeInput.Focus()
+
 		return m, nil
 
 	case tea.KeyMsg:
@@ -180,14 +206,82 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 					m = updateRangeFocus(m)
 					return m, nil
 				case 2:
-					if m.AllCheckbox.Checked || strings.TrimSpace(m.RangeInput.Value()) != "" {
-						m.IsDownloading = true
-						m.State = StateDownloading
-						m.Logs = append(m.Logs, "Starting download...")
-						return m, startDownload(m)
+					var selection app.RangeSelection
+
+					if m.AllCheckbox.Checked {
+						selection.All = true
+					} else {
+						input := strings.TrimSpace(
+							m.RangeInput.Value(),
+						)
+
+						if input == "" {
+							m.Logs = append(
+								m.Logs,
+								errorStyle.Render(
+									"[E] Please enter a range or enable 'Download all chapters'.",
+								),
+							)
+
+							return m, nil
+						}
+
+						parsed, err := app.ParseRangeExpression(
+							input,
+						)
+						if err != nil {
+							m.Logs = append(
+								m.Logs,
+								errorStyle.Render(
+									fmt.Sprintf(
+										"[E] Invalid range: %v",
+										err,
+									),
+								),
+							)
+
+							return m, nil
+						}
+
+						selection = parsed
 					}
-					m.Logs = append(m.Logs, errorStyle.Render("[E] Please enter a valid range or enable 'Download all chapters'."))
-					return m, nil
+
+					matched := app.FilterEntriesBySelection(
+						m.DiscoveredEntryList,
+						selection,
+					)
+
+					if len(matched) == 0 {
+						m.Logs = append(
+							m.Logs,
+							errorStyle.Render(
+								"[E] No available chapters match this selection.",
+							),
+						)
+
+						return m, nil
+					}
+
+					m.SelectedRange = selection
+
+					m.Logs = append(
+						m.Logs,
+						fmt.Sprintf(
+							"Selected %d chapter(s): %s",
+							len(matched),
+							app.FormatAvailableRanges(matched),
+						),
+					)
+
+					m.IsDownloading = true
+					m.State = StateDownloading
+
+					m.Logs = append(
+						m.Logs,
+						"Starting download...",
+					)
+
+					return m, startDownload(m)
 				}
 			}
 
@@ -356,7 +450,11 @@ func handleProviderSelectionUpdate(
 		if oldProvider != newProvider || oldDomain != newDomain {
 			m.SelectedMangaURL = ""
 			m.SelectedScanPath = ""
+
 			m.DiscoveredEntries = 0
+			m.DiscoveredEntryList = nil
+			m.AvailableRanges = ""
+			m.SelectedRange = app.RangeSelection{}
 		}
 
 		m.State = StateForm
@@ -418,8 +516,8 @@ func handleSelectionUpdate(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		} else if m.State == StateScanSelection {
 			m.SelectedScanPath = m.SelectionModel.Selected
 			m.State = StateForm
-			m.Logs = append(m.Logs, "Scan version selected. Fetching chapter count...")
-			return m, fetchEntriesCount(
+			m.Logs = append(m.Logs, "Scan version selected. Fetching chapters...")
+			return m, fetchEntries(
 				m.SelectedProvider,
 				m.SelectedMangaURL,
 				m.SelectedScanPath,
@@ -524,21 +622,24 @@ func fetchScanPaths(
 	}
 }
 
-func fetchEntriesCount(
+func fetchEntries(
 	providerName string,
 	mangaURL string,
 	scanPath string,
 	customDomain string,
 ) tea.Cmd {
 	return func() tea.Msg {
-		log := logger.New(io.Discard, logger.LevelInfo)
+		log := logger.New(
+			io.Discard,
+			logger.LevelInfo,
+		)
 
 		provider, err := source.New(
 			providerName,
 			strings.TrimSpace(customDomain),
 		)
 		if err != nil {
-			return entriesCountResultMsg{
+			return entriesResultMsg{
 				err: err,
 			}
 		}
@@ -549,13 +650,13 @@ func fetchEntriesCount(
 			log,
 		)
 		if err != nil {
-			return entriesCountResultMsg{
+			return entriesResultMsg{
 				err: err,
 			}
 		}
 
-		return entriesCountResultMsg{
-			count: len(entries),
+		return entriesResultMsg{
+			entries: entries,
 		}
 	}
 }
@@ -574,7 +675,7 @@ func startDownload(m Model) tea.Cmd {
 		opts := app.Options{
 			Slug:          m.MangaInput.Value(),
 			Source:        m.SelectedProvider,
-			All:           m.AllCheckbox.Checked,
+			Selection:     m.SelectedRange,
 			ScanDir:       m.ScanDirInput.Value(),
 			Cleanup:       !m.KeepCheckbox.Checked,
 			CustomDomain:  strings.TrimSpace(m.DomainInput.Value()),
@@ -583,27 +684,25 @@ func startDownload(m Model) tea.Cmd {
 			EbookFriendly: m.EbookCheckbox.Checked,
 		}
 
-		if !opts.All {
-			r := strings.TrimSpace(m.RangeInput.Value())
-			chapterRange, rangeMode, err := app.ParseRangeString(r)
-			if err != nil {
-				// Fallback: keep empty range to let backend guard logs report invalid input.
-				// This should rarely happen because UI validates before starting.
-				opts.RangeMode = app.RangeNone
-			} else {
-				opts.Range = chapterRange
-				opts.RangeMode = rangeMode
-			}
-		}
-
 		pr, pw := io.Pipe()
+
 		go func() {
-			log := logger.New(pw, logger.LevelInfo)
-			app.RunWithWorkflow(opts, log)
+			log := logger.New(
+				pw,
+				logger.LevelInfo,
+			)
+
+			app.RunWithWorkflow(
+				opts,
+				log,
+			)
+
 			_ = pw.Close()
 		}()
 
-		return setupLogPipeMsg{reader: pr}
+		return setupLogPipeMsg{
+			reader: pr,
+		}
 	}
 }
 
