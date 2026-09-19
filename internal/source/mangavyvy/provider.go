@@ -2,6 +2,8 @@ package mangavyvy
 
 import (
 	"fmt"
+	"net/url"
+	"path"
 	"strings"
 
 	"github.com/EliasLd/goweeb/internal/logger"
@@ -14,6 +16,31 @@ const defaultDomain = "https://mangavyvy.com"
 
 type Provider struct {
 	domain string
+}
+
+func mangaTitleFromURL(
+	workURL string,
+) string {
+	parsed, err := url.Parse(workURL)
+	if err != nil {
+		return "manga"
+	}
+
+	slug := path.Base(
+		strings.TrimSuffix(parsed.Path, "/"),
+	)
+
+	if slug == "" ||
+		slug == "." ||
+		slug == "/" {
+		return "manga"
+	}
+
+	return strings.ReplaceAll(
+		slug,
+		"-",
+		" ",
+	)
 }
 
 func New(customDomain string) *Provider {
@@ -86,9 +113,35 @@ func (p *Provider) ListEntries(
 	scanPath string,
 	log *logger.Logger,
 ) (sourcetypes.Work, []sourcetypes.Entry, error) {
-	return sourcetypes.Work{}, nil, fmt.Errorf(
-		"Mangavyvy chapter listing is not implemented yet",
+	chapters, err := mangavyvyscraper.ListChapters(
+		workURL,
+		log,
 	)
+	if err != nil {
+		return sourcetypes.Work{}, nil, err
+	}
+
+	entries := make(
+		[]sourcetypes.Entry,
+		0,
+		len(chapters),
+	)
+
+	for _, chapter := range chapters {
+		entries = append(
+			entries,
+			sourcetypes.Entry{
+				Number: chapter.Number,
+				Label:  chapter.Label,
+				URL:    chapter.URL,
+			},
+		)
+	}
+
+	return sourcetypes.Work{
+		Title: mangaTitleFromURL(workURL),
+		Kind:  sourcetypes.ItemChapter,
+	}, entries, nil
 }
 
 func (p *Provider) GetPageImageURLs(
