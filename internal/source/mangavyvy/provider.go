@@ -1,7 +1,6 @@
 package mangavyvy
 
 import (
-	"fmt"
 	"net/url"
 	"path"
 	"strings"
@@ -148,7 +147,9 @@ func (p *Provider) GetPageImageURLs(
 	entryURL string,
 	log *logger.Logger,
 ) ([]string, error) {
-	return nil, fmt.Errorf(
-		"Mangavyvy page extraction is not implemented yet",
+	return mangavyvyscraper.GetPageImageURLs(
+		entryURL,
+		p.domain,
+		log,
 	)
 }
