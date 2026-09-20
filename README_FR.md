@@ -14,6 +14,7 @@ Actuellement, il est possible de télécharger des manga depuis les sites suivan
 | ---------- | ------------------------- |
 | Weebcentral (Anglais) | https://weebcentral.com |
 | Mangadex (Plurilingue) | https://mangadex.org |
+| MangaVyvy (Anglais) | https://mangavyvy.com |
 | MangaFreak  (Anglais) | https://ww3.mangafreak.me |
 | Anime-Sama (Français uniquement) | https://anime-sama.pw |
 
