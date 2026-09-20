@@ -15,6 +15,7 @@ Currently, it can download manga from the following websites:
 | ---------- | ------------------------- |
 | Weebcentral (English) | https://weebcentral.com |
 | Mangadex (Multilingual) | https://mangadex.org |
+| MangaVyvy (English) | https://mangavyvy.com |
 | MangaFreak (English)| https://ww3.mangafreak.me |
 | Anime-Sama (French only) | https://anime-sama.pw |
 
