@@ -148,34 +148,34 @@ If neither `--all` nor `--range` is provided, goweeb will ask you interactively 
 
 ### Download all chapters of a manga
 
-Using Anime-Sama:
+Using MangaDex:
 
 ```bash
-goweeb --source animesama --all "one piece"
+goweeb --source mangadex --all "one piece"
 ```
 
-Using MangaFreak:
+Using WeebCentral:
 
 ```bash
-goweeb --source mangafreak --all "jujutsu kaisen"
+goweeb --source weebcentral --all "jujutsu kaisen"
 ```
 
 ### Download a specific chapter
 
 ```bash
-goweeb --source mangafreak --range 100 "jujutsu kaisen"
+goweeb --source weebcentral --range 100 "jujutsu kaisen"
 ```
 
 ### Download a range of chapters
 
 ```bash
-goweeb --source mangafreak --range 100-120 "jujutsu kaisen"
+goweeb --source mangavyvy --range 100-120 "jujutsu kaisen"
 ```
 
 You can also use the shorthand:
 
 ```bash
-goweeb --source mangafreak -r 100-120 "jujutsu kaisen"
+goweeb --source mangavyvy -r 100-120 "jujutsu kaisen"
 ```
 
 If you do not specify `--range`, goweeb will ask you which chapters you want after the manga has been selected.
@@ -191,7 +191,7 @@ goweeb --source animesama --range -10 "one piece"
 Download everything starting from chapter 100:
 
 ```bash
-goweeb --source mangafreak --range 100- "jujutsu kaisen"
+goweeb --source weebcentral --range 100- "jujutsu kaisen"
 ```
 
 ### Specify a destination folder
@@ -243,7 +243,7 @@ goweeb --source animesama \
 For example, this mode works well with [Kindle Comic Converter](https://github.com/ciromattia/kcc), which can convert the downloaded chapters for Kindle, Kobo and other e-readers.
 
 ```bash
-goweeb --source mangafreak \
+goweeb --source weebcentral \
   --all \
   --ebook-friendly \
   "one piece"
@@ -267,7 +267,7 @@ One Piece/
 
 ```bash
 goweeb \
-  --source mangafreak \
+  --source weebcentral \
   --range 1-50 \
   --scan-dir scans \
   --ebook-friendly \
@@ -278,7 +278,7 @@ Example on Windows:
 
 ```powershell
 goweeb \
-  --source animesama \
+  --source weebcentral \
   -d "C:\Users\<your-username>\scans" \
   -r 1-50 \
   "one piece"

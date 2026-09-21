@@ -153,28 +153,28 @@ Avec Anime-Sama :
 goweeb --source animesama --all "one piece"
 ```
 
-Avec MangaFreak :
+Avec WeebCentral:
 
 ```bash
-goweeb --source mangafreak --all "jujutsu kaisen"
+goweeb --source weebcentral --all "jujutsu kaisen"
 ```
 
 ### Télécharger un chapitre précis
 
 ```bash
-goweeb --source mangafreak --range 100 "jujutsu kaisen"
+goweeb --source weebcentral --range 100 "jujutsu kaisen"
 ```
 
 ### Télécharger une plage de chapitres
 
 ```bash
-goweeb --source mangafreak --range 100-120 "jujutsu kaisen"
+goweeb --source mangavyvy --range 100-120 "jujutsu kaisen"
 ```
 
 Vous pouvez également utiliser le raccourci :
 
 ```bash
-goweeb --source mangafreak -r 100-120 "jujutsu kaisen"
+goweeb --source mangavyvy -r 100-120 "jujutsu kaisen"
 ```
 
 Si vous ne spécifiez pas `--range`, goweeb vous demandera quels chapitres télécharger après la sélection du manga.
@@ -190,7 +190,7 @@ goweeb --source animesama --range -10 "one piece"
 Télécharger tous les chapitres à partir du chapitre 100 :
 
 ```bash
-goweeb --source mangafreak --range 100- "jujutsu kaisen"
+goweeb --source weebcentral --range 100- "jujutsu kaisen"
 ```
 
 ### Spécifier un dossier de destination
@@ -242,7 +242,7 @@ goweeb --source animesama \
 Ce mode fonctionne par exemple très bien avec [Kindle Comic Converter](https://github.com/ciromattia/kcc), qui permet de convertir les chapitres téléchargés pour Kindle, Kobo et d'autres liseuses.
 
 ```bash
-goweeb --source mangafreak \
+goweeb --source weebcentral \
   --all \
   --ebook-friendly \
   "one piece"
@@ -266,7 +266,7 @@ One Piece/
 
 ```bash
 goweeb \
-  --source mangafreak \
+  --source weebcentral \
   --range 1-50 \
   --scan-dir scans \
   --ebook-friendly \
@@ -277,7 +277,7 @@ Exemple sous Windows :
 
 ```powershell
 goweeb \
-  --source animesama \
+  --source weebcentral \
   -d "C:\Users\<votre-utilisateur>\scans" \
   -r 1-50 \
   "one piece"
