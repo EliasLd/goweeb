@@ -101,9 +101,6 @@ func viewForm(m Model) string {
 		form.WriteString("\n\n")
 	}
 
-	footerStyle := lipgloss.NewStyle().Faint(true)
-	form.WriteString(footerStyle.Render("↑/↓ navigate • Space/Enter toggle • Enter to select/search • Ctrl+C/Esc quit"))
-
 	var logs strings.Builder
 	const maxLogs = 18
 	start := 0
@@ -122,18 +119,37 @@ func viewForm(m Model) string {
 	}
 
 	logsView := logBoxStyle.Render(logs.String())
-	content := lipgloss.JoinHorizontal(lipgloss.Top, form.String(), logsView)
 
-	boxWidth := lipgloss.Width(content)
-	boxHeight := lipgloss.Height(content)
-	horizontalMargin := max(0, (m.Width-boxWidth)/2)
-	verticalMargin := max(0, (m.Height-boxHeight)/2)
+	content := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		form.String(),
+		logsView,
+	)
 
-	boxStyle := lipgloss.NewStyle().
-		MarginTop(verticalMargin).
-		MarginLeft(horizontalMargin)
+	footer := lipgloss.NewStyle().
+		Faint(true).
+		Width(m.Width).
+		Align(lipgloss.Center).
+		Render(
+			"↑/↓ navigate • Space/Enter toggle • Enter to select/search • Ctrl+C/Esc quit",
+		)
 
-	return boxStyle.Render(content)
+	// Reserve the last line of the terminal for the footer.
+	contentHeight := max(0, m.Height-1)
+
+	centeredContent := lipgloss.Place(
+		m.Width,
+		contentHeight,
+		lipgloss.Center,
+		lipgloss.Center,
+		content,
+	)
+
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		centeredContent,
+		footer,
+	)
 }
 
 func viewRangeSelection(m Model) string {
