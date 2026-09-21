@@ -82,7 +82,9 @@ Then let the interactive interface guide you through the process.
 
 ### Manga name format
 
-The manga name should be entered **in quotes**, especially when it contains spaces.
+The manga name can be entered **with or without quotes**.
+
+Using quotes is still recommended, especially when the title contains spaces, as it makes the command easier to read and avoids potential shell parsing issues.
 
 You can use any search term supported by the selected provider, such as an English, French or Japanese title.
 
@@ -90,10 +92,16 @@ Examples:
 
 ```text
 "one piece"
+one piece
+
 "jujutsu kaisen"
+jujutsu kaisen
+
 "chainsaw man"
 "attack on titan"
 ```
+
+When using an unquoted manga name, place it after all CLI options.
 
 If multiple results match your search, goweeb will let you choose the correct manga from an interactive list.
 
@@ -111,7 +119,7 @@ The `--source` option is required when using the CLI.
 | --------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--source <provider>` | none     | Select the website provider used to search for and download the manga. This option is required in CLI mode.                                                                             |
 | `--all`               | `-a`     | Download all available chapters.                                                                                                                                                        |
-| `--range <range>`     | `-r`     | Download a specific chapter or range without using the interactive chapter selection prompt. Optional and mainly useful when you already know which chapters you want.                  |
+| `--range <selection>` | `-r`     | Download specific chapters, ranges, or multiple ranges without using the interactive chapter selection prompt.                                                                          |
 | `--scan-dir <folder>` | `-d`     | Folder where downloaded files will be saved. Default: `pdf`.                                                                                                                            |
 | `--ebook-friendly`    | none     | Save chapters as images inside separate folders such as `Chapter 001/`, `Chapter 002/`, etc. Compatible with tools such as [Kindle Comic Converter](https://github.com/ciromattia/kcc). |
 | `--domain <url>`      | `-u`     | Override the selected provider's default domain.                                                                                                                                        |
@@ -121,11 +129,18 @@ The `--source` option is required when using the CLI.
 Supported `--range` formats:
 
 ```text
-10       # Chapter 10 only
-1-10     # Chapters 1 through 10
-10-      # Chapter 10 through the latest available chapter
--10      # Last 10 chapters
+10             # Chapter 10 only
+1-10           # Chapters 1 through 10
+10-            # Chapter 10 through the latest available chapter
+-10            # Last 10 available chapters
+1-10,20-30     # Multiple chapter ranges
+1,5,10         # Multiple individual chapters
+1-10,25,40-50  # Ranges and individual chapters combined
 ```
+
+Requested ranges are matched against the chapters actually available from the selected provider. Missing chapters inside a range are skipped automatically.
+
+For example, if only chapters `1-50` and `70-100` are available, requesting `1-100` will download the available chapters from both ranges without treating chapters `51-69` as an error.
 
 If neither `--all` nor `--range` is provided, goweeb will ask you interactively which chapters you want to download.
 

@@ -81,7 +81,9 @@ Laissez ensuite l'interface interactive vous guider.
 
 ### Format du nom du manga
 
-Le nom du manga doit être saisi **entre guillemets**, en particulier lorsqu'il contient des espaces.
+Le nom du manga peut être saisi **avec ou sans guillemets**.
+
+L'utilisation des guillemets reste recommandée, notamment lorsque le titre contient des espaces, car elle rend la commande plus lisible et évite d'éventuels problèmes d'interprétation par le shell.
 
 Vous pouvez utiliser n'importe quel terme de recherche pris en charge par le provider sélectionné, par exemple un titre en français, en anglais ou en japonais.
 
@@ -89,10 +91,16 @@ Exemples :
 
 ```text
 "one piece"
+one piece
+
 "jujutsu kaisen"
+jujutsu kaisen
+
 "chainsaw man"
 "attaque des titans"
 ```
+
+Lorsque le nom du manga n'est pas entre guillemets, placez-le après toutes les options du CLI.
 
 Si plusieurs résultats correspondent à votre recherche, goweeb vous proposera de sélectionner le bon manga dans une liste interactive.
 
@@ -110,7 +118,7 @@ L'option `--source` est obligatoire lors de l'utilisation du CLI.
 | ---------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--source <provider>`  | aucun     | Sélectionne le provider utilisé pour rechercher et télécharger le manga. Cette option est obligatoire en mode CLI.                                                                                              |
 | `--all`                | `-a`      | Télécharge tous les chapitres disponibles.                                                                                                                                                                      |
-| `--range <plage>`      | `-r`      | Télécharge directement un chapitre ou une plage précise sans utiliser la sélection interactive. Optionnel, principalement utile si vous savez déjà quels chapitres vous souhaitez télécharger.                  |
+| `--range <sélection>`  | `-r`      | Télécharge directement des chapitres, des plages ou plusieurs plages sans utiliser la sélection interactive.                                                                                                    |
 | `--scan-dir <dossier>` | `-d`      | Dossier dans lequel les fichiers téléchargés seront sauvegardés. Par défaut : `pdf`.                                                                                                                            |
 | `--ebook-friendly`     | aucun     | Sauvegarde les chapitres sous forme d'images dans des dossiers séparés comme `Chapter 001/`, `Chapter 002/`, etc. Compatible avec des outils comme [Kindle Comic Converter](https://github.com/ciromattia/kcc). |
 | `--domain <url>`       | `-u`      | Remplace le domaine par défaut du provider sélectionné.                                                                                                                                                         |
@@ -120,11 +128,18 @@ L'option `--source` est obligatoire lors de l'utilisation du CLI.
 Formats pris en charge par `--range` :
 
 ```text
-10       # Chapitre 10 uniquement
-1-10     # Chapitres 1 à 10
-10-      # Du chapitre 10 jusqu'au dernier chapitre disponible
--10      # Les 10 derniers chapitres
+10             # Chapitre 10 uniquement
+1-10           # Chapitres 1 à 10
+10-            # Du chapitre 10 jusqu'au dernier chapitre disponible
+-10            # Les 10 derniers chapitres disponibles
+1-10,20-30     # Plusieurs plages de chapitres
+1,5,10         # Plusieurs chapitres individuels
+1-10,25,40-50  # Combinaison de plages et de chapitres individuels
 ```
+
+Les plages demandées sont comparées aux chapitres réellement disponibles chez le provider sélectionné. Les chapitres manquants à l'intérieur d'une plage sont automatiquement ignorés.
+
+Par exemple, si seuls les chapitres `1-50` et `70-100` sont disponibles, demander `1-100` téléchargera tous les chapitres disponibles dans ces deux plages sans considérer l'absence des chapitres `51-69` comme une erreur.
 
 Si ni `--all` ni `--range` ne sont spécifiés, goweeb vous demandera de choisir interactivement les chapitres à télécharger.
 
