@@ -27,7 +27,7 @@ Actuellement, il est possible de télécharger des manga depuis les sites suivan
 
 ## Installation
 
-L'installation est simple. Rendez-vous dans la section **Releases** du dépôt GitHub et téléchargez la dernière version de l'outil correspondant à votre système d'exploitation.
+L'installation est simple. Rendez-vous dans la section **Releases** du dépôt GitHub et téléchargez la [dernière version](https://github.com/EliasLd/goweeb/releases/latest) de l'outil correspondant à votre système d'exploitation.
 
 ### Windows
 

@@ -28,7 +28,7 @@ Currently, it can download manga from the following websites:
 
 ## Installation
 
-Installation is simple. Go to the **Releases** section of the GitHub repository and download the latest version of the tool for your operating system.
+Installation is simple. Go to the **Releases** section of the GitHub repository and download the [latest version](https://github.com/EliasLd/goweeb/releases/latest) of the tool for your operating system.
 
 ### Windows
 
