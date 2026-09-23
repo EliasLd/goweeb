@@ -167,10 +167,17 @@ func viewRangeSelection(m Model) string {
 		b.WriteString(labelStyle.Render("Available chapters"))
 		b.WriteString("\n")
 
+		rangeWidth := 76
+		if m.Width > 0 {
+			rangeWidth = min(rangeWidth, max(1, m.Width-4))
+		}
+
 		b.WriteString(
 			lipgloss.NewStyle().
 				Faint(true).
-				Render(m.AvailableRanges),
+				Render(
+					wrapAvailableRanges(m.AvailableRanges, rangeWidth),
+				),
 		)
 
 		b.WriteString("\n\n")
@@ -282,4 +289,34 @@ func viewRangeSelection(m Model) string {
 	return boxStyle.Render(
 		b.String(),
 	)
+}
+
+func wrapAvailableRanges(ranges string, width int) string {
+	var lines []string
+	current := ""
+
+	for _, part := range strings.Split(ranges, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+
+		next := part
+		if current != "" {
+			next = current + ", " + part
+		}
+
+		if current != "" && lipgloss.Width(next) > width {
+			lines = append(lines, current)
+			current = part
+		} else {
+			current = next
+		}
+	}
+
+	if current != "" {
+		lines = append(lines, current)
+	}
+
+	return strings.Join(lines, "\n")
 }
