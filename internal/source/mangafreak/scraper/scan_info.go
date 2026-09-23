@@ -5,11 +5,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/EliasLd/goweeb/internal/logger"
+	"github.com/EliasLd/goweeb/internal/source/common"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -19,7 +19,7 @@ type ScanInfo struct {
 }
 
 type ChapterInfo struct {
-	Number int
+	Number common.ChapterNumber
 	Label  string
 	URL    string
 }
@@ -102,7 +102,9 @@ func GetScanInfo(
 				return
 			}
 
-			chapterNumber, err := strconv.Atoi(fields[1])
+			chapterNumber, err := common.ParseChapterNumber(
+				strings.TrimRight(fields[1], ":"),
+			)
 			if err != nil {
 				return
 			}
