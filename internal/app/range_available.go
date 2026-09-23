@@ -1,98 +1,64 @@
 package app
 
 import (
-	"fmt"
+	"math/big"
 	"sort"
 	"strings"
 
+	"github.com/EliasLd/goweeb/internal/source/common"
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 )
 
-type AvailableRange struct {
-	Start int
-	End   int
+type AvailableRange struct{ Start, End common.ChapterNumber }
+
+func nextInteger(previous, next common.ChapterNumber) bool {
+	if !previous.IsInteger() || !next.IsInteger() {
+		return false
+	}
+	value, ok := new(big.Int).SetString(previous.String(), 10)
+	if !ok {
+		return false
+	}
+	value.Add(value, big.NewInt(1))
+	return value.String() == next.String()
 }
 
-func AvailableChapterRanges(
-	entries []sourcetypes.Entry,
-) []AvailableRange {
+func AvailableChapterRanges(entries []sourcetypes.Entry) []AvailableRange {
 	if len(entries) == 0 {
 		return nil
 	}
-
-	numbers := make([]int, 0, len(entries))
-	seen := make(map[int]struct{})
-
-	for _, entry := range entries {
-		if _, exists := seen[entry.Number]; exists {
+	seen := make(map[string]struct{}, len(entries))
+	numbers := make([]common.ChapterNumber, 0, len(entries))
+	for _, e := range entries {
+		if _, ok := seen[e.Number.String()]; ok {
 			continue
 		}
-
-		seen[entry.Number] = struct{}{}
-		numbers = append(numbers, entry.Number)
+		seen[e.Number.String()] = struct{}{}
+		numbers = append(numbers, e.Number)
 	}
-
-	sort.Ints(numbers)
-
-	ranges := make([]AvailableRange, 0)
-
-	start := numbers[0]
-	previous := numbers[0]
-
+	sort.Slice(numbers, func(i, j int) bool { return numbers[i].Compare(numbers[j]) < 0 })
+	ranges := make([]AvailableRange, 0, len(numbers))
+	start, previous := numbers[0], numbers[0]
 	for _, number := range numbers[1:] {
-		if number == previous+1 {
+		if nextInteger(previous, number) {
 			previous = number
 			continue
 		}
-
-		ranges = append(
-			ranges,
-			AvailableRange{
-				Start: start,
-				End:   previous,
-			},
-		)
-
-		start = number
-		previous = number
+		ranges = append(ranges, AvailableRange{Start: start, End: previous})
+		start, previous = number, number
 	}
-
-	ranges = append(
-		ranges,
-		AvailableRange{
-			Start: start,
-			End:   previous,
-		},
-	)
-
-	return ranges
+	return append(ranges, AvailableRange{Start: start, End: previous})
 }
 
-// Joints ranges of available chapters/volumes in a single string
-// according to the format:
-// n_1-m_1,n_2-m_2,...,n_n-m_n
-func FormatAvailableRanges(
-	entries []sourcetypes.Entry,
-) string {
+func FormatAvailableRanges(entries []sourcetypes.Entry) string {
 	ranges := AvailableChapterRanges(entries)
-
 	parts := make([]string, 0, len(ranges))
-
 	for _, r := range ranges {
 		if r.Start == r.End {
-			parts = append(
-				parts,
-				fmt.Sprintf("%d", r.Start),
-			)
-
+			parts = append(parts, r.Start.String())
 			continue
 		}
-
-		parts = append(
-			parts,
-			fmt.Sprintf("%d-%d", r.Start, r.End),
-		)
+		parts = append(parts, r.Start.String()+"-"+r.End.String())
 	}
-
 	return strings.Join(parts, ", ")
 }
