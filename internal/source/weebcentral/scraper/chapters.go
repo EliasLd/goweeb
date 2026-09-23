@@ -6,11 +6,11 @@ import (
 	"net/url"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/EliasLd/goweeb/internal/logger"
+	"github.com/EliasLd/goweeb/internal/source/common"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -20,26 +20,30 @@ type ScanInfo struct {
 }
 
 type ChapterInfo struct {
-	Number int
+	Number common.ChapterNumber
 	Label  string
 	URL    string
 }
 
 var chapterLabelPattern = regexp.MustCompile(
-	`(?i)^(?:chapter\s*|#\s*)(\d+)`,
+	`(?i)^(?:chapter\s*|#\s*)(\d+(?:\.\d+)?)(?:$|[\s:-])`,
 )
 
-func parseChapterLabel(text string) (int, string, bool) {
+func parseChapterLabel(
+	text string,
+) (common.ChapterNumber, string, bool) {
+	var zero common.ChapterNumber
+
 	label := strings.TrimSpace(text)
 
 	match := chapterLabelPattern.FindStringSubmatch(label)
 	if len(match) != 2 {
-		return 0, "", false
+		return zero, "", false
 	}
 
-	number, err := strconv.Atoi(match[1])
+	number, err := common.ParseChapterNumber(match[1])
 	if err != nil {
-		return 0, "", false
+		return zero, "", false
 	}
 
 	return number, label, true
@@ -142,7 +146,7 @@ func GetScanInfo(
 			}
 
 			var (
-				chapterNumber int
+				chapterNumber common.ChapterNumber
 				label         string
 				found         bool
 			)
@@ -214,7 +218,9 @@ func GetScanInfo(
 	// WeebCentral returns newest chapters first.
 	// goweeb expects chapters in ascending order.
 	sort.Slice(chapters, func(i, j int) bool {
-		return chapters[i].Number < chapters[j].Number
+		return chapters[i].Number.Compare(
+			chapters[j].Number,
+		) < 0
 	})
 
 	return &ScanInfo{

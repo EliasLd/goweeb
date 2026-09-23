@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/EliasLd/goweeb/internal/logger"
+	"github.com/EliasLd/goweeb/internal/source/common"
 )
 
 const chapterFeedPageSize = 100
@@ -21,7 +22,7 @@ type ScanInfo struct {
 }
 
 type ChapterInfo struct {
-	Number      int
+	Number      common.ChapterNumber
 	Label       string
 	URL         string
 	ID          string
@@ -130,7 +131,7 @@ func GetScanInfo(
 	//
 	// goweeb currently expects one Entry per chapter number, so keep
 	// the most recently published version.
-	chaptersByNumber := make(map[int]ChapterInfo)
+	chaptersByNumber := make(map[common.ChapterNumber]ChapterInfo)
 
 	offset := 0
 	skippedNonInteger := 0
@@ -274,17 +275,14 @@ func GetScanInfo(
 				continue
 			}
 
-			chapterNumber, err := strconv.Atoi(
+			chapterNumber, err := common.ParseChapterNumber(
 				chapterNumberText,
 			)
 			if err != nil {
-				skippedNonInteger++
-
 				log.Debug(
-					"Skipping unsupported non-integer MangaDex chapter: %s\n",
+					"Skipping invalid MangaDex chapter number: %q\n",
 					chapterNumberText,
 				)
-
 				continue
 			}
 
@@ -360,13 +358,11 @@ func GetScanInfo(
 		)
 	}
 
-	sort.Slice(
-		chapters,
-		func(i, j int) bool {
-			return chapters[i].Number <
-				chapters[j].Number
-		},
-	)
+	sort.Slice(chapters, func(i, j int) bool {
+		return chapters[i].Number.Compare(
+			chapters[j].Number,
+		) < 0
+	})
 
 	if len(chapters) == 0 {
 		return nil, fmt.Errorf(

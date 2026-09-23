@@ -137,15 +137,14 @@ func downloadEntries(
 		return
 	}
 
-	maxNum := 0
+	digits := 3
 
 	for _, entry := range entries {
-		if entry.Number > maxNum {
-			maxNum = entry.Number
-		}
+		digits = max(
+			digits,
+			entry.Number.IntegerDigits(),
+		)
 	}
-
-	digits := chapterDigits(maxNum)
 
 	if opts.EbookFriendly {
 		if err := os.MkdirAll(
@@ -162,10 +161,7 @@ func downloadEntries(
 	}
 
 	for _, entry := range entries {
-		chStr := fmt.Sprintf(
-			"%d",
-			entry.Number,
-		)
+		chStr := entry.Number.String()
 
 		log.Info(
 			"Downloading %s...\n",
@@ -205,10 +201,9 @@ func downloadEntries(
 			entryDir := filepath.Join(
 				opts.ScanDir,
 				fmt.Sprintf(
-					"%s %0*d",
+					"%s %s",
 					prefix,
-					digits,
-					entry.Number,
+					entry.Number.Padded(digits),
 				),
 			)
 

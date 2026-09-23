@@ -2,12 +2,17 @@ package app
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
+
+	"github.com/EliasLd/goweeb/internal/source/common"
 )
 
 type RangeSpec struct {
-	Range [2]int
+	Start common.ChapterNumber
+	End   common.ChapterNumber
 	Mode  RangeMode
+	Count int // Only for RangeLastN; never used as a chapter number.
 }
 
 type RangeSelection struct {
@@ -15,114 +20,71 @@ type RangeSelection struct {
 	Ranges []RangeSpec
 }
 
-// Parses:
-// n, n-m, n-, -n
-func ParseRangeString(rangeStr string) ([2]int, RangeMode, error) {
-	var chapterRange [2]int
-	var rangeMode RangeMode = RangeNone
-
-	rangeStr = strings.TrimSpace(rangeStr)
-	if rangeStr == "" {
-		return chapterRange, rangeMode, fmt.Errorf("invalid range format: empty input")
+// Parses: 0, 6.5, 1-10.5, 6.5-, -10.
+func ParseRangeString(input string) (RangeSpec, error) {
+	raw := strings.TrimSpace(input)
+	invalid := func() (RangeSpec, error) {
+		return RangeSpec{}, fmt.Errorf("invalid range %q; use 0, 6.5, 1-10.5, 6.5- or -10", input)
+	}
+	if raw == "" {
+		return invalid()
 	}
 
-	// Handle last N chapters: -N
-	if strings.HasPrefix(rangeStr, "-") && len(rangeStr) > 1 {
-		var nLast int
-		n, err := fmt.Sscanf(rangeStr, "-%d", &nLast)
-		if err != nil || n != 1 || nLast <= 0 {
-			return chapterRange, rangeMode, fmt.Errorf("invalid range format: %s. Use 1-10, 10, -10, 10- or all", rangeStr)
+	if strings.HasPrefix(raw, "-") {
+		count, err := strconv.Atoi(strings.TrimPrefix(raw, "-"))
+		if err != nil || count <= 0 {
+			return invalid()
 		}
-		chapterRange[0] = 0
-		chapterRange[1] = nLast
-		rangeMode = RangeLastN
-		return chapterRange, rangeMode, nil
+		return RangeSpec{Mode: RangeLastN, Count: count}, nil
 	}
-
-	// Handle open-ended: N-
-	if strings.HasSuffix(rangeStr, "-") {
-		var start int
-		trimmed := strings.TrimSuffix(rangeStr, "-")
-		n, err := fmt.Sscanf(trimmed, "%d", &start)
-		if err != nil || n != 1 || start <= 0 {
-			return chapterRange, rangeMode, fmt.Errorf("invalid range format: %s. Use 1-10, 10, -10, 10- or all", rangeStr)
+	if strings.HasSuffix(raw, "-") {
+		start, err := common.ParseChapterNumber(strings.TrimSpace(strings.TrimSuffix(raw, "-")))
+		if err != nil {
+			return invalid()
 		}
-		chapterRange[0] = start
-		chapterRange[1] = 0
-		rangeMode = RangeOpenEnded
-		return chapterRange, rangeMode, nil
+		return RangeSpec{Mode: RangeOpenEnded, Start: start}, nil
 	}
-
-	// Handle normal range: N-M
-	var start, end int
-	n, err := fmt.Sscanf(rangeStr, "%d-%d", &start, &end)
-	if err == nil && n == 2 && start > 0 && end > 0 && start <= end {
-		chapterRange[0] = start
-		chapterRange[1] = end
-		rangeMode = RangeNormal
-		return chapterRange, rangeMode, nil
+	if strings.Contains(raw, "-") {
+		parts := strings.Split(raw, "-")
+		if len(parts) != 2 {
+			return invalid()
+		}
+		start, err := common.ParseChapterNumber(strings.TrimSpace(parts[0]))
+		if err != nil {
+			return invalid()
+		}
+		end, err := common.ParseChapterNumber(strings.TrimSpace(parts[1]))
+		if err != nil || start.Compare(end) > 0 {
+			return invalid()
+		}
+		return RangeSpec{Mode: RangeNormal, Start: start, End: end}, nil
 	}
-
-	// Handle single chapter: N
-	var solo int
-	n, err = fmt.Sscanf(rangeStr, "%d", &solo)
-	if err == nil && n == 1 && solo > 0 {
-		chapterRange[0] = solo
-		chapterRange[1] = solo
-		rangeMode = RangeNormal
-		return chapterRange, rangeMode, nil
+	number, err := common.ParseChapterNumber(raw)
+	if err != nil {
+		return invalid()
 	}
-
-	return chapterRange, rangeMode, fmt.Errorf("invalid range format: %s. Use 1-10, 10, -10, 10- or all", rangeStr)
+	return RangeSpec{Mode: RangeNormal, Start: number, End: number}, nil
 }
 
 func ParseRangeExpression(input string) (RangeSelection, error) {
-	var selection RangeSelection
-
 	input = strings.TrimSpace(input)
 	if input == "" {
-		return selection, fmt.Errorf("invalid range format: empty input")
+		return RangeSelection{}, fmt.Errorf("invalid range expression: empty input")
 	}
-
 	if strings.EqualFold(input, "all") {
-		selection.All = true
-		return selection, nil
+		return RangeSelection{All: true}, nil
 	}
-
 	parts := strings.Split(input, ",")
-
+	selection := RangeSelection{Ranges: make([]RangeSpec, 0, len(parts))}
 	for _, part := range parts {
-		part = strings.TrimSpace(part)
-
-		if part == "" {
-			return selection, fmt.Errorf(
-				"invalid range expression: %s",
-				input,
-			)
-		}
-
-		chapterRange, mode, err := ParseRangeString(part)
+		spec, err := ParseRangeString(strings.TrimSpace(part))
 		if err != nil {
-			return selection, err
+			return RangeSelection{}, err
 		}
-
-		// "-10" means "last 10 available chapters".
-		// Mixing that with explicit numerical ranges would make
-		// the semantics unnecessarily confusing.
-		if mode == RangeLastN && len(parts) > 1 {
-			return selection, fmt.Errorf(
-				"last-N syntax cannot be combined with other ranges",
-			)
+		if spec.Mode == RangeLastN && len(parts) > 1 {
+			return RangeSelection{}, fmt.Errorf("last-N syntax cannot be combined with other ranges")
 		}
-
-		selection.Ranges = append(
-			selection.Ranges,
-			RangeSpec{
-				Range: chapterRange,
-				Mode:  mode,
-			},
-		)
+		selection.Ranges = append(selection.Ranges, spec)
 	}
-
 	return selection, nil
 }

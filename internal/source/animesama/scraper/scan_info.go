@@ -7,15 +7,20 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/EliasLd/goweeb/internal/logger"
+	"github.com/EliasLd/goweeb/internal/source/common"
 )
+
+type ChapterInfo struct {
+	Number common.ChapterNumber
+	Raw    string
+}
 
 type ScanInfo struct {
 	MangaName string
-	Chapters  []int
+	Chapters  []ChapterInfo
 }
 
 // Fetches scan info using the anime-sama API
@@ -60,16 +65,29 @@ func GetScanInfo(domain, mangaName string, log *logger.Logger) (*ScanInfo, error
 	}
 
 	// Extract and sort chapter numbers
-	var chapters []int
-	for chapterStr := range data {
-		chapterNum, err := strconv.Atoi(chapterStr)
+	var chapters []ChapterInfo
+
+	for raw := range data {
+		number, err := common.ParseChapterNumber(raw)
 		if err != nil {
+			log.Debug(
+				"Skipping invalid Anime-Sama chapter: %q\n",
+				raw,
+			)
 			continue
 		}
-		chapters = append(chapters, chapterNum)
+
+		chapters = append(chapters, ChapterInfo{
+			Number: number,
+			Raw:    raw,
+		})
 	}
 
-	sort.Ints(chapters)
+	sort.Slice(chapters, func(i, j int) bool {
+		return chapters[i].Number.Compare(
+			chapters[j].Number,
+		) < 0
+	})
 
 	return &ScanInfo{
 		MangaName: mangaName,

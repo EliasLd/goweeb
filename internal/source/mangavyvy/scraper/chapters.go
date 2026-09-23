@@ -5,17 +5,17 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/EliasLd/goweeb/internal/logger"
+	"github.com/EliasLd/goweeb/internal/source/common"
 
 	"github.com/PuerkitoBio/goquery"
 )
 
 type Chapter struct {
-	Number int
+	Number common.ChapterNumber
 	Label  string
 	URL    string
 }
@@ -108,13 +108,12 @@ func ListChapters(
 				return
 			}
 
-			number, err := strconv.Atoi(numberStr)
+			number, err := common.ParseChapterNumber(numberStr)
 			if err != nil {
 				log.Debug(
-					"Skipping unsupported non-integer Mangavyvy chapter: %s\n",
+					"Skipping invalid Mangavyvy chapter number: %q\n",
 					numberStr,
 				)
-
 				return
 			}
 
@@ -145,10 +144,7 @@ func ListChapters(
 			)
 
 			if label == "" {
-				label = fmt.Sprintf(
-					"Chapter %d",
-					number,
-				)
+				label = "Chapter " + number.String()
 			}
 
 			chapters = append(
@@ -170,13 +166,11 @@ func ListChapters(
 
 	// Mangavyvy renders newest chapters first.
 	// goweeb expects entries in ascending chapter order.
-	sort.Slice(
-		chapters,
-		func(i, j int) bool {
-			return chapters[i].Number <
-				chapters[j].Number
-		},
-	)
+	sort.Slice(chapters, func(i, j int) bool {
+		return chapters[i].Number.Compare(
+			chapters[j].Number,
+		) < 0
+	})
 
 	log.Debug(
 		"Found %d Mangavyvy chapter(s)\n",
