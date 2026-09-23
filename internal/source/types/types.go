@@ -18,7 +18,7 @@ type SearchResult struct {
 }
 
 type Entry struct {
-	Number int
+	Number common.ChapterNumber
 	Label  string
 	URL    string
 }
