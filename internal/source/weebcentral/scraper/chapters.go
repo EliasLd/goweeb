@@ -25,8 +25,11 @@ type ChapterInfo struct {
 	URL    string
 }
 
+// Extract the first chapter number from its dedicated label.
+// Accepts "Chapter 271.5", "Episode 139.5", "#100",
+// "Part 12", or simply "12.5".
 var chapterLabelPattern = regexp.MustCompile(
-	`(?i)^(?:chapter\s*|#\s*)(\d+(?:\.\d+)?)(?:$|[\s:-])`,
+	`^[^0-9]*([0-9]+(?:\.[0-9]+)?)(?:$|[\s:;,()\-–—])`,
 )
 
 func parseChapterLabel(
@@ -34,7 +37,10 @@ func parseChapterLabel(
 ) (common.ChapterNumber, string, bool) {
 	var zero common.ChapterNumber
 
-	label := strings.TrimSpace(text)
+	label := strings.Join(
+		strings.Fields(text),
+		" ",
+	)
 
 	match := chapterLabelPattern.FindStringSubmatch(label)
 	if len(match) != 2 {
@@ -136,50 +142,39 @@ func GetScanInfo(
 		)
 	}
 
+	chapterList := doc.Find("#chapter-list")
+
+	// The full-chapter-list endpoint may return an HTML fragment
+	// without the outer #chapter-list container.
+	if chapterList.Length() == 0 {
+		log.Debug(
+			"Chapter list container not found; parsing response as an HTML fragment\n",
+		)
+
+		chapterList = doc.Selection
+	}
+
 	var chapters []ChapterInfo
 
-	doc.Find(`a[href^="/chapters/"]`).Each(
-		func(i int, selection *goquery.Selection) {
+	chapterList.Find(`a[href^="/chapters/"]`).Each(
+		func(_ int, selection *goquery.Selection) {
 			href, exists := selection.Attr("href")
 			if !exists {
 				return
 			}
 
-			var (
-				chapterNumber common.ChapterNumber
-				label         string
-				found         bool
-			)
+			// Read only the chapter's dedicated label.
+			// Ignore nested status elements such as "Last Read".
+			rawLabel := selection.
+				Find("span.grow > span").
+				First().
+				Text()
 
-			// The first direct spans inside span.grow may contain:
-			//
-			// "Chapter 100"
-			// "Chapter 100 - Some title"
-			// "# 100"
-			// "#100"
-			//
-			// Other nested spans such as "Last Read" are ignored.
-			selection.Find("span.grow > span").EachWithBreak(
-				func(i int, span *goquery.Selection) bool {
-					text := strings.TrimSpace(span.Text())
-
-					number, parsedLabel, ok := parseChapterLabel(text)
-					if !ok {
-						return true
-					}
-
-					chapterNumber = number
-					label = parsedLabel
-					found = true
-
-					return false
-				},
-			)
-
-			if !found {
+			number, label, ok := parseChapterLabel(rawLabel)
+			if !ok {
 				log.Debug(
-					"Skipping chapter with unrecognized label: %s\n",
-					strings.TrimSpace(selection.Text()),
+					"Skipping chapter with unrecognized label: %q\n",
+					strings.TrimSpace(rawLabel),
 				)
 				return
 			}
@@ -200,7 +195,7 @@ func GetScanInfo(
 			chapters = append(
 				chapters,
 				ChapterInfo{
-					Number: chapterNumber,
+					Number: number,
 					Label:  label,
 					URL:    chapterURL,
 				},
