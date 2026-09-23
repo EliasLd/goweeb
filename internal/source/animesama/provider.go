@@ -93,9 +93,14 @@ func (p *Provider) ListEntries(workURL string, scanPath string, log *logger.Logg
 	entries := make([]sourcetypes.Entry, 0, len(scanInfo.Chapters))
 	for _, ch := range scanInfo.Chapters {
 		entries = append(entries, sourcetypes.Entry{
-			Number: ch,
-			Label:  fmt.Sprintf("Chapter %d", ch),
-			URL:    fmt.Sprintf("%s/s2/scans/%s/%d", p.domain, scanInfo.MangaName, ch),
+			Number: ch.Number,
+			Label:  "Chapter " + ch.Number.String(),
+			URL: fmt.Sprintf(
+				"%s/s2/scans/%s/%s",
+				p.domain,
+				scanInfo.MangaName,
+				url.PathEscape(ch.Raw),
+			),
 		})
 	}
 
