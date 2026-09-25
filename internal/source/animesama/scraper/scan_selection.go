@@ -2,12 +2,12 @@ package animesamascraper
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/EliasLd/goweeb/internal/httpx"
 	"github.com/EliasLd/goweeb/internal/logger"
 	"github.com/EliasLd/goweeb/internal/source/common"
 	"github.com/PuerkitoBio/goquery"
@@ -32,22 +32,26 @@ func GetAllScanPaths(mangaURL string, log *logger.Logger) ([]ScanPathResult, err
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 
-	resp, err := client.Do(req)
+	result, err := httpx.ReadAll(
+		client,
+		req,
+		log,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch manga page: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("manga page returned status: %d", resp.StatusCode)
+		return nil, fmt.Errorf(
+			"failed to fetch manga page: %w",
+			err,
+		)
 	}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read manga page: %w", err)
+	if result.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf(
+			"manga page returned status: %d",
+			result.StatusCode,
+		)
 	}
-	html := string(body)
 
+	html := string(result.Body)
 	var results []ScanPathResult
 	seen := map[string]struct{}{}
 

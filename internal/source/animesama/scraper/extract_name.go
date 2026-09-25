@@ -2,12 +2,12 @@ package animesamascraper
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/EliasLd/goweeb/internal/httpx"
 	"github.com/EliasLd/goweeb/internal/logger"
 )
 
@@ -33,22 +33,26 @@ func ExtractMangaName(scanPageURL string, log *logger.Logger) (string, error) {
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 
-	resp, err := client.Do(req)
+	result, err := httpx.ReadAll(
+		client,
+		req,
+		log,
+	)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch scan page: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("scan page returned status %d", resp.StatusCode)
+		return "", fmt.Errorf(
+			"failed to fetch scan page: %w",
+			err,
+		)
 	}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read scan page: %w", err)
+	if result.StatusCode != http.StatusOK {
+		return "", fmt.Errorf(
+			"scan page returned status %d",
+			result.StatusCode,
+		)
 	}
 
-	html := string(body)
+	html := string(result.Body)
 
 	// Method 1: Extract from <h3 id="titreOeuvre">One Piece Couleur</h3>
 	titleRegex := regexp.MustCompile(`<h3[^>]+id="titreOeuvre"[^>]*>([^<]+)</h3>`)

@@ -3,12 +3,12 @@ package animesamascraper
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"sort"
 	"time"
 
+	"github.com/EliasLd/goweeb/internal/httpx"
 	"github.com/EliasLd/goweeb/internal/logger"
 	"github.com/EliasLd/goweeb/internal/source/common"
 )
@@ -44,26 +44,36 @@ func GetScanInfo(domain, mangaName string, log *logger.Logger) (*ScanInfo, error
 
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	resp, err := client.Do(req)
+	result, err := httpx.ReadAll(
+		client,
+		req,
+		log,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch API: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
+		return nil, fmt.Errorf(
+			"failed to fetch API: %w",
+			err,
+		)
 	}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read API response: %w", err)
+	if result.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf(
+			"API returned status %d",
+			result.StatusCode,
+		)
 	}
 
 	var data map[string]int
-	if err := json.Unmarshal(body, &data); err != nil {
-		return nil, fmt.Errorf("failed to parse JSON: %w", err)
-	}
 
+	if err := json.Unmarshal(
+		result.Body,
+		&data,
+	); err != nil {
+		return nil, fmt.Errorf(
+			"failed to parse JSON: %w",
+			err,
+		)
+	}
 	// Extract and sort chapter numbers
 	var chapters []ChapterInfo
 

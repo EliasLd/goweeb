@@ -1,12 +1,14 @@
 package weebcentralscraper
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/EliasLd/goweeb/internal/httpx"
 	"github.com/EliasLd/goweeb/internal/logger"
 	"github.com/PuerkitoBio/goquery"
 )
@@ -55,28 +57,33 @@ func GetPageImageURLs(
 
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	resp, err := client.Do(req)
+	result, err := httpx.ReadAll(
+		client,
+		req,
+		log,
+	)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"failed to fetch chapter images: %w",
 			err,
 		)
 	}
-	defer resp.Body.Close()
 
 	log.Debug(
 		"Chapter images response status: %d\n",
-		resp.StatusCode,
+		result.StatusCode,
 	)
 
-	if resp.StatusCode != http.StatusOK {
+	if result.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf(
 			"chapter images returned status: %d",
-			resp.StatusCode,
+			result.StatusCode,
 		)
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	doc, err := goquery.NewDocumentFromReader(
+		bytes.NewReader(result.Body),
+	)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"failed to parse chapter images: %w",

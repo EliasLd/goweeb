@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/EliasLd/goweeb/internal/httpx"
 	"github.com/EliasLd/goweeb/internal/logger"
 )
 
@@ -80,30 +81,29 @@ func SearchCatalog(
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", "goweeb")
 
-	resp, err := client.Do(req)
+	result, err := httpx.ReadAll(client, req, log)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"failed to search MangaDex catalog: %w",
 			err,
 		)
 	}
-	defer resp.Body.Close()
 
 	log.Debug(
 		"MangaDex catalog response status: %d\n",
-		resp.StatusCode,
+		result.StatusCode,
 	)
 
-	if resp.StatusCode != http.StatusOK {
+	if result.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf(
 			"MangaDex catalog returned status: %d",
-			resp.StatusCode,
+			result.StatusCode,
 		)
 	}
 
 	var response mangaSearchResponse
 
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.Unmarshal(result.Body, &response); err != nil {
 		return nil, fmt.Errorf(
 			"failed to decode MangaDex response: %w",
 			err,
