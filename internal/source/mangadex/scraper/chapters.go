@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/EliasLd/goweeb/internal/httpx"
 	"github.com/EliasLd/goweeb/internal/logger"
 	"github.com/EliasLd/goweeb/internal/source/common"
 )
@@ -199,7 +200,7 @@ func GetScanInfo(
 			"goweeb",
 		)
 
-		resp, err := client.Do(req)
+		result, err := httpx.ReadAll(client, req, log)
 		if err != nil {
 			return nil, fmt.Errorf(
 				"failed to fetch MangaDex chapter feed: %w",
@@ -207,21 +208,19 @@ func GetScanInfo(
 			)
 		}
 
-		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
-
+		if result.StatusCode != http.StatusOK {
 			return nil, fmt.Errorf(
 				"MangaDex chapter feed returned status: %d",
-				resp.StatusCode,
+				result.StatusCode,
 			)
 		}
 
 		var response chapterFeedResponse
 
-		err = json.NewDecoder(resp.Body).Decode(&response)
-		resp.Body.Close()
-
-		if err != nil {
+		if err := json.Unmarshal(
+			result.Body,
+			&response,
+		); err != nil {
 			return nil, fmt.Errorf(
 				"failed to decode MangaDex chapter feed: %w",
 				err,
@@ -425,25 +424,25 @@ func getMangaInfo(
 		"goweeb",
 	)
 
-	resp, err := client.Do(req)
+	result, err := httpx.ReadAll(client, req, log)
 	if err != nil {
 		return "", false, fmt.Errorf(
 			"failed to fetch MangaDex manga info: %w",
 			err,
 		)
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if result.StatusCode != http.StatusOK {
 		return "", false, fmt.Errorf(
 			"MangaDex manga info returned status: %d",
-			resp.StatusCode,
+			result.StatusCode,
 		)
 	}
 
 	var response mangaInfoResponse
 
-	if err := json.NewDecoder(resp.Body).Decode(
+	if err := json.Unmarshal(
+		result.Body,
 		&response,
 	); err != nil {
 		return "", false, fmt.Errorf(

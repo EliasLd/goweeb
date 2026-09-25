@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/EliasLd/goweeb/internal/httpx"
 	"github.com/EliasLd/goweeb/internal/logger"
 )
 
@@ -58,30 +59,29 @@ func GetAvailableLanguages(
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", "goweeb")
 
-	resp, err := client.Do(req)
+	result, err := httpx.ReadAll(client, req, log)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"failed to fetch MangaDex manga details: %w",
 			err,
 		)
 	}
-	defer resp.Body.Close()
 
 	log.Debug(
 		"MangaDex manga details response status: %d\n",
-		resp.StatusCode,
+		result.StatusCode,
 	)
 
-	if resp.StatusCode != http.StatusOK {
+	if result.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf(
 			"MangaDex manga details returned status: %d",
-			resp.StatusCode,
+			result.StatusCode,
 		)
 	}
 
 	var response mangaDetailsResponse
 
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.Unmarshal(result.Body, &response); err != nil {
 		return nil, fmt.Errorf(
 			"failed to decode MangaDex manga details: %w",
 			err,

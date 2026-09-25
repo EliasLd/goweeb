@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/EliasLd/goweeb/internal/httpx"
 	"github.com/EliasLd/goweeb/internal/logger"
 )
 
@@ -93,30 +94,30 @@ func GetPageImageURLs(
 		"goweeb",
 	)
 
-	resp, err := client.Do(req)
+	result, err := httpx.ReadAll(client, req, log)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"failed to fetch MangaDex At-Home server: %w",
 			err,
 		)
 	}
-	defer resp.Body.Close()
 
 	log.Debug(
 		"MangaDex At-Home response status: %d\n",
-		resp.StatusCode,
+		result.StatusCode,
 	)
 
-	if resp.StatusCode != http.StatusOK {
+	if result.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf(
 			"MangaDex At-Home returned status: %d",
-			resp.StatusCode,
+			result.StatusCode,
 		)
 	}
 
 	var response atHomeResponse
 
-	if err := json.NewDecoder(resp.Body).Decode(
+	if err := json.Unmarshal(
+		result.Body,
 		&response,
 	); err != nil {
 		return nil, fmt.Errorf(
