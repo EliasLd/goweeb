@@ -1,13 +1,14 @@
 package mangafreakscraper
 
 import (
+	"bytes"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/EliasLd/goweeb/internal/httpx"
 	"github.com/EliasLd/goweeb/internal/logger"
 	"github.com/EliasLd/goweeb/internal/source/common"
 	"github.com/PuerkitoBio/goquery"
@@ -48,29 +49,38 @@ func GetScanInfo(
 
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	resp, err := client.Do(req)
+	result, err := httpx.ReadAll(
+		client,
+		req,
+		log,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch manga page: %w", err)
-	}
-	defer resp.Body.Close()
-
-	log.Debug("Manga page response status: %d\n", resp.StatusCode)
-
-	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf(
-			"manga page returned status: %d",
-			resp.StatusCode,
+			"failed to fetch manga page: %w",
+			err,
 		)
 	}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read manga page: %w", err)
+	log.Debug(
+		"Manga page response status: %d\n",
+		result.StatusCode,
+	)
+
+	if result.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf(
+			"manga page returned status: %d",
+			result.StatusCode,
+		)
 	}
 
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
+	doc, err := goquery.NewDocumentFromReader(
+		bytes.NewReader(result.Body),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse manga page: %w", err)
+		return nil, fmt.Errorf(
+			"failed to parse manga page: %w",
+			err,
+		)
 	}
 
 	mangaName := strings.TrimSpace(doc.Find("h1").First().Text())

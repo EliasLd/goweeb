@@ -1,12 +1,14 @@
 package mangafreakscraper
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/EliasLd/goweeb/internal/httpx"
 	"github.com/EliasLd/goweeb/internal/logger"
 	"github.com/PuerkitoBio/goquery"
 )
@@ -42,28 +44,33 @@ func GetPageImageURLs(
 
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	resp, err := client.Do(req)
+	result, err := httpx.ReadAll(
+		client,
+		req,
+		log,
+	)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"failed to fetch chapter page: %w",
 			err,
 		)
 	}
-	defer resp.Body.Close()
 
 	log.Debug(
 		"Chapter page response status: %d\n",
-		resp.StatusCode,
+		result.StatusCode,
 	)
 
-	if resp.StatusCode != http.StatusOK {
+	if result.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf(
 			"chapter page returned status: %d",
-			resp.StatusCode,
+			result.StatusCode,
 		)
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	doc, err := goquery.NewDocumentFromReader(
+		bytes.NewReader(result.Body),
+	)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"failed to parse chapter page: %w",
@@ -71,7 +78,12 @@ func GetPageImageURLs(
 		)
 	}
 
-	baseURL, err := url.Parse(chapterURL)
+	readerURL := chapterURL
+	if result.FinalURL != "" {
+		readerURL = result.FinalURL
+	}
+
+	baseURL, err := url.Parse(readerURL)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"invalid chapter URL: %w",
