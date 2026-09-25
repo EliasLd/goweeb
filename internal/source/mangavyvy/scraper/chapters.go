@@ -1,6 +1,7 @@
 package mangavyvyscraper
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -8,9 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/EliasLd/goweeb/internal/httpx"
 	"github.com/EliasLd/goweeb/internal/logger"
 	"github.com/EliasLd/goweeb/internal/source/common"
-
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -50,29 +51,32 @@ func ListChapters(
 		"goweeb (+https://github.com/EliasLd/goweeb)",
 	)
 
-	resp, err := client.Do(req)
+	result, err := httpx.ReadAll(
+		client,
+		req,
+		log,
+	)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"failed to fetch Mangavyvy chapter list: %w",
 			err,
 		)
 	}
-	defer resp.Body.Close()
 
 	log.Debug(
 		"Mangavyvy chapter list response status: %d\n",
-		resp.StatusCode,
+		result.StatusCode,
 	)
 
-	if resp.StatusCode != http.StatusOK {
+	if result.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf(
 			"unexpected Mangavyvy chapter list status: %d",
-			resp.StatusCode,
+			result.StatusCode,
 		)
 	}
 
 	doc, err := goquery.NewDocumentFromReader(
-		resp.Body,
+		bytes.NewReader(result.Body),
 	)
 	if err != nil {
 		return nil, fmt.Errorf(

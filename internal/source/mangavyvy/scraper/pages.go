@@ -1,6 +1,7 @@
 package mangavyvyscraper
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -9,8 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/EliasLd/goweeb/internal/httpx"
 	"github.com/EliasLd/goweeb/internal/logger"
-
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -62,37 +63,43 @@ func GetPageImageURLs(
 		)
 	}
 
-	resp, err := client.Do(req)
+	result, err := httpx.ReadAll(
+		client,
+		req,
+		log,
+	)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"failed to fetch Mangavyvy reader page: %w",
 			err,
 		)
 	}
-	defer resp.Body.Close()
 
 	log.Debug(
 		"Mangavyvy reader response status: %d\n",
-		resp.StatusCode,
+		result.StatusCode,
 	)
 
-	if resp.Request != nil &&
-		resp.Request.URL != nil {
-		log.Debug(
-			"Mangavyvy reader final URL: %s\n",
-			resp.Request.URL.String(),
-		)
+	// Preserve the final URL after Aovheroes redirects.
+	readerURL := entryURL
+	if result.FinalURL != "" {
+		readerURL = result.FinalURL
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	log.Debug(
+		"Mangavyvy reader final URL: %s\n",
+		readerURL,
+	)
+
+	if result.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf(
 			"unexpected Mangavyvy reader status: %d",
-			resp.StatusCode,
+			result.StatusCode,
 		)
 	}
 
 	doc, err := goquery.NewDocumentFromReader(
-		resp.Body,
+		bytes.NewReader(result.Body),
 	)
 	if err != nil {
 		return nil, fmt.Errorf(
@@ -101,8 +108,13 @@ func GetPageImageURLs(
 		)
 	}
 
-	baseURL := resp.Request.URL
-
+	baseURL, err := url.Parse(readerURL)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"invalid Mangavyvy reader URL: %w",
+			err,
+		)
+	}
 	var pages []pageImage
 
 	seen := make(map[string]struct{})
@@ -169,16 +181,9 @@ func GetPageImageURLs(
 	)
 
 	if len(pages) == 0 {
-		finalURL := entryURL
-
-		if resp.Request != nil &&
-			resp.Request.URL != nil {
-			finalURL = resp.Request.URL.String()
-		}
-
 		return nil, fmt.Errorf(
 			"no Mangavyvy page images found at %s",
-			finalURL,
+			readerURL,
 		)
 	}
 
