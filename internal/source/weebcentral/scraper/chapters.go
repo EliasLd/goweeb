@@ -1,6 +1,7 @@
 package weebcentralscraper
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/EliasLd/goweeb/internal/httpx"
 	"github.com/EliasLd/goweeb/internal/logger"
 	"github.com/EliasLd/goweeb/internal/source/common"
 	"github.com/PuerkitoBio/goquery"
@@ -113,28 +115,33 @@ func GetScanInfo(
 
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	resp, err := client.Do(req)
+	result, err := httpx.ReadAll(
+		client,
+		req,
+		log,
+	)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"failed to fetch chapter list: %w",
 			err,
 		)
 	}
-	defer resp.Body.Close()
 
 	log.Debug(
 		"Chapter list response status: %d\n",
-		resp.StatusCode,
+		result.StatusCode,
 	)
 
-	if resp.StatusCode != http.StatusOK {
+	if result.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf(
 			"chapter list returned status: %d",
-			resp.StatusCode,
+			result.StatusCode,
 		)
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	doc, err := goquery.NewDocumentFromReader(
+		bytes.NewReader(result.Body),
+	)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"failed to parse chapter list: %w",
