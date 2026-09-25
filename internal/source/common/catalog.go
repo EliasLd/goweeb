@@ -1,13 +1,14 @@
 package common
 
 import (
+	"bytes"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/EliasLd/goweeb/internal/httpx"
 	"github.com/EliasLd/goweeb/internal/logger"
 	"github.com/PuerkitoBio/goquery"
 )
@@ -33,20 +34,28 @@ func SearchHTMLCatalog(
 	var searchURL string
 
 	if cfg.QueryParam == "" {
-		// Path-based search:
-		path = strings.TrimSuffix(path, "/") + "/" + url.PathEscape(query)
+		// Path-based search.
+		path = strings.TrimSuffix(path, "/") +
+			"/" +
+			url.PathEscape(query)
 
 		u, err := url.Parse(base + path)
 		if err != nil {
-			return nil, fmt.Errorf("failed to build search URL: %w", err)
+			return nil, fmt.Errorf(
+				"failed to build search URL: %w",
+				err,
+			)
 		}
 
 		searchURL = u.String()
 	} else {
-		// Query parameter search:
+		// Query parameter search.
 		u, err := url.Parse(base + path)
 		if err != nil {
-			return nil, fmt.Errorf("failed to build search URL: %w", err)
+			return nil, fmt.Errorf(
+				"failed to build search URL: %w",
+				err,
+			)
 		}
 
 		q := u.Query()
@@ -61,77 +70,119 @@ func SearchHTMLCatalog(
 		searchURL = u.String()
 	}
 
-	log.Debug("Searching catalog: %s\n", searchURL)
+	log.Debug(
+		"Searching catalog: %s\n",
+		searchURL,
+	)
 
 	client := &http.Client{
 		Timeout: 15 * time.Second,
 	}
 
-	req, err := http.NewRequest("GET", searchURL, nil)
+	req, err := http.NewRequest(
+		http.MethodGet,
+		searchURL,
+		nil,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf(
+			"failed to create request: %w",
+			err,
+		)
 	}
 
-	req.Header.Set("User-Agent", "Mozilla/5.0")
+	req.Header.Set(
+		"User-Agent",
+		"Mozilla/5.0",
+	)
 
-	resp, err := client.Do(req)
+	// Retry transient HTTP failures and interrupted
+	// response body reads.
+	result, err := httpx.ReadAll(
+		client,
+		req,
+		log,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch catalog: %w", err)
-	}
-	defer resp.Body.Close()
-
-	log.Debug("Catalog response status: %d\n", resp.StatusCode)
-	log.Debug("Catalog response headers: %v\n", resp.Header)
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("catalog returned status: %d", resp.StatusCode)
+		return nil, fmt.Errorf(
+			"failed to fetch catalog: %w",
+			err,
+		)
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	log.Debug(
+		"Catalog response status: %d\n",
+		result.StatusCode,
+	)
+
+	log.Debug(
+		"Catalog response headers: %v\n",
+		result.Header,
+	)
+
+	if result.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf(
+			"catalog returned status: %d",
+			result.StatusCode,
+		)
+	}
+
+	doc, err := goquery.NewDocumentFromReader(
+		bytes.NewReader(result.Body),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read catalog response: %w", err)
-	}
-
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse catalog page: %w", err)
+		return nil, fmt.Errorf(
+			"failed to parse catalog page: %w",
+			err,
+		)
 	}
 
 	var results []SelectableItem
 
-	doc.Find(cfg.CardSelector).Each(func(i int, card *goquery.Selection) {
-		var link *goquery.Selection
+	doc.Find(cfg.CardSelector).Each(
+		func(_ int, card *goquery.Selection) {
+			var link *goquery.Selection
 
-		if cfg.LinkSelector == "" {
-			link = card
-		} else {
-			link = card.Find(cfg.LinkSelector).First()
-		}
+			if cfg.LinkSelector == "" {
+				link = card
+			} else {
+				link = card.
+					Find(cfg.LinkSelector).
+					First()
+			}
 
-		href, exists := link.Attr("href")
-		if !exists {
-			return
-		}
+			href, exists := link.Attr("href")
+			if !exists {
+				return
+			}
 
-		title := strings.TrimSpace(card.Find(cfg.TitleSelector).Text())
+			title := strings.TrimSpace(
+				card.Find(cfg.TitleSelector).Text(),
+			)
 
-		if title == "" {
-			title = strings.TrimSpace(link.Text())
-		}
+			if title == "" {
+				title = strings.TrimSpace(
+					link.Text(),
+				)
+			}
 
-		if title == "" {
-			title = href
-		}
+			if title == "" {
+				title = href
+			}
 
-		if strings.HasPrefix(href, "/") {
-			href = base + href
-		}
+			if strings.HasPrefix(href, "/") {
+				href = base + href
+			}
 
-		results = append(results, SelectableItem{
-			Label: title,
-			Value: href,
-		})
-	})
+			results = append(
+				results,
+				SelectableItem{
+					Label: title,
+					Value: href,
+				},
+			)
+		},
+	)
 
 	return results, nil
 }
