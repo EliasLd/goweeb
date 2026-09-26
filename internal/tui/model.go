@@ -2,27 +2,13 @@ package tui
 
 import (
 	"bufio"
+	"io"
+
 	"github.com/EliasLd/goweeb/internal/app"
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"io"
-	"os"
-	"path/filepath"
 )
-
-var asciiArt string = `
-                                                            
-                                                   ▄▄       
-                                                   ██       
-  ▄███▄██   ▄████▄  ██      ██  ▄████▄    ▄████▄   ██▄███▄  
- ██▀  ▀██  ██▀  ▀██ ▀█  ██  █▀ ██▄▄▄▄██  ██▄▄▄▄██  ██▀  ▀██ 
- ██    ██  ██    ██  ██▄██▄██  ██▀▀▀▀▀▀  ██▀▀▀▀▀▀  ██    ██ 
- ▀██▄▄███  ▀██▄▄██▀  ▀██  ██▀  ▀██▄▄▄▄█  ▀██▄▄▄▄█  ███▄▄██▀ 
-  ▄▀▀▀ ██    ▀▀▀▀     ▀▀  ▀▀     ▀▀▀▀▀     ▀▀▀▀▀   ▀▀ ▀▀▀   
-  ▀████▀▀                                                   
-                                                            
-`
 
 type AppState int
 
@@ -35,96 +21,51 @@ const (
 	StateDownloading
 )
 
+// Model contains the current state of the TUI.
 type Model struct {
 	State AppState
 
-	Title         string
+	// Main form.
+	Title string
+
 	MangaInput    textinput.Model
-	AllCheckbox   Checkbox
-	RangeInput    textinput.Model
 	ScanDirInput  textinput.Model
-	KeepCheckbox  Checkbox
-	EbookCheckbox Checkbox
 	DomainInput   textinput.Model
+	EbookCheckbox Checkbox
+	KeepCheckbox  Checkbox
 
 	SelectedProvider      string
 	SelectedProviderLabel string
+	DownloadReady         bool
 
-	ProviderSelectionModel ProviderSelectionModel
-
-	Cursor        int
-	Width         int
-	Height        int
-	DownloadReady bool
-	IsDownloading bool
-	Logs          []string
-
-	pipeReader *io.PipeReader
-	pipeWriter *io.PipeWriter
-	scanner    *bufio.Scanner
-
-	SelectionModel SelectionModel
-
-	// Temporary data for multi-step workflow
-	SelectedMangaURL string
-	SelectedScanPath string
+	// Chapter range selection.
+	RangeInput  textinput.Model
+	AllCheckbox Checkbox
 
 	DiscoveredEntries   int
 	DiscoveredEntryList []sourcetypes.Entry
 	AvailableRanges     string
 	SelectedRange       app.RangeSelection
-}
 
-func getDefaultScanDir() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return ""
-	}
+	// Selection screens.
+	ProviderSelectionModel ProviderSelectionModel
+	SelectionModel         SelectionModel
 
-	return filepath.Join(home, "Documents")
-}
+	// Current workflow.
+	SelectedMangaURL string
+	SelectedScanPath string
+	IsDownloading    bool
 
-func InitialModel() Model {
-	manga := textinput.New()
-	manga.Placeholder = "e.g. one piece"
-	manga.Focus()
-	manga.Prompt = "> "
-	manga.CharLimit = 100
-	manga.Width = 60
+	// Terminal layout and navigation.
+	Cursor int
+	Width  int
+	Height int
 
-	rangeInput := textinput.New()
-	rangeInput.Placeholder = "e.g. 7, 1-30, 30- (30 to the end), -5 (last 5)"
-	rangeInput.Prompt = "> "
-	rangeInput.Width = 85
+	// Download logs.
+	Logs []string
 
-	scanDir := textinput.New()
-	scanDir.Placeholder = "ex: C:\\Users\\<username>\\Documents\\scans\\jjk"
-	scanDir.Prompt = "> "
-	scanDir.SetValue(getDefaultScanDir())
-	scanDir.Width = 70
-
-	domain := textinput.New()
-	domain.Placeholder = "Optional custom base URL"
-	domain.Prompt = "> "
-	domain.Width = 60
-
-	return Model{
-		State:         StateForm,
-		Title:         asciiArt,
-		MangaInput:    manga,
-		AllCheckbox:   Checkbox{Label: "Download all chapters.", Checked: false},
-		RangeInput:    rangeInput,
-		ScanDirInput:  scanDir,
-		DomainInput:   domain,
-		EbookCheckbox: Checkbox{Label: "Ebook-friendly mode (Chapter XXX folders for KCC, no PDF).", Checked: false},
-		KeepCheckbox:  Checkbox{Label: "Keep images after conversion (not recommended).", Checked: false},
-		Cursor:        0,
-		Width:         0,
-		Height:        0,
-		DownloadReady: false,
-		IsDownloading: false,
-		Logs:          []string{},
-	}
+	pipeReader *io.PipeReader
+	scanner    *bufio.Scanner
 }
 
 func (m Model) Init() tea.Cmd {
