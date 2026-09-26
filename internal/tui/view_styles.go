@@ -17,4 +17,10 @@ var (
 			Padding(1).
 			Width(70).
 			Height(20)
+
+	highlightStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("226"))
+
+	errorStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("9"))
 )

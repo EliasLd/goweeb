@@ -1,26 +1,18 @@
 package tui
 
 import (
-	"bufio"
-	"fmt"
-	"strings"
-
-	"github.com/EliasLd/goweeb/internal/app"
-	"github.com/EliasLd/goweeb/internal/source"
-
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
-var highlightStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("226"))
-var errorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("9"))
-
+// Update routes Bubble Tea messages to the appropriate handler.
 func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
+	// Selection screens manage their own keyboard events.
 	if m.State == StateProviderSelection {
 		return handleProviderSelectionUpdate(msg, m)
 	}
 
-	if m.State == StateMangaSelection || m.State == StateScanSelection {
+	if m.State == StateMangaSelection ||
+		m.State == StateScanSelection {
 		return handleSelectionUpdate(msg, m)
 	}
 
@@ -31,481 +23,35 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		return m, nil
 
 	case catalogSearchResultMsg:
-		if msg.err != nil {
-			m.Logs = append(m.Logs, errorStyle.Render(fmt.Sprintf("[E] Catalog search failed: %v", msg.err)))
-			return m, nil
-		}
-		if len(msg.results) == 0 {
-			m.Logs = append(m.Logs, errorStyle.Render("[E] No manga found"))
-			return m, nil
-		}
-
-		if len(msg.results) == 1 {
-			m.SelectedMangaURL = msg.results[0].URL
-
-			m.Logs = append(
-				m.Logs,
-				fmt.Sprintf(
-					"Manga found: %s. Fetching scan versions...",
-					msg.results[0].Title,
-				),
-			)
-
-			return m, fetchScanPaths(
-				m.SelectedProvider,
-				m.SelectedMangaURL,
-				strings.TrimSpace(m.DomainInput.Value()),
-			)
-		}
-
-		items := make([]SelectionItem, len(msg.results))
-		for i, r := range msg.results {
-			items[i] = SelectionItem{Label: r.Title, Value: r.URL}
-		}
-
-		m.SelectionModel = NewSelectionModel("Select a manga", items)
-		m.SelectionModel.Width = m.Width
-		m.SelectionModel.Height = m.Height
-		m.State = StateMangaSelection
-		return m, nil
+		return handleCatalogSearchResult(msg, m)
 
 	case scanPathResultMsg:
-		if msg.err != nil {
-			m.Logs = append(m.Logs, errorStyle.Render(fmt.Sprintf("[E] Failed to get scan paths: %v", msg.err)))
-			return m, nil
-		}
-		if len(msg.paths) == 0 {
-			m.Logs = append(m.Logs, errorStyle.Render("[E] No scan versions found"))
-			return m, nil
-		}
-
-		if len(msg.paths) == 1 {
-			m.SelectedScanPath = msg.paths[0].Value
-
-			m.Logs = append(
-				m.Logs,
-				"Scan version selected. Fetching chapters...",
-			)
-
-			return m, fetchEntries(
-				m.SelectedProvider,
-				m.SelectedMangaURL,
-				m.SelectedScanPath,
-				strings.TrimSpace(m.DomainInput.Value()),
-			)
-		}
-
-		items := make([]SelectionItem, len(msg.paths))
-		for i, p := range msg.paths {
-			items[i] = SelectionItem{Label: p.Label, Value: p.Value}
-		}
-
-		m.SelectionModel = NewSelectionModel("Select a version", items)
-		m.SelectionModel.Width = m.Width
-		m.SelectionModel.Height = m.Height
-		m.State = StateScanSelection
-		return m, nil
+		return handleScanPathResult(msg, m)
 
 	case entriesResultMsg:
-		if msg.err != nil {
-			m.Logs = append(
-				m.Logs,
-				errorStyle.Render(
-					fmt.Sprintf(
-						"[E] Failed to fetch chapters: %v",
-						msg.err,
-					),
-				),
-			)
-
-			return m, nil
-		}
-
-		if len(msg.entries) == 0 {
-			m.Logs = append(
-				m.Logs,
-				errorStyle.Render("[E] No chapters found"),
-			)
-
-			return m, nil
-		}
-
-		m.DiscoveredEntries = len(msg.entries)
-		m.DiscoveredEntryList = msg.entries
-		m.AvailableRanges = app.FormatAvailableRanges(
-			msg.entries,
-		)
-
-		m.SelectedRange = app.RangeSelection{}
-
-		m.State = StateRangeSelection
-		m.Cursor = 0
-		m.AllCheckbox.Checked = false
-		m.RangeInput.SetValue("")
-		m.RangeInput.Focus()
-
-		return m, nil
+		return handleEntriesResult(msg, m)
 
 	case tea.KeyMsg:
-		if m.IsDownloading && msg.String() != "ctrl+c" && msg.String() != "esc" {
+		// Keep the current behavior while downloading:
+		// only the quit shortcuts are accepted.
+		if m.IsDownloading &&
+			msg.String() != "ctrl+c" &&
+			msg.String() != "esc" {
 			return m, nil
 		}
 
-		// Dedicated keyboard handling for range selection screen
 		if m.State == StateRangeSelection {
-			switch msg.String() {
-			case "ctrl+c", "esc":
-				return m, tea.Quit
-			case "up":
-				if m.Cursor > 0 {
-					m.Cursor--
-				}
-				m = updateRangeFocus(m)
-				return m, nil
-			case "down", "tab":
-				if m.Cursor < 2 {
-					m.Cursor++
-				}
-				m = updateRangeFocus(m)
-				return m, nil
-			case " ":
-				if m.Cursor == 1 {
-					m.AllCheckbox.Toggle()
-					m = updateRangeFocus(m)
-				}
-				return m, nil
-			case "enter":
-				switch m.Cursor {
-				case 1:
-					m.AllCheckbox.Toggle()
-					m = updateRangeFocus(m)
-					return m, nil
-				case 2:
-					var selection app.RangeSelection
-
-					if m.AllCheckbox.Checked {
-						selection.All = true
-					} else {
-						input := strings.TrimSpace(
-							m.RangeInput.Value(),
-						)
-
-						if input == "" {
-							m.Logs = append(
-								m.Logs,
-								errorStyle.Render(
-									"[E] Please enter a range or enable 'Download all chapters'.",
-								),
-							)
-
-							return m, nil
-						}
-
-						parsed, err := app.ParseRangeExpression(
-							input,
-						)
-						if err != nil {
-							m.Logs = append(
-								m.Logs,
-								errorStyle.Render(
-									fmt.Sprintf(
-										"[E] Invalid range: %v",
-										err,
-									),
-								),
-							)
-
-							return m, nil
-						}
-
-						selection = parsed
-					}
-
-					matched := app.FilterEntriesBySelection(
-						m.DiscoveredEntryList,
-						selection,
-					)
-
-					if len(matched) == 0 {
-						m.Logs = append(
-							m.Logs,
-							errorStyle.Render(
-								"[E] No available chapters match this selection.",
-							),
-						)
-
-						return m, nil
-					}
-
-					m.SelectedRange = selection
-
-					m.Logs = append(
-						m.Logs,
-						fmt.Sprintf(
-							"Selected %d chapter(s): %s",
-							len(matched),
-							app.FormatAvailableRanges(matched),
-						),
-					)
-
-					m.IsDownloading = true
-					m.State = StateDownloading
-
-					m.Logs = append(
-						m.Logs,
-						"Starting download...",
-					)
-
-					return m, startDownload(m)
-				}
-			}
-
-			if m.Cursor == 0 && !m.AllCheckbox.Checked {
-				var cmd tea.Cmd
-				m.RangeInput, cmd = m.RangeInput.Update(msg)
-				m = updateDownloadReady(m)
-				return m, cmd
-			}
-
-			return m, nil
+			return handleRangeUpdate(msg, m)
 		}
 
-		switch msg.String() {
-		case "ctrl+c", "esc":
-			return m, tea.Quit
-
-		case "up":
-			if m.Cursor > 0 {
-				m.Cursor--
-			}
-			m = updateFocus(m)
-			return m, nil
-
-		case "down", "tab":
-			if m.Cursor < 5 {
-				m.Cursor++
-			}
-			m = updateFocus(m)
-			return m, nil
-
-		case " ":
-			if m.Cursor == 0 {
-				var cmd tea.Cmd
-				m.MangaInput, cmd = m.MangaInput.Update(msg)
-				return m, cmd
-			}
-
-			switch m.Cursor {
-			case 2:
-				m = openProviderSelection(m)
-				return m, nil
-
-			case 3:
-				m.EbookCheckbox.Toggle()
-
-			case 4:
-				m.KeepCheckbox.Toggle()
-			}
-
-			return m, nil
-
-		case "enter":
-			switch m.Cursor {
-			case 2:
-				m = openProviderSelection(m)
-				return m, nil
-
-			case 3:
-				m.EbookCheckbox.Toggle()
-
-			case 4:
-				m.KeepCheckbox.Toggle()
-
-			case 5:
-				if m.DownloadReady {
-					m.Logs = append(
-						m.Logs,
-						fmt.Sprintf(
-							"Searching for: %s...",
-							m.MangaInput.Value(),
-						),
-					)
-
-					return m, searchCatalog(
-						m.SelectedProvider,
-						m.MangaInput.Value(),
-						m.DomainInput.Value(),
-					)
-				}
-			}
-
-			return m, nil
-		}
-
-		switch m.Cursor {
-		case 0:
-			var cmd tea.Cmd
-			m.MangaInput, cmd = m.MangaInput.Update(msg)
-			m = updateDownloadReady(m)
-			return m, cmd
-
-		case 1:
-			var cmd tea.Cmd
-			m.ScanDirInput, cmd = m.ScanDirInput.Update(msg)
-			m = updateDownloadReady(m)
-			return m, cmd
-		}
+		return handleFormUpdate(msg, m)
 
 	case setupLogPipeMsg:
-		m.pipeReader = msg.reader
-		m.scanner = bufio.NewScanner(m.pipeReader)
-		buf := make([]byte, 64*1024)
-		m.scanner.Buffer(buf, 1024*1024)
-		return m, readOneLogLine(m)
+		return handleSetupLogPipe(msg, m)
 
 	case logMsg:
-		logLine := string(msg)
-
-		switch {
-		case logLine == "Finished downloading":
-			styled := highlightStyle.Render("Download complete!")
-			m.Logs = append(m.Logs, styled)
-			m.IsDownloading = false
-			m.State = StateForm
-			m.Cursor = 0
-			m = updateFocus(m)
-		case strings.HasPrefix(logLine, "[DEBUG]"):
-		case strings.Contains(logLine, "[ERROR]"):
-			m.Logs = append(m.Logs, errorStyle.Render(logLine))
-		case strings.Contains(logLine, "[!]"):
-			m.Logs = append(m.Logs, logLine)
-		default:
-			m.Logs = append(m.Logs, logLine)
-		}
-
-		if m.IsDownloading {
-			return m, readOneLogLine(m)
-		}
-		return m, nil
+		return handleLogMsg(msg, m)
 	}
 
-	// Main form readiness (manga + destination + provider)
-	m = updateDownloadReady(m)
-	return m, nil
-}
-
-func handleProviderSelectionUpdate(
-	msg tea.Msg,
-	m Model,
-) (Model, tea.Cmd) {
-	var cmd tea.Cmd
-
-	providerModel, cmd := m.ProviderSelectionModel.Update(msg)
-	m.ProviderSelectionModel = providerModel.(ProviderSelectionModel)
-
-	if m.ProviderSelectionModel.Confirmed {
-		newProvider := m.ProviderSelectionModel.SelectedID
-		newProviderLabel := m.ProviderSelectionModel.SelectedLabel
-		newDomain := strings.TrimSpace(
-			m.ProviderSelectionModel.DomainInput.Value(),
-		)
-
-		oldProvider := m.SelectedProvider
-		oldDomain := strings.TrimSpace(m.DomainInput.Value())
-
-		m.SelectedProvider = newProvider
-		m.SelectedProviderLabel = newProviderLabel
-		m.DomainInput.SetValue(newDomain)
-
-		// Recompute main form readiness immediately.
-		m = updateDownloadReady(m)
-
-		// Changing provider configuration invalidates anything
-		// previously selected from another provider.
-		if oldProvider != newProvider || oldDomain != newDomain {
-			m.SelectedMangaURL = ""
-			m.SelectedScanPath = ""
-
-			m.DiscoveredEntries = 0
-			m.DiscoveredEntryList = nil
-			m.AvailableRanges = ""
-			m.SelectedRange = app.RangeSelection{}
-		}
-
-		m.State = StateForm
-		m.Cursor = 2
-		m = updateFocus(m)
-
-		m.Logs = append(
-			m.Logs,
-			fmt.Sprintf(
-				"Provider selected: %s",
-				newProviderLabel,
-			),
-		)
-
-		return m, nil
-	}
-
-	if m.ProviderSelectionModel.Cancelled {
-		m.State = StateForm
-		m.Cursor = 2
-		m = updateFocus(m)
-
-		return m, nil
-	}
-
-	return m, cmd
-}
-
-func openProviderSelection(m Model) Model {
-	m.ProviderSelectionModel = NewProviderSelectionModel(
-		source.AvailableProviders(),
-		m.SelectedProvider,
-		strings.TrimSpace(m.DomainInput.Value()),
-	)
-
-	m.ProviderSelectionModel.Width = m.Width
-	m.ProviderSelectionModel.Height = m.Height
-
-	m.State = StateProviderSelection
-
-	return m
-}
-
-func handleSelectionUpdate(msg tea.Msg, m Model) (Model, tea.Cmd) {
-	var cmd tea.Cmd
-	selectionModel, cmd := m.SelectionModel.Update(msg)
-	m.SelectionModel = selectionModel.(SelectionModel)
-
-	if m.SelectionModel.Selected != "" {
-		if m.State == StateMangaSelection {
-			m.SelectedMangaURL = m.SelectionModel.Selected
-			m.State = StateForm
-			m.Logs = append(m.Logs, "Manga selected. Fetching scan versions...")
-			return m, fetchScanPaths(
-				m.SelectedProvider,
-				m.SelectedMangaURL,
-				strings.TrimSpace(m.DomainInput.Value()),
-			)
-		} else if m.State == StateScanSelection {
-			m.SelectedScanPath = m.SelectionModel.Selected
-			m.State = StateForm
-			m.Logs = append(m.Logs, "Scan version selected. Fetching chapters...")
-			return m, fetchEntries(
-				m.SelectedProvider,
-				m.SelectedMangaURL,
-				m.SelectedScanPath,
-				strings.TrimSpace(m.DomainInput.Value()),
-			)
-		}
-	}
-
-	if m.SelectionModel.Cancelled {
-		m.State = StateForm
-		m.Logs = append(m.Logs, "Selection cancelled")
-		return m, nil
-	}
-
-	return m, cmd
+	return updateDownloadReady(m), nil
 }
