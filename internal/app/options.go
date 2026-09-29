@@ -362,7 +362,7 @@ func ParseFlags() Options {
 		Slug:          slug,
 		Selection:     selection,
 		Source:        sourceName,
-		ScanDir:       scanDir,
+		ScanDir:       ResolveOutputDir(scanDir),
 		Cleanup:       !keepImages,
 		CustomDomain:  customDomain,
 		Debug:         debug,
