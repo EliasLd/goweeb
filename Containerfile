@@ -33,9 +33,11 @@ RUN CGO_ENABLED=0 \
 FROM alpine:3.24
 
 RUN apk add --no-cache ca-certificates \
-    && addgroup -S goweeb \
+    && addgroup -S -g 1000 goweeb \
     && adduser \
         -S \
+        -D \
+        -u 1000 \
         -G goweeb \
         -h /home/goweeb \
         goweeb \
@@ -51,6 +53,8 @@ RUN chmod +x /usr/local/bin/goweeb
 
 ENV HOME=/home/goweeb
 ENV TERM=xterm-256color
+ENV GOWEEB_CONTAINER=1
+ENV GOWEEB_OUTPUT_DIR=/home/goweeb/Documents
 
 USER goweeb
 WORKDIR /home/goweeb
