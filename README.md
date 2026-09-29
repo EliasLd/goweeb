@@ -1,109 +1,182 @@
-
 **English** | [Français](README_FR.md)
 
 # goweeb
 
+[![Latest Release](https://img.shields.io/github/v/release/EliasLd/goweeb)](https://github.com/EliasLd/goweeb/releases/latest)
+[![CI](https://github.com/EliasLd/goweeb/actions/workflows/ci.yml/badge.svg)](https://github.com/EliasLd/goweeb/actions/workflows/ci.yml)
+[![Container](https://github.com/EliasLd/goweeb/actions/workflows/container.yml/badge.svg)](https://github.com/EliasLd/goweeb/actions/workflows/container.yml)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/EliasLd/goweeb)](https://github.com/EliasLd/goweeb)
+
+**Download manga directly from your terminal.**
+
+goweeb is a cross-platform manga downloader available as both an interactive **Terminal UI (TUI)** and a flexible **Command-Line Interface (CLI)**.
+
 ![goweeb TUI demo](./assets/demo.gif)
 
-**goweeb** is a fast manga downloader that can download scans from multiple websites and languages.
+## Features
 
-It's available both as an interactive terminal interface (TUI) and as a command-line tool (CLI).
+- Interactive TUI and script-friendly CLI.
+- Multiple manga providers and languages.
+- Flexible chapter selection such as `1-10`, `10-`, `-5`, or `1-10,20,30-40`.
+- Integer and decimal chapter support.
+- Automatic handling of unavailable chapters inside requested ranges.
+- PDF output or ebook-friendly image folders.
+- Automatic HTTP retries for unstable connections and temporary server failures.
+- Custom provider domains and compatible mirrors.
+- Native binaries for Linux, macOS and Windows.
+- OCI container image for `linux/amd64` and `linux/arm64`.
 
-Currently, it can download manga from the following websites:
+## Quick start
 
-| Provider   | Website                   |
-| ---------- | ------------------------- |
-| Weebcentral (English) | https://weebcentral.com |
-| Mangadex (Multilingual) | https://mangadex.org |
-| MangaVyvy (English) | https://mangavyvy.com |
-| MangaFreak (English)| https://ww3.mangafreak.me |
-| Anime-Sama (French only) | https://anime-sama.pw |
+### Native
+
+Download the latest release for your operating system:
+
+[**Download the latest version**](https://github.com/EliasLd/goweeb/releases/latest)
+
+Then launch the interactive TUI:
+
+```bash
+./goweeb
+```
+
+Or use the CLI:
+
+```bash
+goweeb --source weebcentral --range 1-10 "blue lock"
+```
+
+### Container
+
+The official image contains both the **TUI** and **CLI**:
+
+```text
+ghcr.io/eliasld/goweeb:latest
+```
+
+Pull it with Podman:
+
+```bash
+podman pull ghcr.io/eliasld/goweeb:latest
+```
+
+Create a local download directory:
+
+```bash
+mkdir -p downloads
+```
+
+Launch the TUI:
+
+```bash
+podman run --rm -it \
+  --userns=keep-id:uid=1000,gid=1000 \
+  -v "$(pwd)/downloads:/home/goweeb/Documents:Z" \
+  ghcr.io/eliasld/goweeb:latest
+```
+
+Or use the CLI:
+
+```bash
+podman run --rm -it \
+  --userns=keep-id:uid=1000,gid=1000 \
+  -v "$(pwd)/downloads:/home/goweeb/Documents:Z" \
+  ghcr.io/eliasld/goweeb:latest \
+  cli --source weebcentral --range 1-10 "blue lock"
+```
+
+> [!IMPORTANT]
+> The official container writes downloads to `/home/goweeb/Documents`.
+> Mount this directory to persist downloaded files on the host.
+
+The image is OCI-compatible and can also be used with Docker. Depending on your host platform and container runtime, bind-mount ownership options may differ.
+
+## Supported providers
+
+| Provider | Language | Website |
+| --- | --- | --- |
+| WeebCentral | English | https://weebcentral.com |
+| MangaDex | Multilingual | https://mangadex.org |
+| Mangavyvy | English | https://mangavyvy.com |
+| MangaFreak | English | https://ww3.mangafreak.me |
+| Anime-Sama | French | https://anime-sama.pw |
 
 > [!NOTE]
-> For **Mangadex**, goweeb currently only handles manga directly hosted at *mangadex.org*.
-> External links are not handled for the moment, as it requires a dedicated scraping logic (I'm working on that).
+> MangaDex entries hosted externally are currently ignored. goweeb only downloads chapters directly hosted by MangaDex.
 
 > [!TIP]
-> Support for more websites will be added over time.
+> Support for additional providers can be added without changing the main download workflow.
 
 ## Installation
 
-Installation is simple. Go to the **Releases** section of the GitHub repository and download the [latest version](https://github.com/EliasLd/goweeb/releases/latest) of the tool for your operating system.
-
 ### Windows
 
-1. Download the Windows archive.
-2. Extract it to a folder of your choice.
-3. Open a terminal (PowerShell or CMD) in that folder and run the tool.
+1. Download the Windows archive from the [latest release](https://github.com/EliasLd/goweeb/releases/latest).
+2. Extract it to a directory of your choice.
+3. Open PowerShell or CMD in that directory.
+4. Run the TUI or CLI executable.
 
 ### Linux / macOS
 
-1. Download the archive corresponding to your operating system (`darwin` for macOS).
-2. Make the binary executable:
+Download the archive matching your operating system (`darwin` for macOS), then make the binary executable:
 
 ```bash
 chmod +x goweeb
 ```
 
-3. Optionally, move it to `/usr/local/bin` to use it from anywhere:
+Optionally move it somewhere available in your `PATH`:
 
 ```bash
 sudo mv goweeb /usr/local/bin/
 ```
 
-## Usage
+### Build from source
 
-goweeb is available in two versions.
-
-### Graphical Interface (TUI) - Recommended for beginners
-
-Simply launch the TUI executable:
+Clone the repository:
 
 ```bash
-# Linux / macOS
+git clone https://github.com/EliasLd/goweeb.git
+cd goweeb
+```
+
+Build the TUI:
+
+```bash
+go build -o goweeb-tui ./cmd/goweeb-tui
+```
+
+Build the CLI:
+
+```bash
+go build -o goweeb-cli ./cmd/goweeb-cli
+```
+
+## Terminal UI
+
+The TUI is the easiest way to use goweeb interactively.
+
+Launch it and follow the interface:
+
+```bash
 ./goweeb
-
-# Windows
-goweeb.exe
 ```
 
-Then let the interactive interface guide you through the process.
+The workflow is straightforward:
 
-* Enter the manga title you are looking for.
-* Select the provider you want to use.
-* Optionally configure a custom domain for the selected provider.
-* Configure your download options.
-* Choose the manga from the search results if multiple results are found.
-* Select a scan version when multiple versions are available.
-* Choose which chapters you want to download.
-* Start the download and follow its progress in real time.
+1. Enter a manga title.
+2. Select a provider.
+3. Optionally configure a custom provider domain.
+4. Configure the output options.
+5. Select the correct manga when multiple results are found.
+6. Select a scan version or language when applicable.
+7. Choose the chapters to download.
+8. Follow the download progress directly from the TUI.
 
-### Command Line (CLI) - For advanced users
+When only one manga or scan version is available, goweeb selects it automatically.
 
-### Manga name format
+## Command-Line Interface
 
-The manga name can be entered **with or without quotes**.
-
-Using quotes is still recommended, especially when the title contains spaces, as it makes the command easier to read and avoids potential shell parsing issues.
-
-You can use any search term supported by the selected provider, such as an English, French or Japanese title.
-
-Examples:
-
-```text
-"one piece"
-one piece
-
-"jujutsu kaisen"
-jujutsu kaisen
-
-"chainsaw man"
-"attack on titan"
-```
-
-When using an unquoted manga name, place it after all CLI options.
-
-If multiple results match your search, goweeb will let you choose the correct manga from an interactive list.
+The CLI is useful for scripting, automation, or quickly downloading known chapters.
 
 ### Basic syntax
 
@@ -111,145 +184,116 @@ If multiple results match your search, goweeb will let you choose the correct ma
 goweeb --source <provider> [options] "manga-name"
 ```
 
-The `--source` option is required when using the CLI.
+`--source` is required in CLI mode.
 
-### Available options
+Manga titles may be quoted or unquoted. Quotes are recommended for titles containing spaces.
 
-| Option                | Shortcut | Description                                                                                                                                                                             |
-| --------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--source <provider>` | none     | Select the website provider used to search for and download the manga. This option is required in CLI mode.                                                                             |
-| `--all`               | `-a`     | Download all available chapters.                                                                                                                                                        |
-| `--range <selection>` | `-r`     | Download specific chapters, ranges, or multiple ranges without using the interactive chapter selection prompt.                                                                          |
-| `--scan-dir <folder>` | `-d`     | Folder where downloaded files will be saved. Default: `pdf`.                                                                                                                            |
-| `--ebook-friendly`    | none     | Save chapters as images inside separate folders such as `Chapter 001/`, `Chapter 002/`, etc. Compatible with tools such as [Kindle Comic Converter](https://github.com/ciromattia/kcc). |
-| `--domain <url>`      | `-u`     | Override the selected provider's default domain.                                                                                                                                        |
-| `--debug`             | none     | Enable verbose debug logging. CLI only.                                                                                                                                                 |
-| `--keep-images`       | `-k`     | Keep downloaded images after PDF creation.                                                                                                                                              |
+When using an unquoted title, place it after all CLI options.
 
-Supported `--range` formats:
+### Options
+
+| Option | Shortcut | Description |
+| --- | --- | --- |
+| `--source <provider>` | — | Provider used to search for and download the manga. Required in CLI mode. |
+| `--all` | `-a` | Download all available chapters. |
+| `--range <selection>` | `-r` | Download specific chapters, ranges, or multiple ranges. |
+| `--scan-dir <folder>` | `-d` | Output directory. Default: `scan` in the native CLI. |
+| `--ebook-friendly` | — | Store chapter images in `Chapter XXX/` folders instead of generating PDFs. |
+| `--domain <url>` | `-u` | Override the selected provider's default domain. |
+| `--debug` | — | Enable verbose debug logging. |
+| `--keep-images` | `-k` | Keep downloaded images after PDF creation. |
+
+Inside the official container, the output directory is fixed to:
+
+```text
+/home/goweeb/Documents
+```
+
+### Chapter ranges
+
+Supported formats:
 
 ```text
 10             # Chapter 10 only
 1-10           # Chapters 1 through 10
 10-            # Chapter 10 through the latest available chapter
 -10            # Last 10 available chapters
-1-10,20-30     # Multiple chapter ranges
-1,5,10         # Multiple individual chapters
+1-10,20-30     # Multiple ranges
+1,5,10         # Individual chapters
 1-10,25,40-50  # Ranges and individual chapters combined
 ```
 
-Requested ranges are matched against the chapters actually available from the selected provider. Missing chapters inside a range are skipped automatically.
+Decimal chapters are supported as well:
 
-For example, if only chapters `1-50` and `70-100` are available, requesting `1-100` will download the available chapters from both ranges without treating chapters `51-69` as an error.
+```text
+6.5
+1-6.5
+6,6.5,7
+```
 
-If neither `--all` nor `--range` is provided, goweeb will ask you interactively which chapters you want to download.
+Selections are matched against chapters actually available from the selected provider.
 
-## Usage examples
+For example, if only chapters `1-50` and `70-100` exist, requesting:
 
-### Download all chapters of a manga
+```text
+1-100
+```
 
-Using MangaDex:
+downloads the available chapters while automatically skipping `51-69`.
+
+If neither `--all` nor `--range` is provided, goweeb asks you interactively which chapters to download.
+
+## Examples
+
+### Download all chapters
 
 ```bash
 goweeb --source mangadex --all "one piece"
 ```
 
-Using WeebCentral:
+### Download a chapter range
 
 ```bash
-goweeb --source weebcentral --all "jujutsu kaisen"
+goweeb --source weebcentral --range 100-120 "jujutsu kaisen"
 ```
-
-### Download a specific chapter
-
-```bash
-goweeb --source weebcentral --range 100 "jujutsu kaisen"
-```
-
-### Download a range of chapters
-
-```bash
-goweeb --source mangavyvy --range 100-120 "jujutsu kaisen"
-```
-
-You can also use the shorthand:
-
-```bash
-goweeb --source mangavyvy -r 100-120 "jujutsu kaisen"
-```
-
-If you do not specify `--range`, goweeb will ask you which chapters you want after the manga has been selected.
 
 ### Download the latest chapters
 
-Download the last 10 chapters:
+Download the last 10 available chapters:
 
 ```bash
 goweeb --source animesama --range -10 "one piece"
 ```
 
-Download everything starting from chapter 100:
+### Combine options
 
 ```bash
-goweeb --source weebcentral --range 100- "jujutsu kaisen"
+goweeb \
+  --source weebcentral \
+  --range 1-50 \
+  --scan-dir scans \
+  --ebook-friendly \
+  "one piece"
 ```
 
-### Specify a destination folder
+### Use a custom provider domain
 
 ```bash
-# Files will be saved in the "my-mangas" folder
-goweeb --source animesama -d my-mangas --all "naruto"
-```
-
-Or with a full path:
-
-```bash
-goweeb --source mangafreak --scan-dir ~/Documents/Mangas "one piece"
-```
-
-On Windows:
-
-```powershell
-goweeb --source mangafreak -d "C:\Users\<your-username>\Documents\Mangas" "one piece"
-```
-
-### Specify a custom provider domain
-
-The `--domain` option can be useful when a provider changes its domain or when you want to use a compatible mirror.
-
-```bash
-goweeb --source animesama \
+goweeb \
+  --source animesama \
   --domain https://example.com \
   --all \
   "one piece"
 ```
 
-Or using the shorthand:
+Custom domains are useful when a provider changes domain while remaining compatible with the existing scraper.
 
-```bash
-goweeb --source animesama \
-  -u https://example.com \
-  --all \
-  "one piece"
-```
-
-### Download using an e-reader-friendly structure
+## Ebook-friendly mode
 
 > [!WARNING]
 > Ebook-friendly mode does not generate EPUB files.
->
-> It downloads manga pages into a folder structure that can then be processed by third-party software designed for e-readers.
 
-For example, this mode works well with [Kindle Comic Converter](https://github.com/ciromattia/kcc), which can convert the downloaded chapters for Kindle, Kobo and other e-readers.
-
-```bash
-goweeb --source weebcentral \
-  --all \
-  --ebook-friendly \
-  "one piece"
-```
-
-The resulting structure looks similar to:
+Instead of creating one PDF per chapter, goweeb saves manga pages into separate chapter directories:
 
 ```text
 One Piece/
@@ -263,48 +307,60 @@ One Piece/
 └── ...
 ```
 
-### Combining options
+Example:
 
 ```bash
 goweeb \
   --source weebcentral \
-  --range 1-50 \
-  --scan-dir scans \
+  --all \
   --ebook-friendly \
   "one piece"
 ```
 
-Example on Windows:
-
-```powershell
-goweeb \
-  --source weebcentral \
-  -d "C:\Users\<your-username>\scans" \
-  -r 1-50 \
-  "one piece"
-```
-
-## Tips
-
-> [!TIP]
->
-> * Search behavior depends on the selected provider.
-> * Some providers may expose several versions of the same manga, such as color and black-and-white editions.
-> * When only one manga or scan version is available, goweeb automatically selects it.
-> * Use `--range` when you already know exactly which chapters you want to download.
-> * If you are unsure which chapters are available, omit `--range` and use the interactive selection instead.
-> * Use `--debug` when developing or troubleshooting a provider.
-> * If a supported provider changes its domain but remains compatible with the existing scraper, you can override the default URL using the `--domain` / `-u` option or the custom domain field in the TUI.
-
+This structure can then be processed by tools such as [Kindle Comic Converter](https://github.com/ciromattia/kcc) for Kindle, Kobo and other e-readers.
 
 ## Contributing
 
 Contributions are very welcome.
 
-One of the main goals of goweeb’s architecture is to make it relatively easy to add support for new manga websites without having to modify the entire application.
+goweeb's provider architecture is designed to make adding support for new manga websites relatively isolated from the rest of the application.
 
-**See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines and instructions on how to add a new provider.**
+Contributions can include:
 
-## Thanks
+- New providers.
+- Fixes for existing providers.
+- TUI or CLI improvements.
+- Tests and reliability improvements.
+- Documentation.
+- Bug reports and feature suggestions.
 
-If you like this tool, it would be very nice if you could leave a star ⭐. Thank you!
+See [**CONTRIBUTING.md**](CONTRIBUTING.md) for development guidelines and instructions for adding a provider.
+
+## Support the project
+
+If goweeb is useful to you, consider leaving a ⭐ on the repository.
+
+It helps the project become easier to discover and is always appreciated.
+
+<a href="https://www.star-history.com/?repos=EliasLd%2Fgoweeb&type=date&legend=top-left">
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://api.star-history.com/chart?repos=EliasLd/goweeb&type=date&theme=dark&legend=top-left"
+    />
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="https://api.star-history.com/chart?repos=EliasLd/goweeb&type=date&legend=top-left"
+    />
+    <img
+      alt="Star History Chart"
+      src="https://api.star-history.com/chart?repos=EliasLd/goweeb&type=date&legend=top-left"
+    />
+  </picture>
+</a>
+
+## ⚠️ Disclaimer
+
+goweeb is intended for personal use and educational purposes.
+
+Whenever possible, please support manga authors and publishers by purchasing official releases or using legal distribution platforms.

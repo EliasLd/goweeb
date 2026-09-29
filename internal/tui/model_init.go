@@ -1,6 +1,9 @@
 package tui
 
-import "github.com/charmbracelet/bubbles/textinput"
+import (
+	"github.com/EliasLd/goweeb/internal/app"
+	"github.com/charmbracelet/bubbles/textinput"
+)
 
 // InitialModel creates the initial TUI state.
 func InitialModel() Model {
@@ -19,7 +22,7 @@ func InitialModel() Model {
 	scanDir := textinput.New()
 	scanDir.Placeholder = "ex: C:\\Users\\<username>\\Documents\\scans\\jjk"
 	scanDir.Prompt = "> "
-	scanDir.SetValue(getDefaultScanDir())
+	scanDir.SetValue(app.DefaultTUIScanDir())
 	scanDir.Width = 70
 
 	domain := textinput.New()

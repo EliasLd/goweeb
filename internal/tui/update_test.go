@@ -143,3 +143,51 @@ func TestDownloadCompletionReturnsToForm(t *testing.T) {
 		t.Error("completion message is missing")
 	}
 }
+
+func TestFormNavigationSkipsLockedOutputDir(t *testing.T) {
+	t.Setenv(
+		"GOWEEB_OUTPUT_DIR",
+		"/home/goweeb/Documents",
+	)
+
+	m := InitialModel()
+	m.Cursor = 0
+
+	next, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeyDown,
+		},
+		m,
+	)
+
+	if next.Cursor != 2 {
+		t.Errorf(
+			"cursor = %d, want 2 when output directory is locked",
+			next.Cursor,
+		)
+	}
+}
+
+func TestFormNavigationSkipsLockedOutputDirGoingUp(t *testing.T) {
+	t.Setenv(
+		"GOWEEB_OUTPUT_DIR",
+		"/home/goweeb/Documents",
+	)
+
+	m := InitialModel()
+	m.Cursor = 2
+
+	next, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeyUp,
+		},
+		m,
+	)
+
+	if next.Cursor != 0 {
+		t.Errorf(
+			"cursor = %d, want 0 when output directory is locked",
+			next.Cursor,
+		)
+	}
+}

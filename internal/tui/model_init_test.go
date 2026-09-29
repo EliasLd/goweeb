@@ -1,6 +1,9 @@
 package tui
 
-import "testing"
+import (
+	"github.com/EliasLd/goweeb/internal/app"
+	"testing"
+)
 
 func TestInitialModel(t *testing.T) {
 	m := InitialModel()
@@ -38,11 +41,11 @@ func TestInitialModel(t *testing.T) {
 		)
 	}
 
-	if got := m.ScanDirInput.Value(); got != getDefaultScanDir() {
+	if got := m.ScanDirInput.Value(); got != app.DefaultTUIScanDir() {
 		t.Errorf(
 			"default scan directory = %q, want %q",
 			got,
-			getDefaultScanDir(),
+			app.DefaultTUIScanDir(),
 		)
 	}
 

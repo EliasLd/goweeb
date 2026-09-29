@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/EliasLd/goweeb/internal/app"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -28,10 +29,24 @@ func viewForm(m Model) string {
 
 	form.WriteString("\n\n")
 
-	form.WriteString(labelStyle.Render("Destination folder"))
-	form.WriteString("\n\n")
+	if app.OutputDirLocked() {
+		form.WriteString(
+			lipgloss.NewStyle().
+				Faint(true).
+				Render(m.ScanDirInput.Value()),
+		)
 
-	if m.Cursor == 1 {
+		form.WriteString("\n")
+
+		form.WriteString(
+			lipgloss.NewStyle().
+				Faint(true).
+				Italic(true).
+				Render(
+					"Managed by the container volume.",
+				),
+		)
+	} else if m.Cursor == 1 {
 		form.WriteString(m.ScanDirInput.View())
 	} else {
 		form.WriteString(

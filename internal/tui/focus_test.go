@@ -67,3 +67,21 @@ func TestUpdateRangeFocus(t *testing.T) {
 		t.Error("range input should be blurred when all chapters are selected")
 	}
 }
+
+func TestUpdateFocusSkipsLockedOutputDir(t *testing.T) {
+	t.Setenv(
+		"GOWEEB_OUTPUT_DIR",
+		"/home/goweeb/Documents",
+	)
+
+	m := InitialModel()
+	m.Cursor = 1
+
+	m = updateFocus(m)
+
+	if m.ScanDirInput.Focused() {
+		t.Error(
+			"destination input should not be focused when output directory is locked",
+		)
+	}
+}

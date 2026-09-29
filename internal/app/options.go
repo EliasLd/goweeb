@@ -54,6 +54,7 @@ type Options struct {
 }
 
 func configureUsage() {
+	defaultScanDir := DefaultCLIScanDir()
 	flag.Usage = func() {
 		out := flag.CommandLine.Output()
 
@@ -95,7 +96,7 @@ func configureUsage() {
 		fmt.Fprintln(out, "Output:")
 		fmt.Fprintln(out, "  --scan-dir <directory>")
 		fmt.Fprintln(out, "  -d <directory>")
-		fmt.Fprintln(out, "      Output directory (default: scan)")
+		fmt.Fprintln(out, "      Output directory (default: ", defaultScanDir, ")")
 		fmt.Fprintln(out)
 
 		fmt.Fprintln(out, "  --ebook-friendly")
@@ -187,16 +188,19 @@ func ParseFlags() Options {
 	)
 
 	// Output.
+	defaultScanDir := DefaultCLIScanDir()
+
 	flag.StringVar(
 		&scanDir,
 		"scan-dir",
-		"scan",
+		defaultScanDir,
 		"Directory to save generated files",
 	)
+
 	flag.StringVar(
 		&scanDir,
 		"d",
-		"scan",
+		defaultScanDir,
 		"Shorthand for --scan-dir",
 	)
 
@@ -358,7 +362,7 @@ func ParseFlags() Options {
 		Slug:          slug,
 		Selection:     selection,
 		Source:        sourceName,
-		ScanDir:       scanDir,
+		ScanDir:       ResolveOutputDir(scanDir),
 		Cleanup:       !keepImages,
 		CustomDomain:  customDomain,
 		Debug:         debug,
