@@ -1,0 +1,43 @@
+# Git
+.git
+.github
+
+# Editors / IDEs
+.idea
+.vscode
+*.swp
+*.swo
+
+# Local environment
+.env
+.env.*
+
+# Build outputs
+bin
+dist
+build
+out
+
+# Locally built binaries
+goweeb
+goweeb-cli
+goweeb-tui
+
+# Test / coverage artifacts
+coverage.out
+coverage.html
+*.prof
+
+# Downloaded manga / generated files
+scan
+scans
+downloads
+container-downloads
+*.pdf
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
