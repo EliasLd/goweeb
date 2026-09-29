@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 
+	"github.com/EliasLd/goweeb/internal/app"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -18,6 +19,10 @@ func handleFormUpdate(
 	case "up":
 		if m.Cursor > 0 {
 			m.Cursor--
+
+			if app.OutputDirLocked() && m.Cursor == 1 {
+				m.Cursor--
+			}
 		}
 
 		return updateFocus(m), nil
@@ -25,6 +30,10 @@ func handleFormUpdate(
 	case "down", "tab":
 		if m.Cursor < 5 {
 			m.Cursor++
+
+			if app.OutputDirLocked() && m.Cursor == 1 {
+				m.Cursor++
+			}
 		}
 
 		return updateFocus(m), nil
@@ -92,6 +101,10 @@ func handleFormUpdate(
 		return m, cmd
 
 	case 1:
+		if app.OutputDirLocked() {
+			return m, nil
+		}
+
 		var cmd tea.Cmd
 
 		m.ScanDirInput, cmd = m.ScanDirInput.Update(msg)

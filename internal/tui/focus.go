@@ -1,6 +1,10 @@
 package tui
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/EliasLd/goweeb/internal/app"
+)
 
 // Updates the focused input on the main form.
 func updateFocus(m Model) Model {
@@ -14,7 +18,9 @@ func updateFocus(m Model) Model {
 		m.MangaInput.Focus()
 
 	case 1:
-		m.ScanDirInput.Focus()
+		if !app.OutputDirLocked() {
+			m.ScanDirInput.Focus()
+		}
 	}
 
 	return m
