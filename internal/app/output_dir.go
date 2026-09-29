@@ -56,3 +56,10 @@ func ResolveOutputDir(requested string) string {
 
 	return requested
 }
+
+// OutputDirLocked reports whether the output directory is enforced
+// by the environment.
+func OutputDirLocked() bool {
+	_, ok := ForcedOutputDir()
+	return ok
+}
