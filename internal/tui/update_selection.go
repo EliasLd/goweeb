@@ -65,6 +65,7 @@ func handleProviderSelectionUpdate(
 	}
 
 	if m.ProviderSelectionModel.Cancelled {
+		m.ProviderSelectionModel.Cancelled = false
 		m.State = StateForm
 		m.Cursor = 2
 		m = updateFocus(m)
@@ -135,12 +136,15 @@ func handleSelectionUpdate(
 	}
 
 	if m.SelectionModel.Cancelled {
-		m.State = StateForm
+		m.SelectionModel.Cancelled = false
+		m.SelectionModel.Selected = ""
 
 		m.Logs = append(
 			m.Logs,
 			"Selection cancelled",
 		)
+		m.State = StateForm
+		m = updateFocus(m)
 
 		return m, nil
 	}

@@ -11,7 +11,7 @@ func handleOptionalSettingsUpdate(
 	m Model,
 ) (Model, tea.Cmd) {
 	switch msg.String() {
-	case "esc":
+	case "esc", "ctrl+c":
 		m.State = StateForm
 
 		return updateFocus(m), nil

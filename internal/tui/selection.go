@@ -123,11 +123,7 @@ func (m SelectionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "q":
-			m.Cancelled = true
-			return m, tea.Quit
-
-		case "esc":
+		case "esc", "ctrl+c":
 			m.Cancelled = true
 			return m, nil
 
@@ -153,7 +149,7 @@ func (m SelectionModel) View() string {
 		m.Width,
 		m.Height,
 		listView,
-		"↑/↓ navigate • Enter select • / filter • Esc cancel",
+		"↑/↓ navigate • Enter select • / filter • Ctrl+C/Esc cancel",
 		lipgloss.Center,
 		lipgloss.Center,
 	)

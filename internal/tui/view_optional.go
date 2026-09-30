@@ -61,7 +61,7 @@ func viewOptionalSettings(m Model) string {
 		m.Width,
 		m.Height,
 		content,
-		"↑/↓ navigate • Space/Enter select • Esc back",
+		"↑/↓ navigate • Space/Enter select • Ctrl+C/Esc back",
 		lipgloss.Left,
 		lipgloss.Top,
 	)
