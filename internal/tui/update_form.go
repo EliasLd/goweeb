@@ -52,9 +52,6 @@ func handleFormUpdate(
 
 		case 3:
 			m.EbookCheckbox.Toggle()
-
-		case 4:
-			m.KeepCheckbox.Toggle()
 		}
 
 		return m, nil
@@ -68,9 +65,6 @@ func handleFormUpdate(
 			m.EbookCheckbox.Toggle()
 
 		case 4:
-			m.KeepCheckbox.Toggle()
-
-		case 5:
 			if m.DownloadReady {
 				m.Logs = append(
 					m.Logs,

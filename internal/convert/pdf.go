@@ -64,7 +64,7 @@ func WebPToJPG(srcPath, destPath string) error {
 	return nil
 }
 
-func ImagesToPDF(imagesDir, outputPDFPath string, cleanup bool, log *logger.Logger) error {
+func ImagesToPDF(imagesDir, outputPDFPath string, log *logger.Logger) error {
 	files, err := os.ReadDir(imagesDir)
 	if err != nil {
 		log.Error("Failed to read image dir: %v", err)

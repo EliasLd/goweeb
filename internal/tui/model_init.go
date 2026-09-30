@@ -50,11 +50,6 @@ func InitialModel() Model {
 			Checked: false,
 		},
 
-		KeepCheckbox: Checkbox{
-			Label:   "Keep images after conversion (not recommended).",
-			Checked: false,
-		},
-
 		Cursor:        0,
 		Width:         0,
 		Height:        0,

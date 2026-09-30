@@ -43,7 +43,6 @@ type Options struct {
 	Slug          string
 	Selection     RangeSelection
 	ScanDir       string
-	Cleanup       bool
 	CustomDomain  string
 	Debug         bool
 	EbookFriendly bool
@@ -103,11 +102,6 @@ func configureUsage() {
 		fmt.Fprintln(out, "      Save chapters as image folders instead of PDF files")
 		fmt.Fprintln(out)
 
-		fmt.Fprintln(out, "  --keep-images")
-		fmt.Fprintln(out, "  -k")
-		fmt.Fprintln(out, "      Keep downloaded images after PDF creation")
-		fmt.Fprintln(out)
-
 		fmt.Fprintln(out, "Provider options:")
 		fmt.Fprintln(out, "  --domain <domain>")
 		fmt.Fprintln(out, "  -u <domain>")
@@ -134,7 +128,6 @@ func ParseFlags() Options {
 		rangeStr      string
 		scanDir       string
 		ebookFriendly bool
-		keepImages    bool
 		customDomain  string
 		debug         bool
 	)
@@ -209,19 +202,6 @@ func ParseFlags() Options {
 		"ebook-friendly",
 		false,
 		"Save chapters as image folders instead of PDF files",
-	)
-
-	flag.BoolVar(
-		&keepImages,
-		"keep-images",
-		false,
-		"Keep images after PDF creation",
-	)
-	flag.BoolVar(
-		&keepImages,
-		"k",
-		false,
-		"Shorthand for --keep-images",
 	)
 
 	// Misc.
@@ -363,7 +343,6 @@ func ParseFlags() Options {
 		Selection:     selection,
 		Source:        sourceName,
 		ScanDir:       ResolveOutputDir(scanDir),
-		Cleanup:       !keepImages,
 		CustomDomain:  customDomain,
 		Debug:         debug,
 		EbookFriendly: ebookFriendly,

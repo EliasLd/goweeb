@@ -89,15 +89,10 @@ func viewForm(m Model) string {
 	)
 	form.WriteString("\n\n")
 
-	form.WriteString(
-		m.KeepCheckbox.View(m.Cursor == 4),
-	)
-	form.WriteString("\n\n")
-
 	if m.DownloadReady {
 		button := "[ Search ]"
 
-		if m.Cursor == 5 {
+		if m.Cursor == 4 {
 			button = lipgloss.NewStyle().
 				Bold(true).
 				Foreground(lipgloss.Color("226")).

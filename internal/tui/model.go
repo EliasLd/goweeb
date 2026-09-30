@@ -32,7 +32,6 @@ type Model struct {
 	ScanDirInput  textinput.Model
 	DomainInput   textinput.Model
 	EbookCheckbox Checkbox
-	KeepCheckbox  Checkbox
 
 	SelectedProvider      string
 	SelectedProviderLabel string
