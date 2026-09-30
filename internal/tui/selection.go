@@ -149,20 +149,12 @@ func (m SelectionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m SelectionModel) View() string {
 	listView := m.list.View()
 
-	footerStyle := lipgloss.NewStyle().Faint(true).Padding(1, 0)
-	footer := footerStyle.Render("↑/↓ to navigate • Enter to select • / to filter • Esc to cancel")
-
-	content := lipgloss.JoinVertical(lipgloss.Left, listView, footer)
-
-	// Center everything
-	boxWidth := lipgloss.Width(content)
-	boxHeight := lipgloss.Height(content)
-	horizontalMargin := max(0, (m.Width-boxWidth)/2)
-	verticalMargin := max(0, (m.Height-boxHeight)/2)
-
-	centeredStyle := lipgloss.NewStyle().
-		MarginTop(verticalMargin).
-		MarginLeft(horizontalMargin)
-
-	return centeredStyle.Render(content)
+	return renderViewWithFooter(
+		m.Width,
+		m.Height,
+		listView,
+		"↑/↓ navigate • Enter select • / filter • Esc cancel",
+		lipgloss.Center,
+		lipgloss.Center,
+	)
 }

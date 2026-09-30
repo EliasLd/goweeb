@@ -198,26 +198,15 @@ func (m ProviderSelectionModel) View() string {
 	}
 
 	b.WriteString(button)
-	b.WriteString("\n\n")
 
-	footer := lipgloss.NewStyle().
-		Faint(true).
-		Render("↑/↓ navigate • Space/Enter select • Esc cancel")
-
-	b.WriteString(footer)
-
-	content := b.String()
-
-	boxWidth := lipgloss.Width(content)
-	boxHeight := lipgloss.Height(content)
-
-	horizontalMargin := max(0, (m.Width-boxWidth)/2)
-	verticalMargin := max(0, (m.Height-boxHeight)/2)
-
-	return lipgloss.NewStyle().
-		MarginTop(verticalMargin).
-		MarginLeft(horizontalMargin).
-		Render(content)
+	return renderViewWithFooter(
+		m.Width,
+		m.Height,
+		b.String(),
+		"↑/↓ navigate • Space/Enter select • Esc cancel",
+		lipgloss.Center,
+		lipgloss.Center,
+	)
 }
 
 func (m *ProviderSelectionModel) selectCurrentProvider() {
