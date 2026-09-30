@@ -44,6 +44,10 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			return handleRangeUpdate(msg, m)
 		}
 
+		if m.State == StateOptionalSettings {
+			return handleOptionalSettingsUpdate(msg, m)
+		}
+
 		return handleFormUpdate(msg, m)
 
 	case setupLogPipeMsg:

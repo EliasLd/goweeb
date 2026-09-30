@@ -18,6 +18,7 @@ const (
 	StateMangaSelection
 	StateScanSelection
 	StateRangeSelection
+	StateOptionalSettings
 	StateDownloading
 )
 
@@ -56,9 +57,10 @@ type Model struct {
 	IsDownloading    bool
 
 	// Terminal layout and navigation.
-	Cursor int
-	Width  int
-	Height int
+	Cursor         int
+	OptionalCursor int
+	Width          int
+	Height         int
 
 	// Download logs.
 	Logs []string
