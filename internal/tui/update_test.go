@@ -191,3 +191,62 @@ func TestFormNavigationSkipsLockedOutputDirGoingUp(t *testing.T) {
 		)
 	}
 }
+
+func TestOptionalSettingsOpensFromForm(t *testing.T) {
+	m := InitialModel()
+	m.Cursor = 3
+
+	next, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeyEnter,
+		},
+		m,
+	)
+
+	if next.State != StateOptionalSettings {
+		t.Fatalf(
+			"state = %v, want StateOptionalSettings",
+			next.State,
+		)
+	}
+}
+
+func TestOptionalSettingsEscapeReturnsToForm(t *testing.T) {
+	m := InitialModel()
+	m.State = StateOptionalSettings
+
+	next, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeyEsc,
+		},
+		m,
+	)
+
+	if next.State != StateForm {
+		t.Fatalf(
+			"state = %v, want StateForm",
+			next.State,
+		)
+	}
+}
+
+func TestOptionalSettingsToggleEbookFriendly(t *testing.T) {
+	m := InitialModel()
+	m.State = StateOptionalSettings
+	m.OptionalCursor = 0
+
+	initial := m.EbookCheckbox.Checked
+
+	next, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeySpace,
+		},
+		m,
+	)
+
+	if next.EbookCheckbox.Checked == initial {
+		t.Fatal(
+			"ebook-friendly checkbox was not toggled",
+		)
+	}
+}

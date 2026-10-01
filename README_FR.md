@@ -201,7 +201,6 @@ Lorsque vous utilisez un titre sans guillemets, placez-le après toutes les opti
 | `--ebook-friendly` | — | Enregistrer les images des chapitres dans des dossiers `Chapter XXX/` au lieu de générer des PDF. |
 | `--domain <url>` | `-u` | Remplacer le domaine par défaut du fournisseur sélectionné. |
 | `--debug` | — | Activer les logs de debug détaillés. |
-| `--keep-images` | `-k` | Conserver les images téléchargées après la création du PDF. |
 
 Dans le conteneur officiel, le dossier de sortie est fixé à :
 

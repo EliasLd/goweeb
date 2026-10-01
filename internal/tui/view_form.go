@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/EliasLd/goweeb/internal/app"
@@ -27,6 +26,9 @@ func viewForm(m Model) string {
 		)
 	}
 
+	form.WriteString("\n\n")
+
+	form.WriteString(labelStyle.Render("Destination folder"))
 	form.WriteString("\n\n")
 
 	if app.OutputDirLocked() {
@@ -58,59 +60,47 @@ func viewForm(m Model) string {
 
 	form.WriteString("\n\n")
 
-	form.WriteString(labelStyle.Render("Provider"))
-	form.WriteString("\n\n")
-
-	providerButton := "[ Select provider ]"
+	providerLabel := "[ Select provider ]"
 
 	if m.SelectedProviderLabel != "" {
-		providerButton = fmt.Sprintf(
-			"[ Provider: %s ]",
-			m.SelectedProviderLabel,
-		)
+		providerLabel = "Provider: " + m.SelectedProviderLabel
 	}
-
-	if m.Cursor == 2 {
-		providerButton = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("226")).
-			Render(providerButton)
-	} else {
-		providerButton = lipgloss.NewStyle().
-			Faint(true).
-			Render(providerButton)
-	}
-
-	form.WriteString(providerButton)
-	form.WriteString("\n\n")
 
 	form.WriteString(
-		m.EbookCheckbox.View(m.Cursor == 3),
+		renderButton(
+			providerLabel,
+			m.Cursor == 2,
+			buttonSecondary,
+		),
 	)
+
 	form.WriteString("\n\n")
 
+	// Optional settings
 	form.WriteString(
-		m.KeepCheckbox.View(m.Cursor == 4),
+		renderButton(
+			"[ Optional settings ]",
+			m.Cursor == 3,
+			buttonSecondary,
+		),
 	)
 	form.WriteString("\n\n")
 
 	if m.DownloadReady {
-		button := "[ Search ]"
-
-		if m.Cursor == 5 {
-			button = lipgloss.NewStyle().
-				Bold(true).
-				Foreground(lipgloss.Color("226")).
-				Render(button)
-		} else {
-			button = lipgloss.NewStyle().
-				Faint(true).
-				Render(button)
-		}
-
-		form.WriteString(button)
-		form.WriteString("\n\n")
+		form.WriteString(
+			renderButton(
+				"[ Start Search ]",
+				m.Cursor == 4,
+				buttonPrimary,
+			),
+		)
+	} else {
+		form.WriteString(
+			disabledButtonStyle.Render("Start Search"),
+		)
 	}
+
+	form.WriteString("\n\n")
 
 	var logs strings.Builder
 
@@ -146,28 +136,12 @@ func viewForm(m Model) string {
 		logsView,
 	)
 
-	footer := lipgloss.NewStyle().
-		Faint(true).
-		Width(m.Width).
-		Align(lipgloss.Center).
-		Render(
-			"↑/↓ navigate • Space/Enter toggle • Enter to select/search • Ctrl+C/Esc quit",
-		)
-
-	// Reserve the last line of the terminal for the footer.
-	contentHeight := max(0, m.Height-1)
-
-	centeredContent := lipgloss.Place(
+	return renderViewWithFooter(
 		m.Width,
-		contentHeight,
-		lipgloss.Center,
-		lipgloss.Center,
+		m.Height,
 		content,
-	)
-
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		centeredContent,
-		footer,
+		"↑/↓ navigate • Space/Enter select • Ctrl+C/Esc quit",
+		lipgloss.Center,
+		lipgloss.Center,
 	)
 }

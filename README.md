@@ -201,7 +201,6 @@ When using an unquoted title, place it after all CLI options.
 | `--ebook-friendly` | — | Store chapter images in `Chapter XXX/` folders instead of generating PDFs. |
 | `--domain <url>` | `-u` | Override the selected provider's default domain. |
 | `--debug` | — | Enable verbose debug logging. |
-| `--keep-images` | `-k` | Keep downloaded images after PDF creation. |
 
 Inside the official container, the output directory is fixed to:
 

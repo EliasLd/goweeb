@@ -277,7 +277,6 @@ func downloadEntries(
 		if err := convert.ImagesToPDF(
 			imageDir,
 			pdfPath,
-			opts.Cleanup,
 			log,
 		); err != nil {
 			log.Error(
@@ -295,8 +294,7 @@ func downloadEntries(
 		)
 	}
 
-	if opts.Cleanup &&
-		!opts.EbookFriendly {
+	if !opts.EbookFriendly {
 		rootImagesDir := filepath.Join(
 			homeDir,
 			"Images",

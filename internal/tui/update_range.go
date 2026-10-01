@@ -14,8 +14,11 @@ func handleRangeUpdate(
 	m Model,
 ) (Model, tea.Cmd) {
 	switch msg.String() {
-	case "ctrl+c", "esc":
-		return m, tea.Quit
+	case "esc", "ctrl+c":
+		m.State = StateForm
+		m = updateFocus(m)
+
+		return m, nil
 
 	case "up":
 		if m.Cursor > 0 {

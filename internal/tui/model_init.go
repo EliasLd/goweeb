@@ -46,12 +46,7 @@ func InitialModel() Model {
 		DomainInput:  domain,
 
 		EbookCheckbox: Checkbox{
-			Label:   "Ebook-friendly mode (Chapter XXX folders for KCC, no PDF).",
-			Checked: false,
-		},
-
-		KeepCheckbox: Checkbox{
-			Label:   "Keep images after conversion (not recommended).",
+			Label:   "Ebook-friendly output",
 			Checked: false,
 		},
 

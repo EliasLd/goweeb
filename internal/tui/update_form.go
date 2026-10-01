@@ -28,7 +28,7 @@ func handleFormUpdate(
 		return updateFocus(m), nil
 
 	case "down", "tab":
-		if m.Cursor < 5 {
+		if m.Cursor < 4 {
 			m.Cursor++
 
 			if app.OutputDirLocked() && m.Cursor == 1 {
@@ -36,41 +36,30 @@ func handleFormUpdate(
 			}
 		}
 
+		if m.Cursor == 4 && !m.DownloadReady {
+			m.Cursor--
+		}
+
 		return updateFocus(m), nil
 
-	case " ":
-		if m.Cursor == 0 {
+	case "enter", " ":
+		switch m.Cursor {
+		case 0:
 			var cmd tea.Cmd
 
 			m.MangaInput, cmd = m.MangaInput.Update(msg)
 			return m, cmd
-		}
 
-		switch m.Cursor {
 		case 2:
 			return openProviderSelection(m), nil
 
 		case 3:
-			m.EbookCheckbox.Toggle()
+			m.OptionalCursor = 0
+			m.State = StateOptionalSettings
+
+			return m, nil
 
 		case 4:
-			m.KeepCheckbox.Toggle()
-		}
-
-		return m, nil
-
-	case "enter":
-		switch m.Cursor {
-		case 2:
-			return openProviderSelection(m), nil
-
-		case 3:
-			m.EbookCheckbox.Toggle()
-
-		case 4:
-			m.KeepCheckbox.Toggle()
-
-		case 5:
 			if m.DownloadReady {
 				m.Logs = append(
 					m.Logs,
@@ -86,6 +75,7 @@ func handleFormUpdate(
 					m.DomainInput.Value(),
 				)
 			}
+
 		}
 
 		return m, nil

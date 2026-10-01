@@ -50,8 +50,7 @@ func TestInitialModel(t *testing.T) {
 	}
 
 	if m.AllCheckbox.Checked ||
-		m.EbookCheckbox.Checked ||
-		m.KeepCheckbox.Checked {
+		m.EbookCheckbox.Checked {
 		t.Error("all checkboxes should be unchecked initially")
 	}
 

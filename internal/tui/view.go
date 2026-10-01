@@ -14,5 +14,9 @@ func View(m Model) string {
 		return viewRangeSelection(m)
 	}
 
+	if m.State == StateOptionalSettings {
+		return viewOptionalSettings(m)
+	}
+
 	return viewForm(m)
 }

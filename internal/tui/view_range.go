@@ -122,36 +122,14 @@ func viewRangeSelection(m Model) string {
 	}
 
 	b.WriteString(btn)
-	b.WriteString("\n\n")
 
-	footerStyle := lipgloss.NewStyle().
-		Faint(true)
-
-	b.WriteString(
-		footerStyle.Render(
-			"↑/↓ navigate • Space/Enter toggle • Enter on Download • Ctrl+C/Esc quit",
-		),
-	)
-
-	boxWidth := lipgloss.Width(b.String())
-	boxHeight := lipgloss.Height(b.String())
-
-	horizontalMargin := max(
-		0,
-		(m.Width-boxWidth)/2,
-	)
-
-	verticalMargin := max(
-		0,
-		(m.Height-boxHeight)/2,
-	)
-
-	boxStyle := lipgloss.NewStyle().
-		MarginTop(verticalMargin).
-		MarginLeft(horizontalMargin)
-
-	return boxStyle.Render(
+	return renderViewWithFooter(
+		m.Width,
+		m.Height,
 		b.String(),
+		"↑/↓ navigate • Space/Enter select • Ctrl+C/Esc quit",
+		lipgloss.Center,
+		lipgloss.Center,
 	)
 }
 
