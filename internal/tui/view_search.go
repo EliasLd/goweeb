@@ -116,10 +116,14 @@ func viewInteractiveSearch(
 		b.WriteString(listView)
 	}
 
+	searchWidth := interactiveSeachWidth(m.Width)
+
 	content :=
-		interactiveSearchViewStyle.Render(
-			b.String(),
-		)
+		interactiveSearchViewStyle.
+			Width(searchWidth).
+			Render(
+				b.String(),
+			)
 
 	return renderViewWithFooter(
 		m.Width,

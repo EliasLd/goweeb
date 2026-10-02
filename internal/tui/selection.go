@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/reflow/truncate"
 )
 
 // Represents a generic selectable item
@@ -34,6 +35,17 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 
 	str := fmt.Sprintf("%d. %s", index+1, i.Label)
 
+	availaleWidth := max(
+		1,
+		m.Width()-2,
+	)
+
+	str = truncate.StringWithTail(
+		str,
+		uint(availaleWidth),
+		"-",
+	)
+
 	// Highlight selected item
 	if index == m.Index() && d.Focused {
 		s := lipgloss.NewStyle().
@@ -44,7 +56,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	} else {
 		s := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("240")).
-			Render(" " + str)
+			Render("  " + str)
 		fmt.Fprint(w, s)
 	}
 }

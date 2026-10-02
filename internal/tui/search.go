@@ -8,14 +8,32 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-const minInteractiveSearchLength = 2
-
 type searchFocus int
 
 const (
-	searchFocusInput searchFocus = iota
+	minInteractiveSearchLength                = 2
+	interactiveSearchDefaultWidth             = 60
+	interactiveSearchMaxWidth                 = 80
+	interactiveSearchMargin                   = 8
+	searchFocusInput              searchFocus = iota
 	searchFocusResults
 )
+
+func interactiveSeachWidth(
+	terminalWidth int,
+) int {
+	if terminalWidth <= 0 {
+		return interactiveSearchDefaultWidth
+	}
+
+	return min(
+		interactiveSearchMaxWidth,
+		max(
+			1,
+			terminalWidth-interactiveSearchMargin,
+		),
+	)
+}
 
 func newInteractiveSearchList() list.Model {
 	l := list.New(
@@ -122,15 +140,8 @@ func setInteractiveSearchFocus(
 }
 
 func resizeInteractiveSearch(m Model) Model {
-	listWidth := 60
+	searchWidth := interactiveSeachWidth(m.Width)
 	listHeight := 14
-
-	if m.Width > 0 {
-		listWidth = min(
-			80,
-			max(1, m.Width-8),
-		)
-	}
 
 	if m.Height > 0 {
 		listHeight = min(
@@ -141,10 +152,10 @@ func resizeInteractiveSearch(m Model) Model {
 
 	m.SearchInput.Width = max(
 		1,
-		listWidth-2,
+		searchWidth-2,
 	)
 
-	m.SearchList.SetWidth(listWidth)
+	m.SearchList.SetWidth(searchWidth)
 	m.SearchList.SetHeight(listHeight)
 
 	return m
