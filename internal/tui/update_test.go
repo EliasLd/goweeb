@@ -9,31 +9,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func TestCatalogResultsOpenMangaSelection(t *testing.T) {
-	m := InitialModel()
-
-	next, cmd := Update(
-		catalogSearchResultMsg{
-			results: []sourcetypes.SearchResult{
-				{Title: "Manga A", URL: "/manga/a"},
-				{Title: "Manga B", URL: "/manga/b"},
-			},
-		},
-		m,
-	)
-
-	if next.State != StateMangaSelection {
-		t.Fatalf(
-			"state = %v, want StateMangaSelection",
-			next.State,
-		)
-	}
-
-	if cmd != nil {
-		t.Error("opening manga selection should not start a command")
-	}
-}
-
 func TestEntriesResultOpensRangeSelection(t *testing.T) {
 	m := InitialModel()
 
@@ -104,7 +79,14 @@ func TestEmptyRangeDoesNotStartDownload(t *testing.T) {
 	}
 }
 
-func TestDownloadCompletionReturnsToForm(t *testing.T) {
+func TestDownloadCompletionReturnsToForm(
+	t *testing.T,
+) {
+	t.Setenv(
+		"GOWEEB_OUTPUT_DIR",
+		"",
+	)
+
 	m := InitialModel()
 
 	m.State = StateDownloading
@@ -124,15 +106,28 @@ func TestDownloadCompletionReturnsToForm(t *testing.T) {
 	}
 
 	if next.IsDownloading {
-		t.Error("download should no longer be active")
+		t.Error(
+			"download should no longer be active",
+		)
 	}
 
-	if next.Cursor != 0 || !next.MangaInput.Focused() {
-		t.Error("form should return to the manga input")
+	if next.Cursor != 0 {
+		t.Errorf(
+			"cursor = %d, want 0",
+			next.Cursor,
+		)
+	}
+
+	if !next.ScanDirInput.Focused() {
+		t.Error(
+			"form should return focus to the destination input",
+		)
 	}
 
 	if cmd != nil {
-		t.Error("completed download should not schedule another log read")
+		t.Error(
+			"completed download should not schedule another log read",
+		)
 	}
 
 	if len(next.Logs) == 0 ||
@@ -140,18 +135,28 @@ func TestDownloadCompletionReturnsToForm(t *testing.T) {
 			next.Logs[len(next.Logs)-1],
 			"Download complete!",
 		) {
-		t.Error("completion message is missing")
+		t.Error(
+			"completion message is missing",
+		)
 	}
 }
 
-func TestFormNavigationSkipsLockedOutputDir(t *testing.T) {
+func TestFormNavigationStartsOnProviderWhenOutputLocked(
+	t *testing.T,
+) {
 	t.Setenv(
 		"GOWEEB_OUTPUT_DIR",
 		"/home/goweeb/Documents",
 	)
 
 	m := InitialModel()
-	m.Cursor = 0
+
+	if m.Cursor != 1 {
+		t.Fatalf(
+			"cursor = %d, want 1 when output directory is locked",
+			m.Cursor,
+		)
+	}
 
 	next, _ := Update(
 		tea.KeyMsg{
@@ -162,20 +167,22 @@ func TestFormNavigationSkipsLockedOutputDir(t *testing.T) {
 
 	if next.Cursor != 2 {
 		t.Errorf(
-			"cursor = %d, want 2 when output directory is locked",
+			"cursor = %d, want 2 after navigating down from provider",
 			next.Cursor,
 		)
 	}
 }
 
-func TestFormNavigationSkipsLockedOutputDirGoingUp(t *testing.T) {
+func TestFormNavigationCannotEnterLockedOutputDir(
+	t *testing.T,
+) {
 	t.Setenv(
 		"GOWEEB_OUTPUT_DIR",
 		"/home/goweeb/Documents",
 	)
 
 	m := InitialModel()
-	m.Cursor = 2
+	m.Cursor = 1
 
 	next, _ := Update(
 		tea.KeyMsg{
@@ -184,9 +191,9 @@ func TestFormNavigationSkipsLockedOutputDirGoingUp(t *testing.T) {
 		m,
 	)
 
-	if next.Cursor != 0 {
+	if next.Cursor != 1 {
 		t.Errorf(
-			"cursor = %d, want 0 when output directory is locked",
+			"cursor = %d, want 1 when destination is locked",
 			next.Cursor,
 		)
 	}
@@ -194,7 +201,7 @@ func TestFormNavigationSkipsLockedOutputDirGoingUp(t *testing.T) {
 
 func TestOptionalSettingsOpensFromForm(t *testing.T) {
 	m := InitialModel()
-	m.Cursor = 3
+	m.Cursor = 2
 
 	next, _ := Update(
 		tea.KeyMsg{
