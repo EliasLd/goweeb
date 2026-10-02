@@ -81,6 +81,12 @@ func viewForm(m Model) string {
 				buttonPrimary,
 			),
 		)
+	} else if m.IsDownloading {
+		form.WriteString(
+			disabledButtonStyle.Render(
+				"Search manga (download in progress)",
+			),
+		)
 	} else {
 		form.WriteString(
 			disabledButtonStyle.Render(

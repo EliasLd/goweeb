@@ -41,6 +41,7 @@ func handleLogMsg(
 		)
 
 		m.IsDownloading = false
+		m = updateSearchReady(m)
 		m.State = StateForm
 		m.Cursor = 0
 

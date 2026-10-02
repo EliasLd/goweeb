@@ -83,12 +83,6 @@ func Update(
 		)
 
 	case tea.KeyMsg:
-		if m.IsDownloading &&
-			msg.String() != "ctrl+c" &&
-			msg.String() != "esc" {
-			return m, nil
-		}
-
 		if m.State == StateRangeSelection {
 			return handleRangeUpdate(
 				msg,

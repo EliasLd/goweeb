@@ -36,9 +36,10 @@ func updateRangeFocus(m Model) Model {
 // Determines whether the main form can open manga search.
 func updateSearchReady(m Model) Model {
 	m.SearchReady =
-		strings.TrimSpace(
-			m.ScanDirInput.Value(),
-		) != "" &&
+		!m.IsDownloading &&
+			strings.TrimSpace(
+				m.ScanDirInput.Value(),
+			) != "" &&
 			strings.TrimSpace(
 				m.SelectedProvider,
 			) != ""
