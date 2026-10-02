@@ -46,12 +46,15 @@ func resizeLogViewport(m Model) Model {
 
 	m.LogViewport.Width = max(
 		1,
-		width-6,
+		width-4,
 	)
 
+	// Header = 3 lines
+	// Hint = 1
+	// Bottom line = 1
 	m.LogViewport.Height = max(
 		1,
-		height-8,
+		height-5,
 	)
 
 	return m
@@ -123,11 +126,8 @@ func handleLogOverlayUpdate(
 
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "l", "esc":
+		case "l", "ctrl+l", "esc":
 			return closeLogOverlay(m), nil
-
-		case "ctrl+c":
-			return m, tea.Quit
 		}
 	}
 
@@ -148,10 +148,7 @@ func shouldToggleLogs(
 		return true
 
 	case "l":
-		// Don't steal normal text input from the
-		// destination field.
-		return m.State == StateDownloading ||
-			!m.ScanDirInput.Focused()
+		return !m.ScanDirInput.Focused()
 	}
 
 	return false
