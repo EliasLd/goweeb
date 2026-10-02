@@ -124,9 +124,9 @@ func TestDownloadCompletionReturnsToForm(
 		)
 	}
 
-	if cmd != nil {
+	if cmd == nil {
 		t.Error(
-			"completed download should not schedule another log read",
+			"completed download should schedule a completion notification",
 		)
 	}
 
