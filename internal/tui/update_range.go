@@ -120,6 +120,15 @@ func handleRangeUpdate(
 			m.IsDownloading = true
 			m.State = StateDownloading
 
+			m.Cursor = 0
+
+			if app.OutputDirLocked() {
+				m.Cursor = 1
+			}
+
+			m = updateSearchReady(m)
+			m = updateFocus(m)
+
 			m.Logs = append(
 				m.Logs,
 				"Starting download...",

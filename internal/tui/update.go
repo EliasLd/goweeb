@@ -2,10 +2,32 @@ package tui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"go.dalton.dog/bubbleup"
 )
 
-// Update routes Bubble Tea messages to the appropriate handler.
 func Update(
+	msg tea.Msg,
+	m Model,
+) (Model, tea.Cmd) {
+	alertModel, alertCmd :=
+		m.AlertModel.Update(msg)
+
+	m.AlertModel =
+		alertModel.(bubbleup.AlertModel)
+
+	next, appCmd := updateApp(
+		msg,
+		m,
+	)
+
+	return next, tea.Batch(
+		alertCmd,
+		appCmd,
+	)
+}
+
+// Update routes Bubble Tea messages to the appropriate handler.
+func updateApp(
 	msg tea.Msg,
 	m Model,
 ) (Model, tea.Cmd) {
@@ -17,6 +39,27 @@ func Update(
 			result,
 			m,
 		)
+	}
+
+	if isMainViewState(m.State) {
+		if m.LogsVisible {
+			switch msg.(type) {
+			case tea.KeyMsg, tea.WindowSizeMsg:
+				return handleLogOverlayUpdate(
+					msg,
+					m,
+				)
+			}
+		}
+
+		if keyMsg, ok := msg.(tea.KeyMsg); ok {
+			if shouldToggleLogs(
+				keyMsg,
+				m,
+			) {
+				return openLogOverlay(m), nil
+			}
+		}
 	}
 
 	if m.State == StateProviderSelection {
@@ -45,6 +88,8 @@ func Update(
 		m.Width = msg.Width
 		m.Height = msg.Height
 
+		m = resizeLogViewport(m)
+
 		return m, nil
 
 	case scanPathResultMsg:
@@ -60,12 +105,6 @@ func Update(
 		)
 
 	case tea.KeyMsg:
-		if m.IsDownloading &&
-			msg.String() != "ctrl+c" &&
-			msg.String() != "esc" {
-			return m, nil
-		}
-
 		if m.State == StateRangeSelection {
 			return handleRangeUpdate(
 				msg,

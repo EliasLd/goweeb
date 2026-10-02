@@ -1,8 +1,12 @@
 package tui
 
 import (
+	"time"
+
 	"github.com/EliasLd/goweeb/internal/app"
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
+	"go.dalton.dog/bubbleup"
 )
 
 // InitialModel creates the initial TUI state.
@@ -28,6 +32,19 @@ func InitialModel() Model {
 	domain.Placeholder = "Optional custom base URL"
 	domain.Prompt = "> "
 	domain.Width = 60
+
+	logViewport := viewport.New(0, 0)
+
+	alertModel := bubbleup.NewAlertModel(
+		52,
+		false,
+		5*time.Second,
+	).
+		WithMinWidth(28).
+		WithPosition(
+			bubbleup.TopRightPosition,
+		).
+		WithUnicodePrefix()
 
 	cursor := 0
 
@@ -63,9 +80,13 @@ func InitialModel() Model {
 		Width:  0,
 		Height: 0,
 
+		AlertModel: alertModel,
+
 		SearchReady:   false,
 		IsDownloading: false,
 		Logs:          []string{},
+		LogsVisible:   false,
+		LogViewport:   logViewport,
 	}
 
 	return updateFocus(m)

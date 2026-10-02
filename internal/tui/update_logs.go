@@ -6,6 +6,7 @@ import (
 
 	"github.com/EliasLd/goweeb/internal/app"
 	tea "github.com/charmbracelet/bubbletea"
+	"go.dalton.dog/bubbleup"
 )
 
 // Initializes the scanner used to receive download logs.
@@ -14,12 +15,29 @@ func handleSetupLogPipe(
 	m Model,
 ) (Model, tea.Cmd) {
 	m.pipeReader = msg.reader
-	m.scanner = bufio.NewScanner(m.pipeReader)
+	m.scanner = bufio.NewScanner(
+		m.pipeReader,
+	)
 
-	buf := make([]byte, 64*1024)
-	m.scanner.Buffer(buf, 1024*1024)
+	buf := make(
+		[]byte,
+		64*1024,
+	)
 
-	return m, readOneLogLine(m)
+	m.scanner.Buffer(
+		buf,
+		1024*1024,
+	)
+
+	alertCmd := m.AlertModel.NewAlertCmd(
+		bubbleup.InfoKey,
+		"Download started\nPress Ctrl+L to view live logs.",
+	)
+
+	return m, tea.Batch(
+		readOneLogLine(m),
+		alertCmd,
+	)
 }
 
 // Handles a log line received during downloading.
@@ -35,9 +53,13 @@ func handleLogMsg(
 			"Download complete!",
 		)
 
-		m.Logs = append(m.Logs, styled)
+		m = appendLogLine(
+			m,
+			styled,
+		)
 
 		m.IsDownloading = false
+		m = updateSearchReady(m)
 		m.State = StateForm
 		m.Cursor = 0
 
@@ -45,23 +67,44 @@ func handleLogMsg(
 			m.Cursor = 1
 		}
 
-		m = updateFocus(m)
+		if !m.LogsVisible {
+			m = updateFocus(m)
+		}
 
-	case strings.HasPrefix(logLine, "[DEBUG]"):
-		// Preserve the existing behavior:
-		// debug lines are not displayed in the TUI.
+		return m, m.AlertModel.NewAlertCmd(
+			bubbleup.InfoKey,
+			"Download complete!",
+		)
 
-	case strings.Contains(logLine, "[ERROR]"):
-		m.Logs = append(
-			m.Logs,
+	case strings.HasPrefix(
+		logLine,
+		"[DEBUG]",
+	):
+		// Debug lines remain hidden from the TUI.
+
+	case strings.Contains(
+		logLine,
+		"[ERROR]",
+	):
+		m = appendLogLine(
+			m,
 			errorStyle.Render(logLine),
 		)
 
-	case strings.Contains(logLine, "[!]"):
-		m.Logs = append(m.Logs, logLine)
+	case strings.Contains(
+		logLine,
+		"[!]",
+	):
+		m = appendLogLine(
+			m,
+			logLine,
+		)
 
 	default:
-		m.Logs = append(m.Logs, logLine)
+		m = appendLogLine(
+			m,
+			logLine,
+		)
 	}
 
 	if m.IsDownloading {
