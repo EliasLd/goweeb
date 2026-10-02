@@ -35,7 +35,10 @@ func handleLogMsg(
 			"Download complete!",
 		)
 
-		m.Logs = append(m.Logs, styled)
+		m = appendLogLine(
+			m,
+			styled,
+		)
 
 		m.IsDownloading = false
 		m.State = StateForm
@@ -45,23 +48,39 @@ func handleLogMsg(
 			m.Cursor = 1
 		}
 
-		m = updateFocus(m)
+		if !m.LogsVisible {
+			m = updateFocus(m)
+		}
 
-	case strings.HasPrefix(logLine, "[DEBUG]"):
-		// Preserve the existing behavior:
-		// debug lines are not displayed in the TUI.
+	case strings.HasPrefix(
+		logLine,
+		"[DEBUG]",
+	):
+		// Debug lines remain hidden from the TUI.
 
-	case strings.Contains(logLine, "[ERROR]"):
-		m.Logs = append(
-			m.Logs,
+	case strings.Contains(
+		logLine,
+		"[ERROR]",
+	):
+		m = appendLogLine(
+			m,
 			errorStyle.Render(logLine),
 		)
 
-	case strings.Contains(logLine, "[!]"):
-		m.Logs = append(m.Logs, logLine)
+	case strings.Contains(
+		logLine,
+		"[!]",
+	):
+		m = appendLogLine(
+			m,
+			logLine,
+		)
 
 	default:
-		m.Logs = append(m.Logs, logLine)
+		m = appendLogLine(
+			m,
+			logLine,
+		)
 	}
 
 	if m.IsDownloading {
