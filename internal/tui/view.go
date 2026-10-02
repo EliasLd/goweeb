@@ -5,7 +5,7 @@ func View(m Model) string {
 
 	if m.LogsVisible &&
 		isMainViewState(m.State) {
-		return renderCenteredOverlay(
+		base = renderCenteredOverlay(
 			base,
 			viewLogOverlay(m),
 			m.Width,
@@ -13,7 +13,7 @@ func View(m Model) string {
 		)
 	}
 
-	return base
+	return m.AlertModel.Render(base)
 }
 
 func viewCurrentState(m Model) string {

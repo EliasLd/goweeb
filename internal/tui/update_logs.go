@@ -6,6 +6,7 @@ import (
 
 	"github.com/EliasLd/goweeb/internal/app"
 	tea "github.com/charmbracelet/bubbletea"
+	"go.dalton.dog/bubbleup"
 )
 
 // Initializes the scanner used to receive download logs.
@@ -14,12 +15,29 @@ func handleSetupLogPipe(
 	m Model,
 ) (Model, tea.Cmd) {
 	m.pipeReader = msg.reader
-	m.scanner = bufio.NewScanner(m.pipeReader)
+	m.scanner = bufio.NewScanner(
+		m.pipeReader,
+	)
 
-	buf := make([]byte, 64*1024)
-	m.scanner.Buffer(buf, 1024*1024)
+	buf := make(
+		[]byte,
+		64*1024,
+	)
 
-	return m, readOneLogLine(m)
+	m.scanner.Buffer(
+		buf,
+		1024*1024,
+	)
+
+	alertCmd := m.AlertModel.NewAlertCmd(
+		bubbleup.InfoKey,
+		"Download started\nPress Ctrl+L to view live logs.",
+	)
+
+	return m, tea.Batch(
+		readOneLogLine(m),
+		alertCmd,
+	)
 }
 
 // Handles a log line received during downloading.
@@ -52,6 +70,11 @@ func handleLogMsg(
 		if !m.LogsVisible {
 			m = updateFocus(m)
 		}
+
+		return m, m.AlertModel.NewAlertCmd(
+			bubbleup.InfoKey,
+			"Download complete!",
+		)
 
 	case strings.HasPrefix(
 		logLine,

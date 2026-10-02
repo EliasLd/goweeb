@@ -2,10 +2,32 @@ package tui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"go.dalton.dog/bubbleup"
 )
 
-// Update routes Bubble Tea messages to the appropriate handler.
 func Update(
+	msg tea.Msg,
+	m Model,
+) (Model, tea.Cmd) {
+	alertModel, alertCmd :=
+		m.AlertModel.Update(msg)
+
+	m.AlertModel =
+		alertModel.(bubbleup.AlertModel)
+
+	next, appCmd := updateApp(
+		msg,
+		m,
+	)
+
+	return next, tea.Batch(
+		alertCmd,
+		appCmd,
+	)
+}
+
+// Update routes Bubble Tea messages to the appropriate handler.
+func updateApp(
 	msg tea.Msg,
 	m Model,
 ) (Model, tea.Cmd) {
