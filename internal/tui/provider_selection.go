@@ -113,16 +113,11 @@ func (m ProviderSelectionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.updateFocus()
 			return m, nil
 
-		case " ":
-			if m.isProviderCursor() {
-				m.selectCurrentProvider()
-				return m, nil
-			}
-
-		case "enter":
+		case "enter", " ":
 			switch {
 			case m.isProviderCursor():
 				m.selectCurrentProvider()
+				m.Cursor = m.confirmCursor()
 				return m, nil
 
 			case m.Cursor == m.confirmCursor():
