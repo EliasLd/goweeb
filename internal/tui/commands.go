@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/EliasLd/goweeb/internal/app"
 	"github.com/EliasLd/goweeb/internal/logger"
@@ -11,11 +12,29 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// Searches a provider's manga catalog asynchronously.
-func searchCatalog(
+const interactiveSearchDebounce = 400 * time.Millisecond
+
+func debounceInteractiveSearch(
+	query string,
+	generation uint64,
+) tea.Cmd {
+	return tea.Tick(
+		interactiveSearchDebounce,
+		func(time.Time) tea.Msg {
+			return interactiveSearchDebounceMsg{
+				query:      query,
+				generation: generation,
+			}
+		},
+	)
+}
+
+// Searches a provider's catalog asynchronously.
+func searchInteractiveCatalog(
 	providerName string,
 	query string,
 	customDomain string,
+	generation uint64,
 ) tea.Cmd {
 	return func() tea.Msg {
 		log := logger.New(

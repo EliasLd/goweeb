@@ -7,12 +7,11 @@ import (
 
 // InitialModel creates the initial TUI state.
 func InitialModel() Model {
-	manga := textinput.New()
-	manga.Placeholder = "e.g. one piece"
-	manga.Focus()
-	manga.Prompt = "> "
-	manga.CharLimit = 100
-	manga.Width = 60
+	searchInput := textinput.New()
+	searchInput.Placeholder = "Search manga..."
+	searchInput.Prompt = "> "
+	searchInput.CharLimit = 100
+	searchInput.Width = 60
 
 	rangeInput := textinput.New()
 	rangeInput.Placeholder = "e.g. 7, 1-30, 30- (30 to the end), -5 (last 5)"
@@ -50,11 +49,20 @@ func InitialModel() Model {
 			Checked: false,
 		},
 
-		Cursor:        0,
-		Width:         0,
-		Height:        0,
-		DownloadReady: false,
+		SearchInput: searchInput,
+		SearchList:  newInteractiveSearchList(),
+		SearchFocus: searchFocusInput,
+
+		Cursor:         cursor,
+		OptionalCursor: 0,
+
+		Width:  0,
+		Height: 0,
+
+		SearchReady:   false,
 		IsDownloading: false,
 		Logs:          []string{},
 	}
+
+	return updateFocus(m)
 }

@@ -15,10 +15,16 @@ type setupLogPipeMsg struct {
 	reader *io.PipeReader
 }
 
-// Results returned by asynchronous provider operations.
-type catalogSearchResultMsg struct {
-	results []sourcetypes.SearchResult
-	err     error
+type interactiveSearchDebounceMsg struct {
+	query      string
+	generation uint64
+}
+
+type interactiveSearchResultMsg struct {
+	query      string
+	generation uint64
+	results    []sourcetypes.SearchResult
+	err        error
 }
 
 type scanPathResultMsg struct {

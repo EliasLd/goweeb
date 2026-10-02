@@ -19,7 +19,9 @@ type SelectionItem struct {
 func (i SelectionItem) FilterValue() string { return i.Label }
 
 // Custom item delegate for styling
-type itemDelegate struct{}
+type itemDelegate struct {
+	Focused bool
+}
 
 func (d itemDelegate) Height() int                             { return 1 }
 func (d itemDelegate) Spacing() int                            { return 0 }
@@ -33,7 +35,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	str := fmt.Sprintf("%d. %s", index+1, i.Label)
 
 	// Highlight selected item
-	if index == m.Index() {
+	if index == m.Index() && d.Focused {
 		s := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("226")).
 			Bold(true).
@@ -65,7 +67,9 @@ func NewSelectionModel(title string, items []SelectionItem) SelectionModel {
 	}
 
 	// Create list
-	delegate := itemDelegate{}
+	delegate := itemDelegate{
+		Focused: true,
+	}
 	l := list.New(listItem, delegate, 60, 14)
 	l.Title = title
 	l.SetShowStatusBar(false)
