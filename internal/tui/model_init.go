@@ -3,6 +3,7 @@ package tui
 import (
 	"github.com/EliasLd/goweeb/internal/app"
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
 )
 
 // InitialModel creates the initial TUI state.
@@ -28,6 +29,8 @@ func InitialModel() Model {
 	domain.Placeholder = "Optional custom base URL"
 	domain.Prompt = "> "
 	domain.Width = 60
+
+	logViewport := viewport.New(0, 0)
 
 	cursor := 0
 
@@ -66,6 +69,8 @@ func InitialModel() Model {
 		SearchReady:   false,
 		IsDownloading: false,
 		Logs:          []string{},
+		LogsVisible:   false,
+		LogViewport:   logViewport,
 	}
 
 	return updateFocus(m)

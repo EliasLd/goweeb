@@ -8,6 +8,7 @@ import (
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -80,7 +81,9 @@ type Model struct {
 	Height         int
 
 	// Download logs.
-	Logs []string
+	Logs        []string
+	LogsVisible bool
+	LogViewport viewport.Model
 
 	pipeReader *io.PipeReader
 	scanner    *bufio.Scanner

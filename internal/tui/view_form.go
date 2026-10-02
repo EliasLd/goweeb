@@ -91,45 +91,11 @@ func viewForm(m Model) string {
 
 	form.WriteString("\n\n")
 
-	var logs strings.Builder
-
-	const maxLogs = 18
-
-	start := 0
-
-	if len(m.Logs) > maxLogs {
-		start = len(m.Logs) - maxLogs
-	}
-
-	visibleLogs := m.Logs[start:]
-
-	for _, line := range visibleLogs {
-		logs.WriteString(line + "\n")
-	}
-
-	if len(m.Logs) == 0 {
-		logs.WriteString("No logs yet...")
-	}
-
-	for i := len(visibleLogs); i < maxLogs; i++ {
-		logs.WriteString("\n")
-	}
-
-	logsView := logBoxStyle.Render(
-		logs.String(),
-	)
-
-	content := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		form.String(),
-		logsView,
-	)
-
 	return renderViewWithFooter(
 		m.Width,
 		m.Height,
-		content,
-		"↑/↓ navigate • Space/Enter select • Ctrl+C/Esc quit",
+		form.String(),
+		"↑/↓ navigate • Space/Enter select • l logs • Ctrl+C/Esc quit",
 		lipgloss.Center,
 		lipgloss.Center,
 	)

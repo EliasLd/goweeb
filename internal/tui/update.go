@@ -19,6 +19,27 @@ func Update(
 		)
 	}
 
+	if isMainViewState(m.State) {
+		if m.LogsVisible {
+			switch msg.(type) {
+			case tea.KeyMsg, tea.WindowSizeMsg:
+				return handleLogOverlayUpdate(
+					msg,
+					m,
+				)
+			}
+		}
+
+		if keyMsg, ok := msg.(tea.KeyMsg); ok {
+			if shouldToggleLogs(
+				keyMsg,
+				m,
+			) {
+				return openLogOverlay(m), nil
+			}
+		}
+	}
+
 	if m.State == StateProviderSelection {
 		return handleProviderSelectionUpdate(
 			msg,
@@ -44,6 +65,8 @@ func Update(
 	case tea.WindowSizeMsg:
 		m.Width = msg.Width
 		m.Height = msg.Height
+
+		m = resizeLogViewport(m)
 
 		return m, nil
 
