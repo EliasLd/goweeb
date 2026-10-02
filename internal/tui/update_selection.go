@@ -34,7 +34,7 @@ func handleProviderSelectionUpdate(
 		m.SelectedProviderLabel = newProviderLabel
 		m.DomainInput.SetValue(newDomain)
 
-		m = updateDownloadReady(m)
+		m = updateSearchReady(m)
 
 		// Changing provider configuration invalidates
 		// selections made with the previous configuration.
@@ -50,7 +50,7 @@ func handleProviderSelectionUpdate(
 		}
 
 		m.State = StateForm
-		m.Cursor = 2
+		m.Cursor = 1
 		m = updateFocus(m)
 
 		m.Logs = append(
@@ -67,7 +67,7 @@ func handleProviderSelectionUpdate(
 	if m.ProviderSelectionModel.Cancelled {
 		m.ProviderSelectionModel.Cancelled = false
 		m.State = StateForm
-		m.Cursor = 2
+		m.Cursor = 1
 		m = updateFocus(m)
 
 		return m, nil
@@ -92,47 +92,37 @@ func openProviderSelection(m Model) Model {
 	return m
 }
 
-// Handles manga and scan version selection screens.
 func handleSelectionUpdate(
 	msg tea.Msg,
 	m Model,
 ) (Model, tea.Cmd) {
 	var cmd tea.Cmd
 
-	selectionModel, cmd := m.SelectionModel.Update(msg)
-	m.SelectionModel = selectionModel.(SelectionModel)
+	selectionModel, cmd :=
+		m.SelectionModel.Update(msg)
+
+	m.SelectionModel =
+		selectionModel.(SelectionModel)
 
 	if m.SelectionModel.Selected != "" {
-		if m.State == StateMangaSelection {
-			m.SelectedMangaURL = m.SelectionModel.Selected
-			m.State = StateForm
+		m.SelectedScanPath =
+			m.SelectionModel.Selected
 
-			m.Logs = append(
-				m.Logs,
-				"Manga selected. Fetching scan versions...",
-			)
+		m.State = StateForm
 
-			return m, fetchScanPaths(
-				m.SelectedProvider,
-				m.SelectedMangaURL,
-				strings.TrimSpace(m.DomainInput.Value()),
-			)
-		} else if m.State == StateScanSelection {
-			m.SelectedScanPath = m.SelectionModel.Selected
-			m.State = StateForm
+		m.Logs = append(
+			m.Logs,
+			"Scan version selected. Fetching chapters...",
+		)
 
-			m.Logs = append(
-				m.Logs,
-				"Scan version selected. Fetching chapters...",
-			)
-
-			return m, fetchEntries(
-				m.SelectedProvider,
-				m.SelectedMangaURL,
-				m.SelectedScanPath,
-				strings.TrimSpace(m.DomainInput.Value()),
-			)
-		}
+		return m, fetchEntries(
+			m.SelectedProvider,
+			m.SelectedMangaURL,
+			m.SelectedScanPath,
+			strings.TrimSpace(
+				m.DomainInput.Value(),
+			),
+		)
 	}
 
 	if m.SelectionModel.Cancelled {
@@ -143,6 +133,7 @@ func handleSelectionUpdate(
 			m.Logs,
 			"Selection cancelled",
 		)
+
 		m.State = StateForm
 		m = updateFocus(m)
 

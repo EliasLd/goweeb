@@ -46,18 +46,25 @@ func searchInteractiveCatalog(
 			providerName,
 			strings.TrimSpace(customDomain),
 		)
+
 		if err != nil {
-			return catalogSearchResultMsg{
-				results: nil,
-				err:     err,
+			return interactiveSearchResultMsg{
+				query:      query,
+				generation: generation,
+				err:        err,
 			}
 		}
 
-		results, err := provider.Search(query, log)
+		results, err := provider.Search(
+			query,
+			log,
+		)
 
-		return catalogSearchResultMsg{
-			results: results,
-			err:     err,
+		return interactiveSearchResultMsg{
+			query:      query,
+			generation: generation,
+			results:    results,
+			err:        err,
 		}
 	}
 }
@@ -147,7 +154,7 @@ func fetchEntries(
 func startDownload(m Model) tea.Cmd {
 	return func() tea.Msg {
 		opts := app.Options{
-			Slug:          m.MangaInput.Value(),
+			Slug:          m.SearchInput.Value(),
 			Source:        m.SelectedProvider,
 			Selection:     m.SelectedRange,
 			ScanDir:       app.ResolveOutputDir(m.ScanDirInput.Value()),

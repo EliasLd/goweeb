@@ -1,11 +1,17 @@
 package tui
 
 import (
-	"github.com/EliasLd/goweeb/internal/app"
 	"testing"
+
+	"github.com/EliasLd/goweeb/internal/app"
 )
 
 func TestInitialModel(t *testing.T) {
+	t.Setenv(
+		"GOWEEB_OUTPUT_DIR",
+		"",
+	)
+
 	m := InitialModel()
 
 	if m.State != StateForm {
@@ -16,21 +22,33 @@ func TestInitialModel(t *testing.T) {
 	}
 
 	if m.Title != asciiArt {
-		t.Error("initial title does not match ASCII art")
+		t.Error(
+			"initial title does not match ASCII art",
+		)
 	}
 
-	if !m.MangaInput.Focused() {
-		t.Error("manga input should have initial focus")
+	if !m.ScanDirInput.Focused() {
+		t.Error(
+			"destination input should have initial focus",
+		)
+	}
+
+	if m.SearchInput.Focused() {
+		t.Error(
+			"search input should not have initial focus",
+		)
 	}
 
 	if m.RangeInput.Focused() {
-		t.Error("range input should not have initial focus")
+		t.Error(
+			"range input should not have initial focus",
+		)
 	}
 
-	if m.MangaInput.Width != 60 {
+	if m.SearchInput.Width != 60 {
 		t.Errorf(
-			"manga input width = %d, want 60",
-			m.MangaInput.Width,
+			"search input width = %d, want 60",
+			m.SearchInput.Width,
 		)
 	}
 
@@ -51,15 +69,21 @@ func TestInitialModel(t *testing.T) {
 
 	if m.AllCheckbox.Checked ||
 		m.EbookCheckbox.Checked {
-		t.Error("all checkboxes should be unchecked initially")
+		t.Error(
+			"all checkboxes should be unchecked initially",
+		)
 	}
 
-	if m.DownloadReady {
-		t.Error("download should not be ready initially")
+	if m.SearchReady {
+		t.Error(
+			"search should not be ready initially",
+		)
 	}
 
 	if m.IsDownloading {
-		t.Error("download should not be active initially")
+		t.Error(
+			"download should not be active initially",
+		)
 	}
 
 	if m.Cursor != 0 {
@@ -70,6 +94,32 @@ func TestInitialModel(t *testing.T) {
 	}
 
 	if m.SelectedProvider != "" {
-		t.Error("no provider should be selected initially")
+		t.Error(
+			"no provider should be selected initially",
+		)
+	}
+}
+
+func TestInitialModelSkipsLockedOutputDir(
+	t *testing.T,
+) {
+	t.Setenv(
+		"GOWEEB_OUTPUT_DIR",
+		"/home/goweeb/Documents",
+	)
+
+	m := InitialModel()
+
+	if m.Cursor != 1 {
+		t.Errorf(
+			"initial cursor = %d, want 1 when output directory is locked",
+			m.Cursor,
+		)
+	}
+
+	if m.ScanDirInput.Focused() {
+		t.Error(
+			"locked destination should not have initial focus",
+		)
 	}
 }

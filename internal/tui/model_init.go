@@ -29,11 +29,15 @@ func InitialModel() Model {
 	domain.Prompt = "> "
 	domain.Width = 60
 
-	return Model{
+	cursor := 0
+
+	if app.OutputDirLocked() {
+		cursor = 1
+	}
+
+	m := Model{
 		State: StateForm,
 		Title: asciiArt,
-
-		MangaInput: manga,
 
 		AllCheckbox: Checkbox{
 			Label:   "Download all chapters.",

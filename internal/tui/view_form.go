@@ -10,22 +10,9 @@ import (
 func viewForm(m Model) string {
 	var form strings.Builder
 
-	form.WriteString(titleStyle.Render(m.Title))
-	form.WriteString("\n\n")
-
-	form.WriteString(labelStyle.Render("Manga title"))
-	form.WriteString("\n\n")
-
-	if m.Cursor == 0 {
-		form.WriteString(m.MangaInput.View())
-	} else {
-		form.WriteString(
-			lipgloss.NewStyle().
-				Faint(true).
-				Render(m.MangaInput.View()),
-		)
-	}
-
+	form.WriteString(
+		titleStyle.Render(m.Title),
+	)
 	form.WriteString("\n\n")
 
 	form.WriteString(labelStyle.Render("Destination folder"))
@@ -48,7 +35,7 @@ func viewForm(m Model) string {
 					"Managed by the container volume.",
 				),
 		)
-	} else if m.Cursor == 1 {
+	} else if m.Cursor == 0 {
 		form.WriteString(m.ScanDirInput.View())
 	} else {
 		form.WriteString(
@@ -69,7 +56,7 @@ func viewForm(m Model) string {
 	form.WriteString(
 		renderButton(
 			providerLabel,
-			m.Cursor == 2,
+			m.Cursor == 1,
 			buttonSecondary,
 		),
 	)
@@ -80,23 +67,25 @@ func viewForm(m Model) string {
 	form.WriteString(
 		renderButton(
 			"[ Optional settings ]",
-			m.Cursor == 3,
+			m.Cursor == 2,
 			buttonSecondary,
 		),
 	)
 	form.WriteString("\n\n")
 
-	if m.DownloadReady {
+	if m.SearchReady {
 		form.WriteString(
 			renderButton(
-				"[ Start Search ]",
-				m.Cursor == 4,
+				"[ Search manga ]",
+				m.Cursor == 3,
 				buttonPrimary,
 			),
 		)
 	} else {
 		form.WriteString(
-			disabledButtonStyle.Render("Start Search"),
+			disabledButtonStyle.Render(
+				"Search manga",
+			),
 		)
 	}
 

@@ -5,35 +5,61 @@ import (
 )
 
 // Update routes Bubble Tea messages to the appropriate handler.
-func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
-	// Selection screens manage their own keyboard events.
-	if m.State == StateProviderSelection {
-		return handleProviderSelectionUpdate(msg, m)
+func Update(
+	msg tea.Msg,
+	m Model,
+) (Model, tea.Cmd) {
+	// Interactive search results must still be consumed
+	// after leaving the search screen so an old in-flight
+	// request cannot leave SearchInFlight stuck forever.
+	if result, ok := msg.(interactiveSearchResultMsg); ok {
+		return handleInteractiveSearchResult(
+			result,
+			m,
+		)
 	}
 
-	if m.State == StateMangaSelection ||
-		m.State == StateScanSelection {
-		return handleSelectionUpdate(msg, m)
+	if m.State == StateProviderSelection {
+		return handleProviderSelectionUpdate(
+			msg,
+			m,
+		)
+	}
+
+	if m.State == StateInteractiveSearch {
+		return handleInteractiveSearchUpdate(
+			msg,
+			m,
+		)
+	}
+
+	if m.State == StateScanSelection {
+		return handleSelectionUpdate(
+			msg,
+			m,
+		)
 	}
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.Width = msg.Width
 		m.Height = msg.Height
+
 		return m, nil
 
-	case catalogSearchResultMsg:
-		return handleCatalogSearchResult(msg, m)
-
 	case scanPathResultMsg:
-		return handleScanPathResult(msg, m)
+		return handleScanPathResult(
+			msg,
+			m,
+		)
 
 	case entriesResultMsg:
-		return handleEntriesResult(msg, m)
+		return handleEntriesResult(
+			msg,
+			m,
+		)
 
 	case tea.KeyMsg:
-		// Keep the current behavior while downloading:
-		// only the quit shortcuts are accepted.
 		if m.IsDownloading &&
 			msg.String() != "ctrl+c" &&
 			msg.String() != "esc" {
@@ -41,21 +67,36 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		}
 
 		if m.State == StateRangeSelection {
-			return handleRangeUpdate(msg, m)
+			return handleRangeUpdate(
+				msg,
+				m,
+			)
 		}
 
 		if m.State == StateOptionalSettings {
-			return handleOptionalSettingsUpdate(msg, m)
+			return handleOptionalSettingsUpdate(
+				msg,
+				m,
+			)
 		}
 
-		return handleFormUpdate(msg, m)
+		return handleFormUpdate(
+			msg,
+			m,
+		)
 
 	case setupLogPipeMsg:
-		return handleSetupLogPipe(msg, m)
+		return handleSetupLogPipe(
+			msg,
+			m,
+		)
 
 	case logMsg:
-		return handleLogMsg(msg, m)
+		return handleLogMsg(
+			msg,
+			m,
+		)
 	}
 
-	return updateDownloadReady(m), nil
+	return updateSearchReady(m), nil
 }
