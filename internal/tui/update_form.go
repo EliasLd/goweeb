@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"fmt"
-
 	"github.com/EliasLd/goweeb/internal/app"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -19,25 +17,18 @@ func handleFormUpdate(
 	case "up":
 		if m.Cursor > 0 {
 			m.Cursor--
+		}
 
-			if app.OutputDirLocked() && m.Cursor == 1 {
-				m.Cursor--
-			}
+		if app.OutputDirLocked() &&
+			m.Cursor == 0 {
+			m.Cursor = 1
 		}
 
 		return updateFocus(m), nil
 
 	case "down", "tab":
-		if m.Cursor < 4 {
+		if m.Cursor < 3 {
 			m.Cursor++
-
-			if app.OutputDirLocked() && m.Cursor == 1 {
-				m.Cursor++
-			}
-		}
-
-		if m.Cursor == 4 && !m.DownloadReady {
-			m.Cursor--
 		}
 
 		return updateFocus(m), nil
@@ -45,63 +36,49 @@ func handleFormUpdate(
 	case "enter", " ":
 		switch m.Cursor {
 		case 0:
+			if app.OutputDirLocked() {
+				return m, nil
+			}
+
 			var cmd tea.Cmd
 
-			m.MangaInput, cmd = m.MangaInput.Update(msg)
+			m.ScanDirInput, cmd =
+				m.ScanDirInput.Update(msg)
+
 			return m, cmd
 
-		case 2:
+		case 1:
 			return openProviderSelection(m), nil
 
-		case 3:
+		case 2:
 			m.OptionalCursor = 0
 			m.State = StateOptionalSettings
 
 			return m, nil
 
-		case 4:
-			if m.DownloadReady {
-				m.Logs = append(
-					m.Logs,
-					fmt.Sprintf(
-						"Searching for: %s...",
-						m.MangaInput.Value(),
-					),
-				)
-
-				return m, searchCatalog(
-					m.SelectedProvider,
-					m.MangaInput.Value(),
-					m.DomainInput.Value(),
-				)
+		case 3:
+			if m.SearchReady {
+				return openInteractiveSearch(m)
 			}
-
 		}
 
 		return m, nil
 	}
 
-	switch m.Cursor {
-	case 0:
-		var cmd tea.Cmd
-
-		m.MangaInput, cmd = m.MangaInput.Update(msg)
-		m = updateDownloadReady(m)
-
-		return m, cmd
-
-	case 1:
+	if m.Cursor == 0 {
 		if app.OutputDirLocked() {
 			return m, nil
 		}
 
 		var cmd tea.Cmd
 
-		m.ScanDirInput, cmd = m.ScanDirInput.Update(msg)
-		m = updateDownloadReady(m)
+		m.ScanDirInput, cmd =
+			m.ScanDirInput.Update(msg)
+
+		m = updateSearchReady(m)
 
 		return m, cmd
 	}
 
-	return updateDownloadReady(m), nil
+	return updateSearchReady(m), nil
 }

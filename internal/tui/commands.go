@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/EliasLd/goweeb/internal/app"
 	"github.com/EliasLd/goweeb/internal/logger"
@@ -11,11 +12,29 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// Searches a provider's manga catalog asynchronously.
-func searchCatalog(
+const interactiveSearchDebounce = 400 * time.Millisecond
+
+func debounceInteractiveSearch(
+	query string,
+	generation uint64,
+) tea.Cmd {
+	return tea.Tick(
+		interactiveSearchDebounce,
+		func(time.Time) tea.Msg {
+			return interactiveSearchDebounceMsg{
+				query:      query,
+				generation: generation,
+			}
+		},
+	)
+}
+
+// Searches a provider's catalog asynchronously.
+func searchInteractiveCatalog(
 	providerName string,
 	query string,
 	customDomain string,
+	generation uint64,
 ) tea.Cmd {
 	return func() tea.Msg {
 		log := logger.New(
@@ -27,18 +46,25 @@ func searchCatalog(
 			providerName,
 			strings.TrimSpace(customDomain),
 		)
+
 		if err != nil {
-			return catalogSearchResultMsg{
-				results: nil,
-				err:     err,
+			return interactiveSearchResultMsg{
+				query:      query,
+				generation: generation,
+				err:        err,
 			}
 		}
 
-		results, err := provider.Search(query, log)
+		results, err := provider.Search(
+			query,
+			log,
+		)
 
-		return catalogSearchResultMsg{
-			results: results,
-			err:     err,
+		return interactiveSearchResultMsg{
+			query:      query,
+			generation: generation,
+			results:    results,
+			err:        err,
 		}
 	}
 }
@@ -128,7 +154,7 @@ func fetchEntries(
 func startDownload(m Model) tea.Cmd {
 	return func() tea.Msg {
 		opts := app.Options{
-			Slug:          m.MangaInput.Value(),
+			Slug:          m.SearchInput.Value(),
 			Source:        m.SelectedProvider,
 			Selection:     m.SelectedRange,
 			ScanDir:       app.ResolveOutputDir(m.ScanDirInput.Value()),

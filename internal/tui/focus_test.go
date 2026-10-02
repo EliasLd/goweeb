@@ -2,49 +2,63 @@ package tui
 
 import "testing"
 
-func TestUpdateDownloadReady(t *testing.T) {
+func TestUpdateSearchReady(t *testing.T) {
 	m := InitialModel()
 
-	m.MangaInput.SetValue("jjk")
 	m.ScanDirInput.SetValue("/tmp/manga")
 	m.SelectedProvider = "mangadex"
 
-	m = updateDownloadReady(m)
+	m = updateSearchReady(m)
 
-	if !m.DownloadReady {
-		t.Fatal("form should be ready when all required fields are set")
+	if !m.SearchReady {
+		t.Fatal(
+			"search should be ready when destination and provider are set",
+		)
 	}
 
-	m.MangaInput.SetValue(" ")
+	m.ScanDirInput.SetValue(" ")
 
-	m = updateDownloadReady(m)
+	m = updateSearchReady(m)
 
-	if m.DownloadReady {
-		t.Error("form should not be ready with an empty manga title")
+	if m.SearchReady {
+		t.Error(
+			"search should not be ready with an empty destination",
+		)
 	}
 
-	m.MangaInput.SetValue("jjk")
+	m.ScanDirInput.SetValue("/tmp/manga")
 	m.SelectedProvider = ""
 
-	m = updateDownloadReady(m)
+	m = updateSearchReady(m)
 
-	if m.DownloadReady {
-		t.Error("form should not be ready without a provider")
+	if m.SearchReady {
+		t.Error(
+			"search should not be ready without a provider",
+		)
 	}
 }
 
 func TestUpdateFocus(t *testing.T) {
+	t.Setenv(
+		"GOWEEB_OUTPUT_DIR",
+		"",
+	)
+
 	m := InitialModel()
 
-	m.Cursor = 1
+	m.Cursor = 0
 	m = updateFocus(m)
 
 	if !m.ScanDirInput.Focused() {
-		t.Error("destination input should be focused")
+		t.Error(
+			"destination input should be focused",
+		)
 	}
 
-	if m.MangaInput.Focused() {
-		t.Error("manga input should not remain focused")
+	if m.SearchInput.Focused() {
+		t.Error(
+			"search input should not be focused on the main form",
+		)
 	}
 }
 
@@ -57,14 +71,18 @@ func TestUpdateRangeFocus(t *testing.T) {
 	m = updateRangeFocus(m)
 
 	if !m.RangeInput.Focused() {
-		t.Error("range input should be focused")
+		t.Error(
+			"range input should be focused",
+		)
 	}
 
 	m.AllCheckbox.Checked = true
 	m = updateRangeFocus(m)
 
 	if m.RangeInput.Focused() {
-		t.Error("range input should be blurred when all chapters are selected")
+		t.Error(
+			"range input should be blurred when all chapters are selected",
+		)
 	}
 }
 
@@ -75,7 +93,7 @@ func TestUpdateFocusSkipsLockedOutputDir(t *testing.T) {
 	)
 
 	m := InitialModel()
-	m.Cursor = 1
+	m.Cursor = 0
 
 	m = updateFocus(m)
 

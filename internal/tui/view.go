@@ -5,9 +5,12 @@ func View(m Model) string {
 		return m.ProviderSelectionModel.View()
 	}
 
-	if m.State == StateMangaSelection ||
-		m.State == StateScanSelection {
+	if m.State == StateScanSelection {
 		return m.SelectionModel.View()
+	}
+
+	if m.State == StateInteractiveSearch {
+		return viewInteractiveSearch(m)
 	}
 
 	if m.State == StateRangeSelection {

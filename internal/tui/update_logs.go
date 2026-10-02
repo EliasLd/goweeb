@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"strings"
 
+	"github.com/EliasLd/goweeb/internal/app"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -39,6 +40,10 @@ func handleLogMsg(
 		m.IsDownloading = false
 		m.State = StateForm
 		m.Cursor = 0
+
+		if app.OutputDirLocked() {
+			m.Cursor = 1
+		}
 
 		m = updateFocus(m)
 

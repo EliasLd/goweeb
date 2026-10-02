@@ -16,6 +16,7 @@ func handleRangeUpdate(
 	switch msg.String() {
 	case "esc", "ctrl+c":
 		m.State = StateForm
+		m.Cursor = 3
 		m = updateFocus(m)
 
 		return m, nil
@@ -133,7 +134,6 @@ func handleRangeUpdate(
 		var cmd tea.Cmd
 
 		m.RangeInput, cmd = m.RangeInput.Update(msg)
-		m = updateDownloadReady(m)
 
 		return m, cmd
 	}

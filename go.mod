@@ -7,6 +7,7 @@ require (
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
+	github.com/muesli/reflow v0.3.0
 	github.com/signintech/gopdf v0.32.0
 	golang.org/x/image v0.28.0
 )

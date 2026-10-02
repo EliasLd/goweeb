@@ -6,6 +6,7 @@ import (
 
 	"github.com/EliasLd/goweeb/internal/app"
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
+	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -15,7 +16,7 @@ type AppState int
 const (
 	StateForm AppState = iota
 	StateProviderSelection
-	StateMangaSelection
+	StateInteractiveSearch
 	StateScanSelection
 	StateRangeSelection
 	StateOptionalSettings
@@ -29,14 +30,17 @@ type Model struct {
 	// Main form.
 	Title string
 
-	MangaInput    textinput.Model
 	ScanDirInput  textinput.Model
 	DomainInput   textinput.Model
 	EbookCheckbox Checkbox
 
+	SearchInput textinput.Model
+	SearchList  list.Model
+	SearchFocus searchFocus
+
 	SelectedProvider      string
 	SelectedProviderLabel string
-	DownloadReady         bool
+	SearchReady           bool
 
 	// Chapter range selection.
 	RangeInput  textinput.Model
@@ -46,6 +50,19 @@ type Model struct {
 	DiscoveredEntryList []sourcetypes.Entry
 	AvailableRanges     string
 	SelectedRange       app.RangeSelection
+
+	SearchGeneration        uint64
+	SearchRequestGeneration uint64
+
+	SearchInFlight bool
+
+	SearchPending           bool
+	SearchPendingQuery      string
+	SearchPendingGeneration uint64
+
+	SearchResultsQuery string
+	SearchHasSearched  bool
+	SearchError        string
 
 	// Selection screens.
 	ProviderSelectionModel ProviderSelectionModel
