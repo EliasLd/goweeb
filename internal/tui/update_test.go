@@ -118,12 +118,6 @@ func TestDownloadCompletionReturnsToForm(
 		)
 	}
 
-	if !next.ScanDirInput.Focused() {
-		t.Error(
-			"form should return focus to the destination input",
-		)
-	}
-
 	if cmd == nil {
 		t.Error(
 			"completed download should schedule a completion notification",

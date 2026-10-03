@@ -2,21 +2,13 @@ package tui
 
 import (
 	"strings"
-
-	"github.com/EliasLd/goweeb/internal/app"
 )
 
 // Updates the focused input on the main form.
 func updateFocus(m Model) Model {
-	m.ScanDirInput.Blur()
 	m.DomainInput.Blur()
 	m.RangeInput.Blur()
 	m.SearchInput.Blur()
-
-	if m.Cursor == 0 &&
-		!app.OutputDirLocked() {
-		m.ScanDirInput.Focus()
-	}
 
 	return m
 }
@@ -34,11 +26,13 @@ func updateRangeFocus(m Model) Model {
 }
 
 // Determines whether the main form can open manga search.
-func updateSearchReady(m Model) Model {
+func updateSearchReady(
+	m Model,
+) Model {
 	m.SearchReady =
 		!m.IsDownloading &&
 			strings.TrimSpace(
-				m.ScanDirInput.Value(),
+				m.DestinationDir,
 			) != "" &&
 			strings.TrimSpace(
 				m.SelectedProvider,

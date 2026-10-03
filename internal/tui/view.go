@@ -17,6 +17,10 @@ func View(m Model) string {
 }
 
 func viewCurrentState(m Model) string {
+	if m.State == StateDestinationPicker {
+		return viewDestinationPicker(m)
+	}
+
 	if m.State == StateProviderSelection {
 		return m.ProviderSelectionModel.View()
 	}

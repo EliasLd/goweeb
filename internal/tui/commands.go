@@ -157,7 +157,7 @@ func startDownload(m Model) tea.Cmd {
 			Slug:          m.SearchInput.Value(),
 			Source:        m.SelectedProvider,
 			Selection:     m.SelectedRange,
-			ScanDir:       app.ResolveOutputDir(m.ScanDirInput.Value()),
+			ScanDir:       app.ResolveOutputDir(m.DestinationDir),
 			CustomDomain:  strings.TrimSpace(m.DomainInput.Value()),
 			MangaURL:      m.SelectedMangaURL,
 			ScanPath:      m.SelectedScanPath,

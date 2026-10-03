@@ -5,7 +5,7 @@ import "testing"
 func TestUpdateSearchReady(t *testing.T) {
 	m := InitialModel()
 
-	m.ScanDirInput.SetValue("/tmp/manga")
+	m.DestinationDir = "/tmp/manga"
 	m.SelectedProvider = "mangadex"
 
 	m = updateSearchReady(m)
@@ -16,7 +16,7 @@ func TestUpdateSearchReady(t *testing.T) {
 		)
 	}
 
-	m.ScanDirInput.SetValue(" ")
+	m.DestinationDir = " "
 
 	m = updateSearchReady(m)
 
@@ -26,7 +26,7 @@ func TestUpdateSearchReady(t *testing.T) {
 		)
 	}
 
-	m.ScanDirInput.SetValue("/tmp/manga")
+	m.DestinationDir = "/tmp/manga"
 	m.SelectedProvider = ""
 
 	m = updateSearchReady(m)
@@ -48,12 +48,6 @@ func TestUpdateFocus(t *testing.T) {
 
 	m.Cursor = 0
 	m = updateFocus(m)
-
-	if !m.ScanDirInput.Focused() {
-		t.Error(
-			"destination input should be focused",
-		)
-	}
 
 	if m.SearchInput.Focused() {
 		t.Error(
@@ -82,24 +76,6 @@ func TestUpdateRangeFocus(t *testing.T) {
 	if m.RangeInput.Focused() {
 		t.Error(
 			"range input should be blurred when all chapters are selected",
-		)
-	}
-}
-
-func TestUpdateFocusSkipsLockedOutputDir(t *testing.T) {
-	t.Setenv(
-		"GOWEEB_OUTPUT_DIR",
-		"/home/goweeb/Documents",
-	)
-
-	m := InitialModel()
-	m.Cursor = 0
-
-	m = updateFocus(m)
-
-	if m.ScanDirInput.Focused() {
-		t.Error(
-			"destination input should not be focused when output directory is locked",
 		)
 	}
 }

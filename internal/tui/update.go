@@ -41,6 +41,20 @@ func updateApp(
 		)
 	}
 
+	switch msg := msg.(type) {
+	case setupLogPipeMsg:
+		return handleSetupLogPipe(
+			msg,
+			m,
+		)
+
+	case logMsg:
+		return handleLogMsg(
+			msg,
+			m,
+		)
+	}
+
 	if isMainViewState(m.State) {
 		if m.LogsVisible {
 			switch msg.(type) {
@@ -53,13 +67,17 @@ func updateApp(
 		}
 
 		if keyMsg, ok := msg.(tea.KeyMsg); ok {
-			if shouldToggleLogs(
-				keyMsg,
-				m,
-			) {
+			if shouldToggleLogs(keyMsg) {
 				return openLogOverlay(m), nil
 			}
 		}
+	}
+
+	if m.State == StateDestinationPicker {
+		return handleDestinationPickerUpdate(
+			msg,
+			m,
+		)
 	}
 
 	if m.State == StateProviderSelection {
@@ -120,18 +138,6 @@ func updateApp(
 		}
 
 		return handleFormUpdate(
-			msg,
-			m,
-		)
-
-	case setupLogPipeMsg:
-		return handleSetupLogPipe(
-			msg,
-			m,
-		)
-
-	case logMsg:
-		return handleLogMsg(
 			msg,
 			m,
 		)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/EliasLd/goweeb/internal/app"
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
+	"github.com/charmbracelet/bubbles/filepicker"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -17,6 +18,7 @@ type AppState int
 
 const (
 	StateForm AppState = iota
+	StateDestinationPicker
 	StateProviderSelection
 	StateInteractiveSearch
 	StateScanSelection
@@ -32,7 +34,9 @@ type Model struct {
 	// Main form.
 	Title string
 
-	ScanDirInput  textinput.Model
+	DestinationDir    string
+	DestinationPicker filepicker.Model
+
 	DomainInput   textinput.Model
 	EbookCheckbox Checkbox
 
