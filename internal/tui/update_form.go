@@ -40,17 +40,7 @@ func handleFormUpdate(
 	case "enter", " ":
 		switch m.Cursor {
 		case 0:
-			if app.OutputDirLocked() {
-				return m, nil
-			}
-
-			var cmd tea.Cmd
-
-			m.ScanDirInput, cmd =
-				m.ScanDirInput.Update(msg)
-
-			return m, cmd
-
+			return openDestinationPicker(m)
 		case 1:
 			return openProviderSelection(m), nil
 
@@ -67,21 +57,6 @@ func handleFormUpdate(
 		}
 
 		return m, nil
-	}
-
-	if m.Cursor == 0 {
-		if app.OutputDirLocked() {
-			return m, nil
-		}
-
-		var cmd tea.Cmd
-
-		m.ScanDirInput, cmd =
-			m.ScanDirInput.Update(msg)
-
-		m = updateSearchReady(m)
-
-		return m, cmd
 	}
 
 	return updateSearchReady(m), nil

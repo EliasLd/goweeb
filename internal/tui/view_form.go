@@ -14,14 +14,15 @@ func viewForm(m Model) string {
 	)
 	form.WriteString("\n\n")
 
-	form.WriteString(labelStyle.Render("Destination folder"))
-	form.WriteString("\n\n")
+	destinationLabel :=
+		"Destination folder: " +
+			m.DestinationDir
 
 	if app.OutputDirLocked() {
 		form.WriteString(
-			lipgloss.NewStyle().
-				Faint(true).
-				Render(m.ScanDirInput.Value()),
+			disabledButtonStyle.Render(
+				destinationLabel,
+			),
 		)
 
 		form.WriteString("\n")
@@ -34,13 +35,13 @@ func viewForm(m Model) string {
 					"Managed by the container volume.",
 				),
 		)
-	} else if m.Cursor == 0 {
-		form.WriteString(m.ScanDirInput.View())
 	} else {
 		form.WriteString(
-			lipgloss.NewStyle().
-				Faint(true).
-				Render(m.ScanDirInput.View()),
+			renderButton(
+				destinationLabel,
+				m.Cursor == 0,
+				buttonSecondary,
+			),
 		)
 	}
 

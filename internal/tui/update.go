@@ -62,6 +62,13 @@ func updateApp(
 		}
 	}
 
+	if m.State == StateDestinationPicker {
+		return handleDestinationPickerUpdate(
+			msg,
+			m,
+		)
+	}
+
 	if m.State == StateProviderSelection {
 		return handleProviderSelectionUpdate(
 			msg,

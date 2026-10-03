@@ -27,12 +27,6 @@ func TestInitialModel(t *testing.T) {
 		)
 	}
 
-	if !m.ScanDirInput.Focused() {
-		t.Error(
-			"destination input should have initial focus",
-		)
-	}
-
 	if m.SearchInput.Focused() {
 		t.Error(
 			"search input should not have initial focus",
@@ -59,7 +53,7 @@ func TestInitialModel(t *testing.T) {
 		)
 	}
 
-	if got := m.ScanDirInput.Value(); got != app.DefaultTUIScanDir() {
+	if got := m.DestinationDir; got != app.DefaultTUIScanDir() {
 		t.Errorf(
 			"default scan directory = %q, want %q",
 			got,
@@ -114,12 +108,6 @@ func TestInitialModelSkipsLockedOutputDir(
 		t.Errorf(
 			"initial cursor = %d, want 1 when output directory is locked",
 			m.Cursor,
-		)
-	}
-
-	if m.ScanDirInput.Focused() {
-		t.Error(
-			"locked destination should not have initial focus",
 		)
 	}
 }

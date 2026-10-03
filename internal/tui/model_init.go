@@ -11,6 +11,14 @@ import (
 
 // InitialModel creates the initial TUI state.
 func InitialModel() Model {
+	destinationDir :=
+		app.DefaultTUIScanDir()
+
+	destinationPicker :=
+		newDestinationPicker(
+			destinationDir,
+		)
+
 	searchInput := textinput.New()
 	searchInput.Placeholder = "Search manga..."
 	searchInput.Prompt = "> "
@@ -21,12 +29,6 @@ func InitialModel() Model {
 	rangeInput.Placeholder = "e.g. 7, 1-30, 30- (30 to the end), -5 (last 5)"
 	rangeInput.Prompt = "> "
 	rangeInput.Width = 85
-
-	scanDir := textinput.New()
-	scanDir.Placeholder = "ex: C:\\Users\\<username>\\Documents\\scans\\jjk"
-	scanDir.Prompt = "> "
-	scanDir.SetValue(app.DefaultTUIScanDir())
-	scanDir.Width = 70
 
 	domain := textinput.New()
 	domain.Placeholder = "Optional custom base URL"
@@ -56,14 +58,16 @@ func InitialModel() Model {
 		State: StateForm,
 		Title: asciiArt,
 
+		DestinationDir:    destinationDir,
+		DestinationPicker: destinationPicker,
+
 		AllCheckbox: Checkbox{
 			Label:   "Download all chapters.",
 			Checked: false,
 		},
 
-		RangeInput:   rangeInput,
-		ScanDirInput: scanDir,
-		DomainInput:  domain,
+		RangeInput:  rangeInput,
+		DomainInput: domain,
 
 		EbookCheckbox: Checkbox{
 			Label:   "Ebook-friendly output",
