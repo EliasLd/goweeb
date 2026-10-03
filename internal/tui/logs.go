@@ -90,11 +90,6 @@ func syncLogViewport(
 
 func openLogOverlay(m Model) Model {
 	m.LogsVisible = true
-
-	// Prevent the underlying destination input cursor
-	// from blinking through the modal.
-	m.ScanDirInput.Blur()
-
 	m = resizeLogViewport(m)
 	m = syncLogViewport(m, true)
 
@@ -141,14 +136,10 @@ func handleLogOverlayUpdate(
 
 func shouldToggleLogs(
 	msg tea.KeyMsg,
-	m Model,
 ) bool {
 	switch msg.String() {
 	case "ctrl+l":
 		return true
-
-	case "l":
-		return !m.ScanDirInput.Focused()
 	}
 
 	return false

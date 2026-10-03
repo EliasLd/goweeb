@@ -67,10 +67,7 @@ func updateApp(
 		}
 
 		if keyMsg, ok := msg.(tea.KeyMsg); ok {
-			if shouldToggleLogs(
-				keyMsg,
-				m,
-			) {
+			if shouldToggleLogs(keyMsg) {
 				return openLogOverlay(m), nil
 			}
 		}

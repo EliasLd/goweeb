@@ -7,29 +7,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func TestLogOverlayOpensFromMainView(
-	t *testing.T,
-) {
-	m := InitialModel()
-
-	m.Cursor = 1
-	m = updateFocus(m)
-
-	next, _ := Update(
-		tea.KeyMsg{
-			Type:  tea.KeyRunes,
-			Runes: []rune{'l'},
-		},
-		m,
-	)
-
-	if !next.LogsVisible {
-		t.Fatal(
-			"log overlay should be visible",
-		)
-	}
-}
-
 func TestLogOverlayEscapeClosesOverlay(
 	t *testing.T,
 ) {
@@ -79,36 +56,6 @@ func TestLogOverlayCanOpenWhileDownloading(
 	if !next.LogsVisible {
 		t.Fatal(
 			"log overlay should open while downloading",
-		)
-	}
-}
-
-func TestLogShortcutDoesNotStealDestinationInput(
-	t *testing.T,
-) {
-	m := InitialModel()
-
-	m.Cursor = 0
-	m = updateFocus(m)
-
-	next, _ := Update(
-		tea.KeyMsg{
-			Type:  tea.KeyRunes,
-			Runes: []rune{'l'},
-		},
-		m,
-	)
-
-	if next.LogsVisible {
-		t.Fatal(
-			"log overlay should not intercept text input",
-		)
-	}
-
-	if next.ScanDirInput.Value() ==
-		m.ScanDirInput.Value() {
-		t.Fatal(
-			"destination input should receive the typed character",
 		)
 	}
 }
@@ -179,35 +126,6 @@ func TestLogOverlayEscapeClosesWithoutQuitting(
 	if cmd != nil {
 		t.Error(
 			"closing the log overlay should not quit the application",
-		)
-	}
-}
-
-func TestLogOverlayOpensWithLWhenInputIsNotFocused(
-	t *testing.T,
-) {
-	m := InitialModel()
-
-	m.Cursor = 1
-	m = updateFocus(m)
-
-	if m.ScanDirInput.Focused() {
-		t.Fatal(
-			"destination input should not be focused",
-		)
-	}
-
-	next, _ := Update(
-		tea.KeyMsg{
-			Type:  tea.KeyRunes,
-			Runes: []rune{'l'},
-		},
-		m,
-	)
-
-	if !next.LogsVisible {
-		t.Fatal(
-			"log overlay should open with l when no text input is focused",
 		)
 	}
 }
