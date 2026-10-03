@@ -5,7 +5,24 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/reflow/wrap"
 )
+
+func destinationPickerContentWidth(
+	terminalWidth int,
+) int {
+	if terminalWidth <= 0 {
+		return 60
+	}
+
+	return min(
+		80,
+		max(
+			30,
+			terminalWidth-8,
+		),
+	)
+}
 
 var destinationPickerCurrentStyle = lipgloss.NewStyle().
 	Faint(true)
@@ -23,12 +40,23 @@ func viewDestinationPicker(
 
 	content.WriteString("\n")
 
+	pickerWidth := destinationPickerContentWidth(
+		m.Width,
+	)
+
+	current := fmt.Sprintf(
+		"Current: %s",
+		m.DestinationPicker.CurrentDirectory,
+	)
+
+	current = wrap.String(
+		current,
+		pickerWidth,
+	)
+
 	content.WriteString(
 		destinationPickerCurrentStyle.Render(
-			fmt.Sprintf(
-				"Current: %s",
-				m.DestinationPicker.CurrentDirectory,
-			),
+			current,
 		),
 	)
 
@@ -38,10 +66,16 @@ func viewDestinationPicker(
 		m.DestinationPicker.View(),
 	)
 
+	renderedContent := lipgloss.NewStyle().
+		Width(pickerWidth).
+		Render(
+			content.String(),
+		)
+
 	return renderViewWithFooter(
 		m.Width,
 		m.Height,
-		content.String(),
+		renderedContent,
 		"↑/k ↓/j navigate • →/l open • ←/h back • Enter select • Esc back",
 		lipgloss.Center,
 		lipgloss.Center,

@@ -11,7 +11,7 @@ func handleDestinationPickerUpdate(
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "esc":
+		case "esc", "ctrl+c":
 			return closeDestinationPicker(m), nil
 		}
 
