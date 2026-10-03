@@ -1,10 +1,9 @@
 package tui
 
 import (
-	"strings"
-
 	"github.com/EliasLd/goweeb/internal/app"
 	"github.com/charmbracelet/lipgloss"
+	"strings"
 )
 
 func viewForm(m Model) string {
@@ -101,7 +100,7 @@ func viewForm(m Model) string {
 		m.Width,
 		m.Height,
 		form.String(),
-		"↑/↓ navigate • Space/Enter select • l logs • Ctrl+C/Esc quit",
+		"↑/↓ navigate • Space/Enter select • Ctrl+L logs • Ctrl+C/Esc quit",
 		lipgloss.Center,
 		lipgloss.Center,
 	)

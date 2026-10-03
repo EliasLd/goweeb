@@ -31,6 +31,10 @@ func handleFormUpdate(
 			m.Cursor++
 		}
 
+		if m.Cursor == 3 && !m.SearchReady {
+			m.Cursor--
+		}
+
 		return updateFocus(m), nil
 
 	case "enter", " ":
