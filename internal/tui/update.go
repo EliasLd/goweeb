@@ -41,6 +41,20 @@ func updateApp(
 		)
 	}
 
+	switch msg := msg.(type) {
+	case setupLogPipeMsg:
+		return handleSetupLogPipe(
+			msg,
+			m,
+		)
+
+	case logMsg:
+		return handleLogMsg(
+			msg,
+			m,
+		)
+	}
+
 	if isMainViewState(m.State) {
 		if m.LogsVisible {
 			switch msg.(type) {
@@ -127,18 +141,6 @@ func updateApp(
 		}
 
 		return handleFormUpdate(
-			msg,
-			m,
-		)
-
-	case setupLogPipeMsg:
-		return handleSetupLogPipe(
-			msg,
-			m,
-		)
-
-	case logMsg:
-		return handleLogMsg(
 			msg,
 			m,
 		)

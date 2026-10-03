@@ -60,15 +60,18 @@ func handleLogMsg(
 
 		m.IsDownloading = false
 		m = updateSearchReady(m)
-		m.State = StateForm
-		m.Cursor = 0
 
-		if app.OutputDirLocked() {
-			m.Cursor = 1
-		}
+		if m.State == StateDownloading {
+			m.State = StateForm
+			m.Cursor = 0
 
-		if !m.LogsVisible {
-			m = updateFocus(m)
+			if app.OutputDirLocked() {
+				m.Cursor = 1
+			}
+
+			if !m.LogsVisible {
+				m = updateFocus(m)
+			}
 		}
 
 		return m, m.AlertModel.NewAlertCmd(
