@@ -14,7 +14,7 @@ func handleFormUpdate(
 	case "ctrl+c", "esc":
 		return m, tea.Quit
 
-	case "up":
+	case "up", "k":
 		if m.Cursor > 0 {
 			m.Cursor--
 		}
@@ -26,7 +26,7 @@ func handleFormUpdate(
 
 		return updateFocus(m), nil
 
-	case "down", "tab":
+	case "down", "tab", "j":
 		if m.Cursor < 3 {
 			m.Cursor++
 		}
