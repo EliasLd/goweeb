@@ -42,15 +42,6 @@ var (
 	disabledButtonStyle = buttonBaseStyle.
 				Foreground(lipgloss.Color("240")).
 				Faint(true)
-
-	downloadingTextStyle = lipgloss.NewStyle().
-				Foreground(
-			lipgloss.AdaptiveColor{
-				Light: "#333333",
-				Dark:  "#FFFFFF",
-			},
-		).
-		Faint(true)
 )
 
 func renderButton(
