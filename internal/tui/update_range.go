@@ -134,7 +134,10 @@ func handleRangeUpdate(
 				"Starting download...",
 			)
 
-			return m, startDownload(m)
+			return m, tea.Batch(
+				startDownload(m),
+				m.DownloadSpinner.Tick,
+			)
 		}
 	}
 

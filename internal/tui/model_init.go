@@ -4,8 +4,10 @@ import (
 	"time"
 
 	"github.com/EliasLd/goweeb/internal/app"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
+	"github.com/charmbracelet/lipgloss"
 	"go.dalton.dog/bubbleup"
 )
 
@@ -48,6 +50,13 @@ func InitialModel() Model {
 		).
 		WithUnicodePrefix()
 
+	downloadSpinner := spinner.New()
+	downloadSpinner.Spinner = spinner.Dot
+	downloadSpinner.Style = lipgloss.NewStyle().
+		Foreground(
+			lipgloss.Color("226"),
+		)
+
 	cursor := 0
 
 	if app.OutputDirLocked() {
@@ -86,11 +95,12 @@ func InitialModel() Model {
 
 		AlertModel: alertModel,
 
-		SearchReady:   false,
-		IsDownloading: false,
-		Logs:          []string{},
-		LogsVisible:   false,
-		LogViewport:   logViewport,
+		SearchReady:     false,
+		IsDownloading:   false,
+		DownloadSpinner: downloadSpinner,
+		Logs:            []string{},
+		LogsVisible:     false,
+		LogViewport:     logViewport,
 	}
 
 	return updateFocus(m)

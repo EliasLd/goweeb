@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"go.dalton.dog/bubbleup"
 )
@@ -53,6 +54,15 @@ func updateApp(
 			msg,
 			m,
 		)
+
+	case spinner.TickMsg:
+		if !m.IsDownloading {
+			return m, nil
+		}
+
+		var cmd tea.Cmd
+		m.DownloadSpinner, cmd = m.DownloadSpinner.Update(msg)
+		return m, cmd
 	}
 
 	if isMainViewState(m.State) {

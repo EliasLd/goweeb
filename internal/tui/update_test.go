@@ -6,6 +6,7 @@ import (
 
 	"github.com/EliasLd/goweeb/internal/source/common"
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -248,6 +249,51 @@ func TestOptionalSettingsToggleEbookFriendly(t *testing.T) {
 	if next.EbookCheckbox.Checked == initial {
 		t.Fatal(
 			"ebook-friendly checkbox was not toggled",
+		)
+	}
+}
+
+func TestDownloadSpinnerUpdatesWhileDownloading(
+	t *testing.T,
+) {
+	m := InitialModel()
+
+	m.IsDownloading = true
+	m.State = StateDownloading
+
+	next, cmd := Update(
+		spinner.TickMsg{},
+		m,
+	)
+
+	if cmd == nil {
+		t.Error(
+			"active download spinner should schedule another tick",
+		)
+	}
+
+	if next.DownloadSpinner.View() == "" {
+		t.Error(
+			"download spinner should render while downloading",
+		)
+	}
+}
+
+func TestDownloadSpinnerStopsWhenDownloadIsInactive(
+	t *testing.T,
+) {
+	m := InitialModel()
+
+	m.IsDownloading = false
+
+	_, cmd := Update(
+		spinner.TickMsg{},
+		m,
+	)
+
+	if cmd != nil {
+		t.Error(
+			"inactive download spinner should not schedule another tick",
 		)
 	}
 }
