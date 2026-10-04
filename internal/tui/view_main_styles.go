@@ -3,37 +3,12 @@ package tui
 import "github.com/charmbracelet/lipgloss"
 
 var (
-	mainAccentColor = lipgloss.AdaptiveColor{
-		Light: "#2563EB",
-		Dark:  "#69A7FF",
-	}
-
-	mainBrightAccentColor = lipgloss.AdaptiveColor{
-		Light: "#0891B2",
-		Dark:  "#67E8F9",
-	}
-
-	mainTextColor = lipgloss.AdaptiveColor{
-		Light: "#1E293B",
-		Dark:  "#DDE7F2",
-	}
-
-	mainMutedColor = lipgloss.AdaptiveColor{
-		Light: "#64748B",
-		Dark:  "#718096",
-	}
-
-	mainBorderColor = lipgloss.AdaptiveColor{
-		Light: "#CBD5E1",
-		Dark:  "#26384D",
-	}
-
 	mainBrandKanaStyle = lipgloss.NewStyle().
-				Foreground(mainBrightAccentColor).
+				Foreground(brightAccentColor).
 				Bold(true)
 
 	mainTaglineStyle = lipgloss.NewStyle().
-				Foreground(mainMutedColor).
+				Foreground(mutedColor).
 				Faint(true)
 
 	mainDeckStyle = lipgloss.NewStyle().
@@ -41,74 +16,66 @@ var (
 			lipgloss.RoundedBorder(),
 		).
 		BorderForeground(
-			mainBorderColor,
+			borderColor,
 		).
 		Padding(1, 2)
 
 	mainRowLabelStyle = lipgloss.NewStyle().
-				Foreground(mainMutedColor).
+				Foreground(mutedColor).
 				Bold(true)
 
 	mainRowValueStyle = lipgloss.NewStyle().
-				Foreground(mainTextColor)
+				Foreground(textColor)
 
 	mainRowFocusedLabelStyle = lipgloss.NewStyle().
-					Foreground(mainBrightAccentColor).
+					Foreground(brightAccentColor).
 					Bold(true)
 
 	mainRowFocusedValueStyle = lipgloss.NewStyle().
-					Foreground(mainTextColor).
+					Foreground(textColor).
 					Bold(true)
 
 	mainRowMarkerStyle = lipgloss.NewStyle().
-				Foreground(mainBrightAccentColor).
+				Foreground(brightAccentColor).
 				Bold(true)
 
 	mainRowArrowStyle = lipgloss.NewStyle().
-				Foreground(mainMutedColor)
+				Foreground(mutedColor)
 
 	mainRowFocusedArrowStyle = lipgloss.NewStyle().
-					Foreground(mainBrightAccentColor)
+					Foreground(brightAccentColor)
 
 	mainRowDisabledStyle = lipgloss.NewStyle().
-				Foreground(mainMutedColor).
+				Foreground(mutedColor).
 				Faint(true)
 
 	mainSearchButtonStyle = lipgloss.NewStyle().
-				Foreground(mainAccentColor).
+				Foreground(accentColor).
 				Bold(true).
 				Padding(0, 2)
 
 	mainSearchButtonFocusedStyle = lipgloss.NewStyle().
-					Background(mainBrightAccentColor).
+					Background(brightAccentColor).
 					Foreground(lipgloss.Color("#06111C")).
 					Bold(true).
 					Padding(0, 2)
 
 	mainSearchButtonDisabledStyle = lipgloss.NewStyle().
-					Foreground(mainMutedColor).
+					Foreground(mutedColor).
 					Faint(true).
 					Padding(0, 2)
 
 	mainDownloadingTextStyle = lipgloss.NewStyle().
-					Foreground(mainTextColor).
+					Foreground(textColor).
 					Faint(true)
 
 	mainReadyStatusStyle = lipgloss.NewStyle().
-				Foreground(mainBrightAccentColor)
+				Foreground(brightAccentColor)
 
 	mainBusyStatusStyle = lipgloss.NewStyle().
-				Foreground(mainAccentColor)
+				Foreground(accentColor)
 
 	mainIdleStatusStyle = lipgloss.NewStyle().
-				Foreground(mainMutedColor).
+				Foreground(mutedColor).
 				Faint(true)
-
-	mainShortcutStyle = lipgloss.NewStyle().
-				Foreground(mainMutedColor).
-				Faint(true)
-
-	mainLinkStyle = lipgloss.NewStyle().
-			Foreground(mainAccentColor).
-			Faint(true)
 )

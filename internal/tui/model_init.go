@@ -55,7 +55,7 @@ func InitialModel() Model {
 	downloadSpinner.Style =
 		lipgloss.NewStyle().
 			Foreground(
-				mainBrightAccentColor,
+				brightAccentColor,
 			)
 
 	cursor := 0
