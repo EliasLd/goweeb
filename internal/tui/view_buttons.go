@@ -10,37 +10,28 @@ const (
 )
 
 var (
-	primaryButtonColor = lipgloss.AdaptiveColor{
-		Light: "#B77900",
-		Dark:  "#FFD75F",
-	}
-
-	secondaryButtonColor = lipgloss.AdaptiveColor{
-		Light: "#333333",
-		Dark:  "#FFFFFF",
-	}
-
 	buttonBaseStyle = lipgloss.NewStyle().
-			Padding(0, 1)
+			Padding(0, 2)
 
 	primaryButtonStyle = buttonBaseStyle.
-				Foreground(primaryButtonColor)
+				Foreground(accentColor).
+				Bold(true)
 
 	primaryButtonFocusedStyle = buttonBaseStyle.
-					Background(primaryButtonColor).
-					Foreground(lipgloss.Color("#000000")).
+					Background(brightAccentColor).
+					Foreground(lipgloss.Color("#06111C")).
 					Bold(true)
 
 	secondaryButtonStyle = buttonBaseStyle.
-				Foreground(secondaryButtonColor)
+				Foreground(textColor)
 
 	secondaryButtonFocusedStyle = buttonBaseStyle.
-					Background(secondaryButtonColor).
-					Foreground(lipgloss.Color("#000000")).
+					Background(borderColor).
+					Foreground(brightAccentColor).
 					Bold(true)
 
 	disabledButtonStyle = buttonBaseStyle.
-				Foreground(lipgloss.Color("240")).
+				Foreground(mutedColor).
 				Faint(true)
 )
 

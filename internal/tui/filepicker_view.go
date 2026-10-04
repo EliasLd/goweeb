@@ -25,6 +25,7 @@ func destinationPickerContentWidth(
 }
 
 var destinationPickerCurrentStyle = lipgloss.NewStyle().
+	Foreground(mutedColor).
 	Faint(true)
 
 func viewDestinationPicker(

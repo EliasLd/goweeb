@@ -28,16 +28,14 @@ func newDestinationPicker(
 
 	fp.AutoHeight = false
 
-	// Keep the picker consistent with goweeb's current
-	// yellow highlight styling.
 	fp.Styles.Cursor = lipgloss.NewStyle().
 		Foreground(
-			lipgloss.Color("226"),
+			brightAccentColor,
 		)
 
 	fp.Styles.Selected = lipgloss.NewStyle().
 		Foreground(
-			lipgloss.Color("226"),
+			brightAccentColor,
 		).
 		Bold(true)
 
