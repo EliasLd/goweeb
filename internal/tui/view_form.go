@@ -73,18 +73,23 @@ func viewForm(m Model) string {
 	)
 	form.WriteString("\n\n")
 
-	if m.SearchReady {
+	if m.IsDownloading {
+		form.WriteString(
+			lipgloss.JoinHorizontal(
+				lipgloss.Center,
+				m.DownloadSpinner.View(),
+				" ",
+				downloadingTextStyle.Render(
+					"Downloading manga...",
+				),
+			),
+		)
+	} else if m.SearchReady {
 		form.WriteString(
 			renderButton(
 				"[ Search manga ]",
 				m.Cursor == 3,
 				buttonPrimary,
-			),
-		)
-	} else if m.IsDownloading {
-		form.WriteString(
-			disabledButtonStyle.Render(
-				"Search manga (download in progress)",
 			),
 		)
 	} else {

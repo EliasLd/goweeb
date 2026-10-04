@@ -8,6 +8,7 @@ import (
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 	"github.com/charmbracelet/bubbles/filepicker"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -78,6 +79,8 @@ type Model struct {
 	SelectedMangaURL string
 	SelectedScanPath string
 	IsDownloading    bool
+
+	DownloadSpinner spinner.Model
 
 	// Terminal layout and navigation.
 	Cursor         int
