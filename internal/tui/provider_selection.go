@@ -172,25 +172,21 @@ func (m ProviderSelectionModel) View() string {
 
 	b.WriteString("\n\n")
 
-	button := "[ Confirm ]"
-
 	if m.SelectedID == "" {
-		button = lipgloss.NewStyle().
-			Faint(true).
-			Render(button)
-	} else if m.Cursor == m.confirmCursor() {
-		button = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("226")).
-			Render(button)
+		b.WriteString(
+			disabledButtonStyle.Render(
+				"Confirm",
+			),
+		)
 	} else {
-		button = lipgloss.NewStyle().
-			Faint(true).
-			Render(button)
+		b.WriteString(
+			renderButton(
+				"Confirm",
+				m.Cursor == m.confirmCursor(),
+				buttonPrimary,
+			),
+		)
 	}
-
-	b.WriteString(button)
-
 	return renderViewWithFooter(
 		m.Width,
 		m.Height,
