@@ -7,11 +7,6 @@ import (
 )
 
 var (
-	logOverlayBorderColor = lipgloss.AdaptiveColor{
-		Light: "#333333",
-		Dark:  "#FFFFFF",
-	}
-
 	logOverlayStyle = lipgloss.NewStyle().
 			Padding(0, 2)
 
@@ -20,16 +15,17 @@ var (
 		border.Right = "├"
 
 		return lipgloss.NewStyle().
-			Foreground(lipgloss.Color("226")).
+			Foreground(brightAccentColor).
 			BorderStyle(border).
 			BorderForeground(
-				logOverlayBorderColor,
+				borderColor,
 			).
 			Bold(true).
 			Padding(0, 1)
 	}()
 
 	logOverlayHintStyle = lipgloss.NewStyle().
+				Foreground(mutedColor).
 				Faint(true)
 )
 
@@ -51,7 +47,7 @@ func logViewportHeader(
 
 	line = lipgloss.NewStyle().
 		Foreground(
-			logOverlayBorderColor,
+			borderColor,
 		).
 		Render(line)
 
@@ -72,7 +68,7 @@ func logViewportFooter(
 
 	return lipgloss.NewStyle().
 		Foreground(
-			logOverlayBorderColor,
+			borderColor,
 		).
 		Render(line)
 }

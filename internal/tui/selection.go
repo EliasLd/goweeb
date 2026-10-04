@@ -49,13 +49,13 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	// Highlight selected item
 	if index == m.Index() && d.Focused {
 		s := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("226")).
+			Foreground(brightAccentColor).
 			Bold(true).
 			Render("> " + str)
 		fmt.Fprint(w, s)
 	} else {
 		s := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("240")).
+			Foreground(mutedColor).
 			Render("  " + str)
 		fmt.Fprint(w, s)
 	}
@@ -89,13 +89,11 @@ func NewSelectionModel(title string, items []SelectionItem) SelectionModel {
 	l.SetShowHelp(false)
 	l.SetFilteringEnabled(true)
 
-	l.Styles.Title = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("226")).
+	l.Styles.Title = titleStyle.
 		Padding(0, 0, 1, 0)
 
 	l.Styles.StatusBar = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("240")).
+		Foreground(mutedColor).
 		Padding(0, 0, 1, 0)
 
 	return SelectionModel{

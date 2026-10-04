@@ -108,20 +108,13 @@ func viewRangeSelection(m Model) string {
 
 	b.WriteString("\n\n")
 
-	btn := "[ Download ]"
-
-	if m.Cursor == 2 {
-		btn = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("226")).
-			Render(btn)
-	} else {
-		btn = lipgloss.NewStyle().
-			Faint(true).
-			Render(btn)
-	}
-
-	b.WriteString(btn)
+	b.WriteString(
+		renderButton(
+			"Download",
+			m.Cursor == 2,
+			buttonPrimary,
+		),
+	)
 
 	return renderViewWithFooter(
 		m.Width,

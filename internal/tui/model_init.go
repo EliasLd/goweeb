@@ -52,10 +52,11 @@ func InitialModel() Model {
 
 	downloadSpinner := spinner.New()
 	downloadSpinner.Spinner = spinner.Dot
-	downloadSpinner.Style = lipgloss.NewStyle().
-		Foreground(
-			lipgloss.Color("226"),
-		)
+	downloadSpinner.Style =
+		lipgloss.NewStyle().
+			Foreground(
+				brightAccentColor,
+			)
 
 	cursor := 0
 
