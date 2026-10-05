@@ -26,6 +26,12 @@ goweeb is a cross-platform manga downloader available as both an interactive **T
 - Native binaries for Linux, macOS and Windows.
 - OCI container image for `linux/amd64` and `linux/arm64`.
 
+### Interactive search
+
+Search for manga directly from the TUI and browse matching results as you type, with a fully keyboard-driven workflow from query to selection.
+
+![goweeb interactive search demo](./assets/search-demo.gif)
+
 ## Quick start
 
 ### Native

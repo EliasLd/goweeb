@@ -26,6 +26,12 @@ goweeb est un téléchargeur de mangas multiplateforme disponible à la fois sou
 - Binaires natifs pour Linux, macOS et Windows.
 - Image de conteneur OCI pour `linux/amd64` et `linux/arm64`.
 
+### Recherche interactive
+
+Recherchez un manga directement depuis le TUI et parcourez les résultats correspondants au fur et à mesure de votre saisie, avec une navigation entièrement au clavier, de la recherche jusqu’à la sélection.
+
+![Démo de la recherche interactive de goweeb](./assets/search-demo.gif)
+
 ## Démarrage rapide
 
 ### Installation native
