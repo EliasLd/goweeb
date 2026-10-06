@@ -5,7 +5,11 @@ import (
 )
 
 func Start() error {
-	p := tea.NewProgram(InitialModel(), tea.WithAltScreen())
+	p := tea.NewProgram(
+		InitialModel(),
+		tea.WithAltScreen(),
+		tea.WithMouseCellMotion(),
+	)
 	if _, err := p.Run(); err != nil {
 		return err
 	}

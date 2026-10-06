@@ -21,44 +21,85 @@ func (i SelectionItem) FilterValue() string { return i.Label }
 
 // Custom item delegate for styling
 type itemDelegate struct {
-	Focused bool
+	Focused    bool
+	ZonePrefix string
 }
 
 func (d itemDelegate) Height() int                             { return 1 }
 func (d itemDelegate) Spacing() int                            { return 0 }
 func (d itemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
-func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
-	i, ok := listItem.(SelectionItem)
+func (
+	d itemDelegate,
+) Render(
+	w io.Writer,
+	m list.Model,
+	index int,
+	listItem list.Item,
+) {
+	i, ok :=
+		listItem.(SelectionItem)
+
 	if !ok {
 		return
 	}
 
-	str := fmt.Sprintf("%d. %s", index+1, i.Label)
+	str := fmt.Sprintf(
+		"%d. %s",
+		index+1,
+		i.Label,
+	)
 
-	availaleWidth := max(
+	availableWidth := max(
 		1,
 		m.Width()-2,
 	)
 
 	str = truncate.StringWithTail(
 		str,
-		uint(availaleWidth),
+		uint(availableWidth),
 		"-",
 	)
 
-	// Highlight selected item
-	if index == m.Index() && d.Focused {
-		s := lipgloss.NewStyle().
-			Foreground(brightAccentColor).
-			Bold(true).
-			Render("> " + str)
-		fmt.Fprint(w, s)
+	var rendered string
+
+	if index == m.Index() &&
+		d.Focused {
+		rendered =
+			lipgloss.NewStyle().
+				Foreground(
+					brightAccentColor,
+				).
+				Bold(true).
+				Render(
+					"> " + str,
+				)
 	} else {
-		s := lipgloss.NewStyle().
-			Foreground(mutedColor).
-			Render("  " + str)
-		fmt.Fprint(w, s)
+		rendered =
+			lipgloss.NewStyle().
+				Foreground(
+					mutedColor,
+				).
+				Render(
+					"  " + str,
+				)
 	}
+
+	if d.ZonePrefix != "" {
+		rendered =
+			markMouseZone(
+				fmt.Sprintf(
+					"%s%d",
+					d.ZonePrefix,
+					index,
+				),
+				rendered,
+			)
+	}
+
+	fmt.Fprint(
+		w,
+		rendered,
+	)
 }
 
 // Represents a generic selection screen

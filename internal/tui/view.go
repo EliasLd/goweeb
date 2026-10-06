@@ -13,7 +13,12 @@ func View(m Model) string {
 		)
 	}
 
-	return m.AlertModel.Render(base)
+	rendered :=
+		m.AlertModel.Render(base)
+
+	return mouseZones.Scan(
+		rendered,
+	)
 }
 
 func viewCurrentState(m Model) string {

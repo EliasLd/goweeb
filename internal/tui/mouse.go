@@ -1,0 +1,343 @@
+package tui
+
+import (
+	"fmt"
+
+	"github.com/EliasLd/goweeb/internal/app"
+	tea "github.com/charmbracelet/bubbletea"
+	zone "github.com/lrstanley/bubblezone"
+)
+
+var mouseZones = zone.New()
+
+const (
+	mouseZoneMainDestination = "main-destination"
+	mouseZoneMainProvider    = "main-provider"
+	mouseZoneMainOptions     = "main-options"
+	mouseZoneMainSearch      = "main-search"
+
+	mouseZoneRangeInput    = "range-input"
+	mouseZoneRangeAll      = "range-all"
+	mouseZoneRangeDownload = "range-download"
+
+	mouseZoneProviderDomain  = "provider-domain"
+	mouseZoneProviderConfirm = "provider-confirm"
+
+	mouseZoneSearchInput = "search-input"
+)
+
+func providerOptionZone(
+	index int,
+) string {
+	return fmt.Sprintf(
+		"provider-option-%d",
+		index,
+	)
+}
+
+func searchResultZone(
+	index int,
+) string {
+	return fmt.Sprintf(
+		"search-result-%d",
+		index,
+	)
+}
+
+func selectionItemZone(
+	index int,
+) string {
+	return fmt.Sprintf(
+		"selection-item-%d",
+		index,
+	)
+}
+
+func markMouseZone(
+	id string,
+	view string,
+) string {
+	return mouseZones.Mark(
+		id,
+		view,
+	)
+}
+
+func mouseZoneHit(
+	id string,
+	msg tea.MouseMsg,
+) bool {
+	z := mouseZones.Get(id)
+
+	return z != nil &&
+		z.InBounds(msg)
+}
+
+func isLeftMouseRelease(
+	msg tea.MouseMsg,
+) bool {
+	return msg.Action ==
+		tea.MouseActionRelease &&
+		msg.Button ==
+			tea.MouseButtonLeft
+}
+
+func handleMouseUpdate(
+	msg tea.MouseMsg,
+	m Model,
+) (Model, tea.Cmd, bool) {
+	if !isLeftMouseRelease(msg) {
+		return m, nil, false
+	}
+
+	switch m.State {
+	case StateForm,
+		StateDownloading:
+		return handleMainMouse(
+			msg,
+			m,
+		)
+
+	case StateRangeSelection:
+		return handleRangeMouse(
+			msg,
+			m,
+		)
+
+	case StateProviderSelection:
+		return handleProviderMouse(
+			msg,
+			m,
+		)
+
+	case StateInteractiveSearch:
+		return handleSearchMouse(
+			msg,
+			m,
+		)
+	}
+
+	return m, nil, false
+}
+
+func handleMainMouse(
+	msg tea.MouseMsg,
+	m Model,
+) (Model, tea.Cmd, bool) {
+	switch {
+	case mouseZoneHit(
+		mouseZoneMainDestination,
+		msg,
+	):
+		if app.OutputDirLocked() {
+			return m, nil, true
+		}
+
+		m.Cursor = 0
+		m = updateFocus(m)
+
+		next, cmd :=
+			openDestinationPicker(m)
+
+		return next, cmd, true
+
+	case mouseZoneHit(
+		mouseZoneMainProvider,
+		msg,
+	):
+		m.Cursor = 1
+		m = updateFocus(m)
+
+		return openProviderSelection(m),
+			nil,
+			true
+
+	case mouseZoneHit(
+		mouseZoneMainOptions,
+		msg,
+	):
+		m.Cursor = 2
+		m.OptionalCursor = 0
+		m.State =
+			StateOptionalSettings
+
+		return m, nil, true
+
+	case mouseZoneHit(
+		mouseZoneMainSearch,
+		msg,
+	):
+		if !m.SearchReady {
+			return m, nil, true
+		}
+
+		m.Cursor = 3
+
+		next, cmd :=
+			openInteractiveSearch(m)
+
+		return next, cmd, true
+	}
+
+	return m, nil, false
+}
+
+func handleRangeMouse(
+	msg tea.MouseMsg,
+	m Model,
+) (Model, tea.Cmd, bool) {
+	switch {
+	case mouseZoneHit(
+		mouseZoneRangeInput,
+		msg,
+	):
+		if m.AllCheckbox.Checked {
+			return m, nil, true
+		}
+
+		m.Cursor = 0
+		m = updateRangeFocus(m)
+
+		return m, nil, true
+
+	case mouseZoneHit(
+		mouseZoneRangeAll,
+		msg,
+	):
+		m.Cursor = 1
+		m.AllCheckbox.Toggle()
+		m = updateRangeFocus(m)
+
+		return m, nil, true
+
+	case mouseZoneHit(
+		mouseZoneRangeDownload,
+		msg,
+	):
+		m.Cursor = 2
+
+		// Reuse the exact same validation/download path
+		// as pressing Enter.
+		next, cmd :=
+			handleRangeUpdate(
+				tea.KeyMsg{
+					Type: tea.KeyEnter,
+				},
+				m,
+			)
+
+		return next, cmd, true
+	}
+
+	return m, nil, false
+}
+
+func handleProviderMouse(
+	msg tea.MouseMsg,
+	m Model,
+) (Model, tea.Cmd, bool) {
+	pm :=
+		&m.ProviderSelectionModel
+
+	for i := range pm.Options {
+
+		if mouseZoneHit(
+			providerOptionZone(i),
+			msg,
+		) {
+			pm.Cursor = i
+			pm.selectCurrentProvider()
+			pm.updateFocus()
+
+			return m, nil, true
+		}
+	}
+
+	if mouseZoneHit(
+		mouseZoneProviderDomain,
+		msg,
+	) {
+		pm.Cursor =
+			pm.domainCursor()
+
+		pm.updateFocus()
+
+		return m, nil, true
+	}
+
+	if mouseZoneHit(
+		mouseZoneProviderConfirm,
+		msg,
+	) &&
+		pm.SelectedID != "" {
+
+		pm.Cursor =
+			pm.confirmCursor()
+
+		pm.Confirmed = true
+
+		return m, nil, true
+	}
+
+	return m, nil, false
+}
+
+func handleSearchMouse(
+	msg tea.MouseMsg,
+	m Model,
+) (Model, tea.Cmd, bool) {
+	if mouseZoneHit(
+		mouseZoneSearchInput,
+		msg,
+	) {
+		m.SearchFocus =
+			searchFocusInput
+
+		m.SearchInput.Focus()
+
+		m.SearchList.SetDelegate(
+			itemDelegate{
+				Focused:    false,
+				ZonePrefix: "search-result-",
+			},
+		)
+
+		return m, nil, true
+	}
+
+	for i := range m.SearchList.Items() {
+
+		if !mouseZoneHit(
+			searchResultZone(i),
+			msg,
+		) {
+			continue
+		}
+
+		m.SearchList.Select(i)
+
+		m.SearchFocus =
+			searchFocusResults
+
+		m.SearchInput.Blur()
+
+		m.SearchList.SetDelegate(
+			itemDelegate{
+				Focused:    true,
+				ZonePrefix: "search-result-",
+			},
+		)
+
+		next, cmd :=
+			handleInteractiveSearchUpdate(
+				tea.KeyMsg{
+					Type: tea.KeyEnter,
+				},
+				m,
+			)
+
+		return next, cmd, true
+	}
+
+	return m, nil, false
+}
