@@ -50,11 +50,14 @@ func viewRangeSelection(m Model) string {
 	b.WriteString(labelStyle.Render("Chapter range"))
 	b.WriteString("\n\n")
 
+	rangeInputView :=
+		m.RangeInput.View()
+
 	if m.AllCheckbox.Checked {
 		b.WriteString(
 			lipgloss.NewStyle().
 				Faint(true).
-				Render(m.RangeInput.View()),
+				Render(rangeInputView),
 		)
 
 		b.WriteString("\n")
@@ -69,12 +72,19 @@ func viewRangeSelection(m Model) string {
 		)
 	} else {
 		if m.Cursor == 0 {
-			b.WriteString(m.RangeInput.View())
+			rangeInputView =
+				markMouseZone(
+					mouseZoneRangeInput,
+					rangeInputView,
+				)
+			b.WriteString(
+				rangeInputView,
+			)
 		} else {
 			b.WriteString(
 				lipgloss.NewStyle().
 					Faint(true).
-					Render(m.RangeInput.View()),
+					Render(rangeInputView),
 			)
 		}
 	}
@@ -102,18 +112,38 @@ func viewRangeSelection(m Model) string {
 
 	b.WriteString("\n\n")
 
+	allCheckbox :=
+		m.AllCheckbox.View(
+			m.Cursor == 1,
+		)
+
+	allCheckbox =
+		markMouseZone(
+			mouseZoneRangeAll,
+			allCheckbox,
+		)
+
 	b.WriteString(
-		m.AllCheckbox.View(m.Cursor == 1),
+		allCheckbox,
 	)
 
 	b.WriteString("\n\n")
 
-	b.WriteString(
+	downloadButton :=
 		renderButton(
 			"Download",
 			m.Cursor == 2,
 			buttonPrimary,
-		),
+		)
+
+	downloadButton =
+		markMouseZone(
+			mouseZoneRangeDownload,
+			downloadButton,
+		)
+
+	b.WriteString(
+		downloadButton,
 	)
 
 	return renderViewWithFooter(

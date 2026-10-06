@@ -152,7 +152,21 @@ func (m ProviderSelectionModel) View() string {
 	b.WriteString("\n\n")
 
 	for i, option := range m.Options {
-		b.WriteString(option.Checkbox.View(m.Cursor == i))
+		optionView :=
+			option.Checkbox.View(
+				m.Cursor == i,
+			)
+
+		optionView =
+			markMouseZone(
+				providerOptionZone(i),
+				optionView,
+			)
+
+		b.WriteString(
+			optionView,
+		)
+
 		b.WriteString("\n")
 	}
 
@@ -160,13 +174,21 @@ func (m ProviderSelectionModel) View() string {
 	b.WriteString(labelStyle.Render("Custom domain (optional)"))
 	b.WriteString("\n\n")
 
+	domainView :=
+		m.DomainInput.View()
+
 	if m.Cursor == m.domainCursor() {
-		b.WriteString(m.DomainInput.View())
+		domainView =
+			markMouseZone(
+				mouseZoneProviderDomain,
+				domainView,
+			)
+		b.WriteString(domainView)
 	} else {
 		b.WriteString(
 			lipgloss.NewStyle().
 				Faint(true).
-				Render(m.DomainInput.View()),
+				Render(domainView),
 		)
 	}
 
@@ -179,14 +201,21 @@ func (m ProviderSelectionModel) View() string {
 			),
 		)
 	} else {
-		b.WriteString(
+		button :=
 			renderButton(
 				"Confirm",
-				m.Cursor == m.confirmCursor(),
+				m.Cursor ==
+					m.confirmCursor(),
 				buttonPrimary,
-			),
-		)
+			)
+		button =
+			markMouseZone(
+				mouseZoneProviderConfirm,
+				button,
+			)
+		b.WriteString(button)
 	}
+
 	return renderViewWithFooter(
 		m.Width,
 		m.Height,
