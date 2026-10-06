@@ -196,10 +196,17 @@ func renderMainSearchAction(
 			mainSearchButtonFocusedStyle
 	}
 
+	button := style.Render(
+		"Search manga",
+	)
+
+	button = markMouseZone(
+		mouseZoneMainSearch,
+		button,
+	)
+
 	return container.Render(
-		style.Render(
-			"Search manga",
-		),
+		button,
 	)
 }
 
@@ -306,6 +313,14 @@ func renderMainDeck(
 		innerWidth,
 	)
 
+	if destinationEnabled {
+		destination =
+			markMouseZone(
+				mouseZoneMainDestination,
+				destination,
+			)
+	}
+
 	providerRow := renderMainSettingRow(
 		"Provider",
 		provider,
@@ -314,6 +329,12 @@ func renderMainDeck(
 		innerWidth,
 	)
 
+	providerRow =
+		markMouseZone(
+			mouseZoneMainProvider,
+			providerRow,
+		)
+
 	options := renderMainSettingRow(
 		"Options",
 		mainOptionsSummary(m),
@@ -321,6 +342,12 @@ func renderMainDeck(
 		true,
 		innerWidth,
 	)
+
+	options =
+		markMouseZone(
+			mouseZoneMainOptions,
+			options,
+		)
 
 	search := renderMainSearchAction(
 		m,
