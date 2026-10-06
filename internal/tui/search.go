@@ -38,7 +38,7 @@ func interactiveSeachWidth(
 func newInteractiveSearchList() list.Model {
 	l := list.New(
 		[]list.Item{},
-		itemDelegate{Focused: false},
+		itemDelegate{Focused: false, ZonePrefix: "search-result-"},
 		60,
 		14,
 	)
@@ -122,7 +122,8 @@ func setInteractiveSearchFocus(
 
 		m.SearchList.SetDelegate(
 			itemDelegate{
-				Focused: true,
+				Focused:    true,
+				ZonePrefix: "search-result-",
 			},
 		)
 
@@ -131,7 +132,8 @@ func setInteractiveSearchFocus(
 
 		m.SearchList.SetDelegate(
 			itemDelegate{
-				Focused: false,
+				Focused:    false,
+				ZonePrefix: "search-result-",
 			},
 		)
 	}

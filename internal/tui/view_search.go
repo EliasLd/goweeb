@@ -36,8 +36,17 @@ func viewInteractiveSearch(
 
 	b.WriteString("\n\n")
 
+	searchInput :=
+		m.SearchInput.View()
+
+	searchInput =
+		markMouseZone(
+			mouseZoneSearchInput,
+			searchInput,
+		)
+
 	b.WriteString(
-		m.SearchInput.View(),
+		searchInput,
 	)
 
 	b.WriteString("\n\n")
