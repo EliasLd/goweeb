@@ -35,10 +35,19 @@ func viewOptionalSettings(m Model) string {
 
 	view.WriteString("\n\n")
 
-	view.WriteString(
+	ebookCheckbox :=
 		m.EbookCheckbox.View(
 			m.OptionalCursor == 0,
-		),
+		)
+
+	ebookCheckbox =
+		markMouseZone(
+			mouseZoneOptionalEbook,
+			ebookCheckbox,
+		)
+
+	view.WriteString(
+		ebookCheckbox,
 	)
 
 	view.WriteString("\n")

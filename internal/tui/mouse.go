@@ -23,7 +23,8 @@ const (
 	mouseZoneProviderDomain  = "provider-domain"
 	mouseZoneProviderConfirm = "provider-confirm"
 
-	mouseZoneSearchInput = "search-input"
+	mouseZoneOptionalEbook = "optional-ebook"
+	mouseZoneSearchInput   = "search-input"
 )
 
 func providerOptionZone(
@@ -106,6 +107,12 @@ func handleMouseUpdate(
 
 	case StateProviderSelection:
 		return handleProviderMouse(
+			msg,
+			m,
+		)
+
+	case StateOptionalSettings:
+		return handleOptionalMouse(
 			msg,
 			m,
 		)
@@ -397,4 +404,28 @@ func handleSearchMouse(
 	}
 
 	return m, nil, false
+}
+
+func handleOptionalMouse(
+	msg tea.MouseMsg,
+	m Model,
+) (Model, tea.Cmd, bool) {
+	if !mouseZoneHit(
+		mouseZoneOptionalEbook,
+		msg,
+	) {
+		return m, nil, false
+	}
+
+	m.OptionalCursor = 0
+
+	next, cmd :=
+		handleOptionalSettingsUpdate(
+			tea.KeyMsg{
+				Type: tea.KeySpace,
+			},
+			m,
+		)
+
+	return next, cmd, true
 }
