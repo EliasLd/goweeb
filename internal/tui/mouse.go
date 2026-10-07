@@ -133,35 +133,34 @@ func handleMainMouse(
 			return m, nil, true
 		}
 
-		m.Cursor = 0
-		m = updateFocus(m)
+		if m.Cursor != 0 {
+			m.Cursor = 0
+			m = updateFocus(m)
 
-		next, cmd :=
-			openDestinationPicker(m)
-
-		return next, cmd, true
+			return m, nil, true
+		}
 
 	case mouseZoneHit(
 		mouseZoneMainProvider,
 		msg,
 	):
-		m.Cursor = 1
-		m = updateFocus(m)
+		if m.Cursor != 1 {
+			m.Cursor = 1
+			m = updateFocus(m)
 
-		return openProviderSelection(m),
-			nil,
-			true
+			return m, nil, true
+		}
 
 	case mouseZoneHit(
 		mouseZoneMainOptions,
 		msg,
 	):
-		m.Cursor = 2
-		m.OptionalCursor = 0
-		m.State =
-			StateOptionalSettings
+		if m.Cursor != 2 {
+			m.Cursor = 2
+			m = updateFocus(m)
 
-		return m, nil, true
+			return m, nil, true
+		}
 
 	case mouseZoneHit(
 		mouseZoneMainSearch,
@@ -171,15 +170,26 @@ func handleMainMouse(
 			return m, nil, true
 		}
 
-		m.Cursor = 3
+		if m.Cursor != 3 {
+			m.Cursor = 3
+			m = updateFocus(m)
 
-		next, cmd :=
-			openInteractiveSearch(m)
+			return m, nil, true
+		}
 
-		return next, cmd, true
+	default:
+		return m, nil, false
 	}
 
-	return m, nil, false
+	next, cmd :=
+		handleFormUpdate(
+			tea.KeyMsg{
+				Type: tea.KeyEnter,
+			},
+			m,
+		)
+
+	return next, cmd, true
 }
 
 func handleRangeMouse(
@@ -195,8 +205,10 @@ func handleRangeMouse(
 			return m, nil, true
 		}
 
-		m.Cursor = 0
-		m = updateRangeFocus(m)
+		if m.Cursor != 0 {
+			m.Cursor = 0
+			m = updateRangeFocus(m)
+		}
 
 		return m, nil, true
 
@@ -214,22 +226,26 @@ func handleRangeMouse(
 		mouseZoneRangeDownload,
 		msg,
 	):
-		m.Cursor = 2
+		if m.Cursor != 2 {
+			m.Cursor = 2
+			m = updateRangeFocus(m)
 
-		// Reuse the exact same validation/download path
-		// as pressing Enter.
-		next, cmd :=
-			handleRangeUpdate(
-				tea.KeyMsg{
-					Type: tea.KeyEnter,
-				},
-				m,
-			)
+			return m, nil, true
+		}
 
-		return next, cmd, true
+	default:
+		return m, nil, false
 	}
 
-	return m, nil, false
+	next, cmd :=
+		handleRangeUpdate(
+			tea.KeyMsg{
+				Type: tea.KeyEnter,
+			},
+			m,
+		)
+
+	return next, cmd, true
 }
 
 func handleProviderMouse(
@@ -240,27 +256,39 @@ func handleProviderMouse(
 		&m.ProviderSelectionModel
 
 	for i := range pm.Options {
-
-		if mouseZoneHit(
+		if !mouseZoneHit(
 			providerOptionZone(i),
 			msg,
 		) {
-			pm.Cursor = i
-			pm.selectCurrentProvider()
-			pm.updateFocus()
-
-			return m, nil, true
+			continue
 		}
+
+		pm.Cursor = i
+		pm.updateFocus()
+
+		// Reuse the existing Enter behavior to select the provider.
+		next, cmd := handleProviderSelectionUpdate(
+			tea.KeyMsg{
+				Type: tea.KeyEnter,
+			},
+			m,
+		)
+
+		return next, cmd, true
 	}
 
 	if mouseZoneHit(
 		mouseZoneProviderDomain,
 		msg,
 	) {
-		pm.Cursor =
-			pm.domainCursor()
+		if pm.Cursor !=
+			pm.domainCursor() {
 
-		pm.updateFocus()
+			pm.Cursor =
+				pm.domainCursor()
+
+			pm.updateFocus()
+		}
 
 		return m, nil, true
 	}
@@ -268,15 +296,31 @@ func handleProviderMouse(
 	if mouseZoneHit(
 		mouseZoneProviderConfirm,
 		msg,
-	) &&
-		pm.SelectedID != "" {
+	) {
+		if pm.SelectedID == "" {
+			return m, nil, true
+		}
 
-		pm.Cursor =
-			pm.confirmCursor()
+		if pm.Cursor !=
+			pm.confirmCursor() {
 
-		pm.Confirmed = true
+			pm.Cursor =
+				pm.confirmCursor()
 
-		return m, nil, true
+			pm.updateFocus()
+
+			return m, nil, true
+		}
+
+		next, cmd :=
+			handleProviderSelectionUpdate(
+				tea.KeyMsg{
+					Type: tea.KeyEnter,
+				},
+				m,
+			)
+
+		return next, cmd, true
 	}
 
 	return m, nil, false
@@ -290,17 +334,21 @@ func handleSearchMouse(
 		mouseZoneSearchInput,
 		msg,
 	) {
-		m.SearchFocus =
-			searchFocusInput
+		if m.SearchFocus !=
+			searchFocusInput {
 
-		m.SearchInput.Focus()
+			m.SearchFocus =
+				searchFocusInput
 
-		m.SearchList.SetDelegate(
-			itemDelegate{
-				Focused:    false,
-				ZonePrefix: "search-result-",
-			},
-		)
+			m.SearchInput.Focus()
+
+			m.SearchList.SetDelegate(
+				itemDelegate{
+					Focused:    false,
+					ZonePrefix: "search-result-",
+				},
+			)
+		}
 
 		return m, nil, true
 	}
@@ -313,6 +361,11 @@ func handleSearchMouse(
 		) {
 			continue
 		}
+
+		alreadyFocused :=
+			m.SearchFocus ==
+				searchFocusResults &&
+				m.SearchList.Index() == i
 
 		m.SearchList.Select(i)
 
@@ -327,6 +380,10 @@ func handleSearchMouse(
 				ZonePrefix: "search-result-",
 			},
 		)
+
+		if !alreadyFocused {
+			return m, nil, true
+		}
 
 		next, cmd :=
 			handleInteractiveSearchUpdate(

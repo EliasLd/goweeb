@@ -177,21 +177,26 @@ func (m ProviderSelectionModel) View() string {
 	domainView :=
 		m.DomainInput.View()
 
-	if m.Cursor == m.domainCursor() {
+	if m.Cursor !=
+		m.domainCursor() {
+
 		domainView =
-			markMouseZone(
-				mouseZoneProviderDomain,
-				domainView,
-			)
-		b.WriteString(domainView)
-	} else {
-		b.WriteString(
 			lipgloss.NewStyle().
 				Faint(true).
-				Render(domainView),
-		)
+				Render(
+					domainView,
+				)
 	}
 
+	domainView =
+		markMouseZone(
+			mouseZoneProviderDomain,
+			domainView,
+		)
+
+	b.WriteString(
+		domainView,
+	)
 	b.WriteString("\n\n")
 
 	if m.SelectedID == "" {

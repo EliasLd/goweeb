@@ -57,7 +57,9 @@ func viewRangeSelection(m Model) string {
 		b.WriteString(
 			lipgloss.NewStyle().
 				Faint(true).
-				Render(rangeInputView),
+				Render(
+					rangeInputView,
+				),
 		)
 
 		b.WriteString("\n")
@@ -67,28 +69,29 @@ func viewRangeSelection(m Model) string {
 				Faint(true).
 				Italic(true).
 				Render(
-					"Disabled because 'Download all chapters' is enabled.",
+					"Disabled while downloading all chapters.",
 				),
 		)
 	} else {
-		if m.Cursor == 0 {
+		if m.Cursor != 0 {
 			rangeInputView =
-				markMouseZone(
-					mouseZoneRangeInput,
-					rangeInputView,
-				)
-			b.WriteString(
-				rangeInputView,
-			)
-		} else {
-			b.WriteString(
 				lipgloss.NewStyle().
 					Faint(true).
-					Render(rangeInputView),
-			)
+					Render(
+						rangeInputView,
+					)
 		}
-	}
 
+		rangeInputView =
+			markMouseZone(
+				mouseZoneRangeInput,
+				rangeInputView,
+			)
+
+		b.WriteString(
+			rangeInputView,
+		)
+	}
 	b.WriteString("\n\n")
 
 	b.WriteString(
