@@ -50,11 +50,16 @@ func viewRangeSelection(m Model) string {
 	b.WriteString(labelStyle.Render("Chapter range"))
 	b.WriteString("\n\n")
 
+	rangeInputView :=
+		m.RangeInput.View()
+
 	if m.AllCheckbox.Checked {
 		b.WriteString(
 			lipgloss.NewStyle().
 				Faint(true).
-				Render(m.RangeInput.View()),
+				Render(
+					rangeInputView,
+				),
 		)
 
 		b.WriteString("\n")
@@ -64,21 +69,29 @@ func viewRangeSelection(m Model) string {
 				Faint(true).
 				Italic(true).
 				Render(
-					"Disabled because 'Download all chapters' is enabled.",
+					"Disabled while downloading all chapters.",
 				),
 		)
 	} else {
-		if m.Cursor == 0 {
-			b.WriteString(m.RangeInput.View())
-		} else {
-			b.WriteString(
+		if m.Cursor != 0 {
+			rangeInputView =
 				lipgloss.NewStyle().
 					Faint(true).
-					Render(m.RangeInput.View()),
-			)
+					Render(
+						rangeInputView,
+					)
 		}
-	}
 
+		rangeInputView =
+			markMouseZone(
+				mouseZoneRangeInput,
+				rangeInputView,
+			)
+
+		b.WriteString(
+			rangeInputView,
+		)
+	}
 	b.WriteString("\n\n")
 
 	b.WriteString(
@@ -102,18 +115,38 @@ func viewRangeSelection(m Model) string {
 
 	b.WriteString("\n\n")
 
+	allCheckbox :=
+		m.AllCheckbox.View(
+			m.Cursor == 1,
+		)
+
+	allCheckbox =
+		markMouseZone(
+			mouseZoneRangeAll,
+			allCheckbox,
+		)
+
 	b.WriteString(
-		m.AllCheckbox.View(m.Cursor == 1),
+		allCheckbox,
 	)
 
 	b.WriteString("\n\n")
 
-	b.WriteString(
+	downloadButton :=
 		renderButton(
 			"Download",
 			m.Cursor == 2,
 			buttonPrimary,
-		),
+		)
+
+	downloadButton =
+		markMouseZone(
+			mouseZoneRangeDownload,
+			downloadButton,
+		)
+
+	b.WriteString(
+		downloadButton,
 	)
 
 	return renderViewWithFooter(

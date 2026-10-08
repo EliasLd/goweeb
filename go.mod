@@ -8,6 +8,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/x/ansi v0.11.7
+	github.com/lrstanley/bubblezone v1.0.0
 	github.com/muesli/reflow v0.3.0
 	github.com/signintech/gopdf v0.32.0
 	go.dalton.dog/bubbleup v1.4.0

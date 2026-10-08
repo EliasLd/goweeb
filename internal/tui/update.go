@@ -65,6 +65,18 @@ func updateApp(
 		return m, cmd
 	}
 
+	if mouseMsg, ok :=
+		msg.(tea.MouseMsg); ok {
+
+		if next, cmd, handled :=
+			handleMouseUpdate(
+				mouseMsg,
+				m,
+			); handled {
+			return next, cmd
+		}
+	}
+
 	if isMainViewState(m.State) {
 		if m.LogsVisible {
 			switch msg.(type) {
