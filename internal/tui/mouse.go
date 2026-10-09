@@ -105,7 +105,6 @@ func handleMouseUpdate(
 	if m.LogsVisible {
 		return m, nil, false
 	}
-
 	switch m.State {
 	case StateForm,
 		StateDownloading:
@@ -151,7 +150,14 @@ func handleMainMouse(
 		mouseZoneMainLogs,
 		msg,
 	):
-		return toggleLogOverlay(m), nil, true
+		next :=
+			toggleLogOverlay(m)
+
+		next.HoveredAction = ""
+
+		return next,
+			setMousePointer(""),
+			true
 
 	case mouseZoneHit(
 		mouseZoneMainDestination,

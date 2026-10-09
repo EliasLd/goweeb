@@ -90,6 +90,8 @@ func syncLogViewport(
 
 func openLogOverlay(m Model) Model {
 	m.LogsVisible = true
+	m.HoveredAction = ""
+
 	m = resizeLogViewport(m)
 	m = syncLogViewport(m, true)
 
@@ -98,6 +100,7 @@ func openLogOverlay(m Model) Model {
 
 func closeLogOverlay(m Model) Model {
 	m.LogsVisible = false
+	m.HoveredAction = ""
 
 	if m.State == StateForm {
 		m = updateFocus(m)
@@ -131,7 +134,13 @@ func handleLogOverlayUpdate(
 				mouseZoneLogClose,
 				msg,
 			) {
-			return toggleLogOverlay(m), nil
+			next :=
+				toggleLogOverlay(m)
+
+			next.HoveredAction = ""
+
+			return next,
+				setMousePointer("")
 		}
 	}
 
