@@ -90,6 +90,14 @@ func handleMouseUpdate(
 	msg tea.MouseMsg,
 	m Model,
 ) (Model, tea.Cmd, bool) {
+	if msg.Action ==
+		tea.MouseActionMotion {
+		return handleMouseHover(
+			msg,
+			m,
+		)
+	}
+
 	if !isLeftMouseRelease(msg) {
 		return m, nil, false
 	}
@@ -441,4 +449,69 @@ func handleOptionalMouse(
 		)
 
 	return next, cmd, true
+}
+
+func handleMouseHover(
+	msg tea.MouseMsg,
+	m Model,
+) (Model, tea.Cmd, bool) {
+	hoveredAction := ""
+
+	switch {
+	case m.LogsVisible &&
+		mouseZoneHit(
+			mouseZoneLogClose,
+			msg,
+		):
+		hoveredAction =
+			mouseZoneLogClose
+
+	case !m.LogsVisible &&
+		isMainViewState(m.State) &&
+		mouseZoneHit(
+			mouseZoneMainLogs,
+			msg,
+		):
+		hoveredAction =
+			mouseZoneMainLogs
+	}
+
+	if m.HoveredAction ==
+		hoveredAction {
+		return m, nil, false
+	}
+
+	m.HoveredAction =
+		hoveredAction
+
+	if hoveredAction == "" {
+		return m,
+			setMousePointer(""),
+			true
+	}
+
+	return m,
+		setMousePointer("pointer"),
+		true
+}
+
+func setMousePointer(
+	shape string,
+) tea.Cmd {
+	return func() tea.Msg {
+		if shape == "" {
+			fmt.Print(
+				"\x1b]22;\x1b\\",
+			)
+
+			return nil
+		}
+
+		fmt.Printf(
+			"\x1b]22;%s\x1b\\",
+			shape,
+		)
+
+		return nil
+	}
 }

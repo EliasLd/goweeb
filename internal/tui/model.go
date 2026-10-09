@@ -93,6 +93,9 @@ type Model struct {
 	LogsVisible bool
 	LogViewport viewport.Model
 
+	// Mouse interaction.
+	HoveredAction string
+
 	// Notifications.
 	AlertModel bubbleup.AlertModel
 

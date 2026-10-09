@@ -25,6 +25,11 @@ var (
 	secondaryButtonStyle = buttonBaseStyle.
 				Foreground(textColor)
 
+	secondaryButtonHoverStyle = buttonBaseStyle.
+					Foreground(accentColor).
+					Bold(true).
+					Underline(true)
+
 	secondaryButtonFocusedStyle = buttonBaseStyle.
 					Background(borderColor).
 					Foreground(brightAccentColor).
@@ -55,4 +60,19 @@ func renderButton(
 
 		return secondaryButtonStyle.Render(label)
 	}
+}
+
+func renderActionButton(
+	label string,
+	hovered bool,
+) string {
+	style := secondaryButtonStyle
+
+	if hovered {
+		style = secondaryButtonHoverStyle
+	}
+
+	return style.Render(
+		label,
+	)
 }

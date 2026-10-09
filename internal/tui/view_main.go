@@ -30,12 +30,14 @@ func mainViewWidth(
 	)
 }
 
-func renderMainLogsAction() string {
+func renderMainLogsAction(
+	m Model,
+) string {
 	button :=
-		renderButton(
+		renderActionButton(
 			"Logs",
-			false,
-			buttonSecondary,
+			m.HoveredAction ==
+				mouseZoneMainLogs,
 		)
 
 	return markMouseZone(
@@ -52,7 +54,7 @@ func renderMainStatusRow(
 		renderMainStatus(m)
 
 	logsButton :=
-		renderMainLogsAction()
+		renderMainLogsAction(m)
 
 	row :=
 		lipgloss.JoinHorizontal(

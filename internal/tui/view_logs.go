@@ -38,10 +38,10 @@ func logViewportHeader(
 		)
 
 	closeButton :=
-		renderButton(
+		renderActionButton(
 			"Close",
-			false,
-			buttonSecondary,
+			m.HoveredAction ==
+				mouseZoneLogClose,
 		)
 
 	closeWidth :=
