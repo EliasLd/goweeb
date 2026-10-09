@@ -80,7 +80,9 @@ func updateApp(
 	if isMainViewState(m.State) {
 		if m.LogsVisible {
 			switch msg.(type) {
-			case tea.KeyMsg, tea.WindowSizeMsg:
+			case tea.KeyMsg,
+				tea.WindowSizeMsg,
+				tea.MouseMsg:
 				return handleLogOverlayUpdate(
 					msg,
 					m,

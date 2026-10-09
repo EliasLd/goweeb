@@ -124,6 +124,15 @@ func handleLogOverlayUpdate(
 		case "l", "ctrl+l", "esc":
 			return closeLogOverlay(m), nil
 		}
+
+	case tea.MouseMsg:
+		if isLeftMouseRelease(msg) &&
+			mouseZoneHit(
+				mouseZoneLogClose,
+				msg,
+			) {
+			return toggleLogOverlay(m), nil
+		}
 	}
 
 	var cmd tea.Cmd
