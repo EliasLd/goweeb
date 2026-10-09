@@ -172,3 +172,13 @@ func appendLogLine(
 
 	return m
 }
+
+func toggleLogOverlay(
+	m Model,
+) Model {
+	if m.LogsVisible {
+		return closeLogOverlay(m)
+	}
+
+	return openLogOverlay(m)
+}

@@ -30,6 +30,46 @@ func mainViewWidth(
 	)
 }
 
+func renderMainLogsAction() string {
+	button :=
+		renderButton(
+			"Logs",
+			false,
+			buttonSecondary,
+		)
+
+	return markMouseZone(
+		mouseZoneMainLogs,
+		button,
+	)
+}
+
+func renderMainStatusRow(
+	m Model,
+	width int,
+) string {
+	status :=
+		renderMainStatus(m)
+
+	logsButton :=
+		renderMainLogsAction()
+
+	row :=
+		lipgloss.JoinHorizontal(
+			lipgloss.Center,
+			status,
+			"  ",
+			logsButton,
+		)
+
+	return lipgloss.NewStyle().
+		Width(width).
+		Align(lipgloss.Center).
+		Render(
+			row,
+		)
+}
+
 func renderMainSettingRow(
 	label string,
 	value string,
@@ -212,44 +252,30 @@ func renderMainSearchAction(
 
 func renderMainStatus(
 	m Model,
-	width int,
 ) string {
-	var status string
-
 	switch {
 	case m.IsDownloading:
-		status =
-			mainBusyStatusStyle.Render(
-				"● Downloading",
-			)
+		return mainBusyStatusStyle.Render(
+			"● Downloading",
+		)
 
 	case strings.TrimSpace(
 		m.SelectedProvider,
 	) == "":
-		status =
-			mainIdleStatusStyle.Render(
-				"○ Select a provider to start",
-			)
+		return mainIdleStatusStyle.Render(
+			"○ Select a provider to start",
+		)
 
 	case m.SearchReady:
-		status =
-			mainReadyStatusStyle.Render(
-				"● Ready",
-			)
+		return mainReadyStatusStyle.Render(
+			"● Ready",
+		)
 
 	default:
-		status =
-			mainIdleStatusStyle.Render(
-				"○ Not ready",
-			)
-	}
-
-	return lipgloss.NewStyle().
-		Width(width).
-		Align(lipgloss.Center).
-		Render(
-			status,
+		return mainIdleStatusStyle.Render(
+			"○ Not ready",
 		)
+	}
 }
 
 func renderMainBrand(

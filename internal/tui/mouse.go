@@ -25,6 +25,9 @@ const (
 
 	mouseZoneOptionalEbook = "optional-ebook"
 	mouseZoneSearchInput   = "search-input"
+
+	mouseZoneMainLogs = "main-logs"
+	mouseZoneLogClose = "log-close"
 )
 
 func providerOptionZone(
@@ -91,6 +94,10 @@ func handleMouseUpdate(
 		return m, nil, false
 	}
 
+	if m.LogsVisible {
+		return m, nil, false
+	}
+
 	switch m.State {
 	case StateForm,
 		StateDownloading:
@@ -132,6 +139,12 @@ func handleMainMouse(
 	m Model,
 ) (Model, tea.Cmd, bool) {
 	switch {
+	case mouseZoneHit(
+		mouseZoneMainLogs,
+		msg,
+	):
+		return toggleLogOverlay(m), nil, true
+
 	case mouseZoneHit(
 		mouseZoneMainDestination,
 		msg,
