@@ -461,26 +461,11 @@ func handleMouseHover(
 	msg tea.MouseMsg,
 	m Model,
 ) (Model, tea.Cmd, bool) {
-	hoveredAction := ""
-
-	switch {
-	case m.LogsVisible &&
-		mouseZoneHit(
-			mouseZoneLogClose,
+	hoveredAction :=
+		hoveredMouseZone(
 			msg,
-		):
-		hoveredAction =
-			mouseZoneLogClose
-
-	case !m.LogsVisible &&
-		isMainViewState(m.State) &&
-		mouseZoneHit(
-			mouseZoneMainLogs,
-			msg,
-		):
-		hoveredAction =
-			mouseZoneMainLogs
-	}
+			m,
+		)
 
 	if m.HoveredAction ==
 		hoveredAction {
@@ -520,4 +505,113 @@ func setMousePointer(
 
 		return nil
 	}
+}
+
+func firstHoveredMouseZone(
+	msg tea.MouseMsg,
+	zones ...string,
+) string {
+	for _, zoneID := range zones {
+		if mouseZoneHit(
+			zoneID,
+			msg,
+		) {
+			return zoneID
+		}
+	}
+
+	return ""
+}
+
+func hoveredMouseZone(
+	msg tea.MouseMsg,
+	m Model,
+) string {
+	if m.LogsVisible {
+		return firstHoveredMouseZone(
+			msg,
+			mouseZoneLogClose,
+		)
+	}
+
+	switch m.State {
+	case StateForm,
+		StateDownloading:
+		zones := []string{
+			mouseZoneMainLogs,
+			mouseZoneMainDestination,
+			mouseZoneMainProvider,
+			mouseZoneMainOptions,
+		}
+
+		if m.SearchReady {
+			zones = append(
+				zones,
+				mouseZoneMainSearch,
+			)
+		}
+
+		return firstHoveredMouseZone(
+			msg,
+			zones...,
+		)
+
+	case StateProviderSelection:
+		for i := range m.ProviderSelectionModel.Options {
+
+			zoneID :=
+				providerOptionZone(i)
+
+			if mouseZoneHit(
+				zoneID,
+				msg,
+			) {
+				return zoneID
+			}
+		}
+
+		return firstHoveredMouseZone(
+			msg,
+			mouseZoneProviderDomain,
+			mouseZoneProviderConfirm,
+		)
+
+	case StateInteractiveSearch:
+		if zoneID :=
+			firstHoveredMouseZone(
+				msg,
+				mouseZoneSearchInput,
+			); zoneID != "" {
+			return zoneID
+		}
+
+		for i := range m.SearchList.Items() {
+
+			zoneID :=
+				searchResultZone(i)
+
+			if mouseZoneHit(
+				zoneID,
+				msg,
+			) {
+				return zoneID
+			}
+		}
+
+	case StateRangeSelection:
+		return firstHoveredMouseZone(
+			msg,
+			mouseZoneRangeInput,
+			mouseZoneRangeAll,
+			mouseZoneRangeDownload,
+		)
+
+	case StateOptionalSettings:
+		return firstHoveredMouseZone(
+			msg,
+			mouseZoneOptionalEbook,
+		)
+	}
+
+	return ""
 }
