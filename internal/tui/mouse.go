@@ -26,6 +26,8 @@ const (
 	mouseZoneOptionalEbook = "optional-ebook"
 	mouseZoneSearchInput   = "search-input"
 
+	selectionItemZonePrefix = "selection-item-"
+
 	mouseZoneMainLogs = "main-logs"
 	mouseZoneLogClose = "log-close"
 
@@ -135,6 +137,12 @@ func handleMouseUpdate(
 
 	case StateProviderSelection:
 		return handleProviderMouse(
+			msg,
+			m,
+		)
+
+	case StateScanSelection:
+		return handleScanSelectionMouse(
 			msg,
 			m,
 		)
@@ -598,6 +606,20 @@ func hoveredMouseZone(
 			mouseZoneProviderConfirm,
 		)
 
+	case StateScanSelection:
+		for i := range m.SelectionModel.list.Items() {
+
+			zoneID :=
+				selectionItemZone(i)
+
+			if mouseZoneHit(
+				zoneID,
+				msg,
+			) {
+				return zoneID
+			}
+		}
+
 	case StateInteractiveSearch:
 		if zoneID :=
 			firstHoveredMouseZone(
@@ -636,4 +658,37 @@ func hoveredMouseZone(
 	}
 
 	return ""
+}
+
+func handleScanSelectionMouse(
+	msg tea.MouseMsg,
+	m Model,
+) (Model, tea.Cmd, bool) {
+	for i := range m.SelectionModel.list.Items() {
+
+		if !mouseZoneHit(
+			selectionItemZone(i),
+			msg,
+		) {
+			continue
+		}
+
+		if m.SelectionModel.list.Index() != i {
+			m.SelectionModel.list.Select(i)
+
+			return m, nil, true
+		}
+
+		next, cmd :=
+			handleSelectionUpdate(
+				tea.KeyMsg{
+					Type: tea.KeyEnter,
+				},
+				m,
+			)
+
+		return next, cmd, true
+	}
+
+	return m, nil, false
 }

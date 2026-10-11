@@ -121,7 +121,8 @@ func NewSelectionModel(title string, items []SelectionItem) SelectionModel {
 
 	// Create list
 	delegate := itemDelegate{
-		Focused: true,
+		Focused:    true,
+		ZonePrefix: selectionItemZonePrefix,
 	}
 	l := list.New(listItem, delegate, 60, 14)
 	l.Title = title
