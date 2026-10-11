@@ -21,6 +21,17 @@ func Update(
 		m,
 	)
 
+	if next.State != m.State &&
+		next.HoveredAction != "" {
+		next.HoveredAction = ""
+
+		appCmd =
+			tea.Batch(
+				appCmd,
+				setMousePointer(""),
+			)
+	}
+
 	return next, tea.Batch(
 		alertCmd,
 		appCmd,
@@ -80,7 +91,9 @@ func updateApp(
 	if isMainViewState(m.State) {
 		if m.LogsVisible {
 			switch msg.(type) {
-			case tea.KeyMsg, tea.WindowSizeMsg:
+			case tea.KeyMsg,
+				tea.WindowSizeMsg,
+				tea.MouseMsg:
 				return handleLogOverlayUpdate(
 					msg,
 					m,

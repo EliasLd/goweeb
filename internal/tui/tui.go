@@ -8,7 +8,7 @@ func Start() error {
 	p := tea.NewProgram(
 		InitialModel(),
 		tea.WithAltScreen(),
-		tea.WithMouseCellMotion(),
+		tea.WithMouseAllMotion(),
 	)
 	if _, err := p.Run(); err != nil {
 		return err

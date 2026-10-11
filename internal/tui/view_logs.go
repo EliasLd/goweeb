@@ -32,29 +32,53 @@ var (
 func logViewportHeader(
 	m Model,
 ) string {
-	title := logViewportTitleStyle.Render(
-		"Live logs",
-	)
+	title :=
+		logViewportTitleStyle.Render(
+			"Live logs",
+		)
+
+	closeButton :=
+		renderActionButton(
+			"Close",
+			m.HoveredAction ==
+				mouseZoneLogClose,
+		)
+
+	closeWidth :=
+		lipgloss.Width(
+			closeButton,
+		)
+
+	closeButton =
+		markMouseZone(
+			mouseZoneLogClose,
+			closeButton,
+		)
 
 	line := strings.Repeat(
 		"─",
 		max(
 			0,
 			m.LogViewport.Width-
-				lipgloss.Width(title),
+				lipgloss.Width(title)-
+				closeWidth,
 		),
 	)
 
-	line = lipgloss.NewStyle().
-		Foreground(
-			borderColor,
-		).
-		Render(line)
+	line =
+		lipgloss.NewStyle().
+			Foreground(
+				borderColor,
+			).
+			Render(
+				line,
+			)
 
 	return lipgloss.JoinHorizontal(
 		lipgloss.Center,
 		title,
 		line,
+		closeButton,
 	)
 }
 

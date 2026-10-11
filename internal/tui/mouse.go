@@ -25,6 +25,13 @@ const (
 
 	mouseZoneOptionalEbook = "optional-ebook"
 	mouseZoneSearchInput   = "search-input"
+
+	selectionItemZonePrefix = "selection-item-"
+
+	mouseZoneMainLogs = "main-logs"
+	mouseZoneLogClose = "log-close"
+
+	mouseZoneBack = "back"
 )
 
 func providerOptionZone(
@@ -87,7 +94,30 @@ func handleMouseUpdate(
 	msg tea.MouseMsg,
 	m Model,
 ) (Model, tea.Cmd, bool) {
+	if msg.Action ==
+		tea.MouseActionMotion {
+		return handleMouseHover(
+			msg,
+			m,
+		)
+	}
+
 	if !isLeftMouseRelease(msg) {
+		return m, nil, false
+	}
+
+	if hasBackAction(m.State) &&
+		mouseZoneHit(
+			mouseZoneBack,
+			msg,
+		) {
+		next, cmd :=
+			handleBackAction(m)
+
+		return next, cmd, true
+	}
+
+	if m.LogsVisible {
 		return m, nil, false
 	}
 
@@ -107,6 +137,12 @@ func handleMouseUpdate(
 
 	case StateProviderSelection:
 		return handleProviderMouse(
+			msg,
+			m,
+		)
+
+	case StateScanSelection:
+		return handleScanSelectionMouse(
 			msg,
 			m,
 		)
@@ -132,6 +168,19 @@ func handleMainMouse(
 	m Model,
 ) (Model, tea.Cmd, bool) {
 	switch {
+	case mouseZoneHit(
+		mouseZoneMainLogs,
+		msg,
+	):
+		next :=
+			toggleLogOverlay(m)
+
+		next.HoveredAction = ""
+
+		return next,
+			setMousePointer(""),
+			true
+
 	case mouseZoneHit(
 		mouseZoneMainDestination,
 		msg,
@@ -428,4 +477,218 @@ func handleOptionalMouse(
 		)
 
 	return next, cmd, true
+}
+
+func handleMouseHover(
+	msg tea.MouseMsg,
+	m Model,
+) (Model, tea.Cmd, bool) {
+	hoveredAction :=
+		hoveredMouseZone(
+			msg,
+			m,
+		)
+
+	if m.HoveredAction ==
+		hoveredAction {
+		return m, nil, false
+	}
+
+	m.HoveredAction =
+		hoveredAction
+
+	if hoveredAction == "" {
+		return m,
+			setMousePointer(""),
+			true
+	}
+
+	return m,
+		setMousePointer("pointer"),
+		true
+}
+
+func setMousePointer(
+	shape string,
+) tea.Cmd {
+	return func() tea.Msg {
+		if shape == "" {
+			fmt.Print(
+				"\x1b]22;\x1b\\",
+			)
+
+			return nil
+		}
+
+		fmt.Printf(
+			"\x1b]22;%s\x1b\\",
+			shape,
+		)
+
+		return nil
+	}
+}
+
+func firstHoveredMouseZone(
+	msg tea.MouseMsg,
+	zones ...string,
+) string {
+	for _, zoneID := range zones {
+		if mouseZoneHit(
+			zoneID,
+			msg,
+		) {
+			return zoneID
+		}
+	}
+
+	return ""
+}
+
+func hoveredMouseZone(
+	msg tea.MouseMsg,
+	m Model,
+) string {
+	if hasBackAction(m.State) &&
+		mouseZoneHit(
+			mouseZoneBack,
+			msg,
+		) {
+		return mouseZoneBack
+	}
+
+	if m.LogsVisible {
+		return firstHoveredMouseZone(
+			msg,
+			mouseZoneLogClose,
+		)
+	}
+
+	switch m.State {
+	case StateForm,
+		StateDownloading:
+		zones := []string{
+			mouseZoneMainLogs,
+			mouseZoneMainDestination,
+			mouseZoneMainProvider,
+			mouseZoneMainOptions,
+		}
+
+		if m.SearchReady {
+			zones = append(
+				zones,
+				mouseZoneMainSearch,
+			)
+		}
+
+		return firstHoveredMouseZone(
+			msg,
+			zones...,
+		)
+
+	case StateProviderSelection:
+		for i := range m.ProviderSelectionModel.Options {
+
+			zoneID :=
+				providerOptionZone(i)
+
+			if mouseZoneHit(
+				zoneID,
+				msg,
+			) {
+				return zoneID
+			}
+		}
+
+		return firstHoveredMouseZone(
+			msg,
+			mouseZoneProviderDomain,
+			mouseZoneProviderConfirm,
+		)
+
+	case StateScanSelection:
+		for i := range m.SelectionModel.list.Items() {
+
+			zoneID :=
+				selectionItemZone(i)
+
+			if mouseZoneHit(
+				zoneID,
+				msg,
+			) {
+				return zoneID
+			}
+		}
+
+	case StateInteractiveSearch:
+		if zoneID :=
+			firstHoveredMouseZone(
+				msg,
+				mouseZoneSearchInput,
+			); zoneID != "" {
+			return zoneID
+		}
+
+		for i := range m.SearchList.Items() {
+
+			zoneID :=
+				searchResultZone(i)
+
+			if mouseZoneHit(
+				zoneID,
+				msg,
+			) {
+				return zoneID
+			}
+		}
+
+	case StateRangeSelection:
+		return firstHoveredMouseZone(
+			msg,
+			mouseZoneRangeInput,
+			mouseZoneRangeAll,
+			mouseZoneRangeDownload,
+		)
+
+	case StateOptionalSettings:
+		return firstHoveredMouseZone(
+			msg,
+			mouseZoneOptionalEbook,
+		)
+	}
+
+	return ""
+}
+
+func handleScanSelectionMouse(
+	msg tea.MouseMsg,
+	m Model,
+) (Model, tea.Cmd, bool) {
+	for i := range m.SelectionModel.list.Items() {
+
+		if !mouseZoneHit(
+			selectionItemZone(i),
+			msg,
+		) {
+			continue
+		}
+
+		if m.SelectionModel.list.Index() != i {
+			m.SelectionModel.list.Select(i)
+
+			return m, nil, true
+		}
+
+		next, cmd :=
+			handleSelectionUpdate(
+				tea.KeyMsg{
+					Type: tea.KeyEnter,
+				},
+				m,
+			)
+
+		return next, cmd, true
+	}
+
+	return m, nil, false
 }

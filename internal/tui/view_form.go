@@ -24,7 +24,7 @@ func viewForm(
 		)
 
 	status :=
-		renderMainStatus(
+		renderMainStatusRow(
 			m,
 			width,
 		)
