@@ -94,6 +94,18 @@ func handleLogMsg(
 			errorStyle.Render(logLine),
 		)
 
+		alertCmd :=
+			errorAlertCmd(m)
+
+		if m.IsDownloading {
+			return m, tea.Batch(
+				readOneLogLine(m),
+				alertCmd,
+			)
+		}
+
+		return m, alertCmd
+
 	case strings.Contains(
 		logLine,
 		"[!]",

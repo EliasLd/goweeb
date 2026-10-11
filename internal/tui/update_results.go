@@ -24,7 +24,7 @@ func handleScanPathResult(
 			),
 		)
 
-		return m, nil
+		return m, errorAlertCmd(m)
 	}
 
 	if len(msg.paths) == 0 {
@@ -33,7 +33,7 @@ func handleScanPathResult(
 			errorStyle.Render("[E] No scan versions found"),
 		)
 
-		return m, nil
+		return m, errorAlertCmd(m)
 	}
 
 	if len(msg.paths) == 1 {
@@ -90,7 +90,7 @@ func handleEntriesResult(
 			),
 		)
 
-		return m, nil
+		return m, errorAlertCmd(m)
 	}
 
 	if len(msg.entries) == 0 {
@@ -99,7 +99,7 @@ func handleEntriesResult(
 			errorStyle.Render("[E] No chapters found"),
 		)
 
-		return m, nil
+		return m, errorAlertCmd(m)
 	}
 
 	m.DiscoveredEntries = len(msg.entries)

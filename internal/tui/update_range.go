@@ -67,7 +67,7 @@ func handleRangeUpdate(
 						),
 					)
 
-					return m, nil
+					return m, errorAlertCmd(m)
 				}
 
 				parsed, err := app.ParseRangeExpression(
@@ -84,7 +84,7 @@ func handleRangeUpdate(
 						),
 					)
 
-					return m, nil
+					return m, errorAlertCmd(m)
 				}
 
 				selection = parsed
@@ -103,7 +103,7 @@ func handleRangeUpdate(
 					),
 				)
 
-				return m, nil
+				return m, errorAlertCmd(m)
 			}
 
 			m.SelectedRange = selection
