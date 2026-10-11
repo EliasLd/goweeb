@@ -28,6 +28,8 @@ const (
 
 	mouseZoneMainLogs = "main-logs"
 	mouseZoneLogClose = "log-close"
+
+	mouseZoneBack = "back"
 )
 
 func providerOptionZone(
@@ -102,9 +104,21 @@ func handleMouseUpdate(
 		return m, nil, false
 	}
 
+	if hasBackAction(m.State) &&
+		mouseZoneHit(
+			mouseZoneBack,
+			msg,
+		) {
+		next, cmd :=
+			handleBackAction(m)
+
+		return next, cmd, true
+	}
+
 	if m.LogsVisible {
 		return m, nil, false
 	}
+
 	switch m.State {
 	case StateForm,
 		StateDownloading:
@@ -527,6 +541,14 @@ func hoveredMouseZone(
 	msg tea.MouseMsg,
 	m Model,
 ) string {
+	if hasBackAction(m.State) &&
+		mouseZoneHit(
+			mouseZoneBack,
+			msg,
+		) {
+		return mouseZoneBack
+	}
+
 	if m.LogsVisible {
 		return firstHoveredMouseZone(
 			msg,

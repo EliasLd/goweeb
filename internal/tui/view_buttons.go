@@ -76,3 +76,31 @@ func renderActionButton(
 		label,
 	)
 }
+
+func renderBackAction(
+	m Model,
+) string {
+	style :=
+		secondaryButtonStyle
+
+	if m.HoveredAction ==
+		mouseZoneBack {
+		style =
+			secondaryButtonStyle.
+				Foreground(
+					errorColor,
+				).
+				Bold(true).
+				Underline(true)
+	}
+
+	button :=
+		style.Render(
+			"← Back",
+		)
+
+	return markMouseZone(
+		mouseZoneBack,
+		button,
+	)
+}

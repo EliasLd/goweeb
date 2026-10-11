@@ -1,16 +1,47 @@
 package tui
 
+import "github.com/charmbracelet/lipgloss"
+
 func View(m Model) string {
-	base := viewCurrentState(m)
+	viewModel := m
+
+	if hasBackAction(m.State) {
+		viewModel.Height =
+			max(
+				0,
+				m.Height-1,
+			)
+
+		viewModel.ProviderSelectionModel.Height =
+			viewModel.Height
+
+		viewModel.SelectionModel.Height =
+			viewModel.Height
+	}
+
+	base :=
+		viewCurrentState(
+			viewModel,
+		)
+
+	if hasBackAction(m.State) {
+		base =
+			lipgloss.JoinVertical(
+				lipgloss.Left,
+				renderBackRow(m),
+				base,
+			)
+	}
 
 	if m.LogsVisible &&
 		isMainViewState(m.State) {
-		base = renderCenteredOverlay(
-			base,
-			viewLogOverlay(m),
-			m.Width,
-			m.Height,
-		)
+		base =
+			renderCenteredOverlay(
+				base,
+				viewLogOverlay(m),
+				m.Width,
+				m.Height,
+			)
 	}
 
 	rendered :=
@@ -47,4 +78,19 @@ func viewCurrentState(m Model) string {
 	}
 
 	return viewForm(m)
+}
+
+func renderBackRow(
+	m Model,
+) string {
+	return lipgloss.NewStyle().
+		Width(
+			max(
+				0,
+				m.Width,
+			),
+		).
+		Render(
+			renderBackAction(m),
+		)
 }

@@ -21,6 +21,17 @@ func Update(
 		m,
 	)
 
+	if next.State != m.State &&
+		next.HoveredAction != "" {
+		next.HoveredAction = ""
+
+		appCmd =
+			tea.Batch(
+				appCmd,
+				setMousePointer(""),
+			)
+	}
+
 	return next, tea.Batch(
 		alertCmd,
 		appCmd,
