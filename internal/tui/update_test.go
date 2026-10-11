@@ -63,20 +63,34 @@ func TestEmptyRangeDoesNotStartDownload(t *testing.T) {
 	m.RangeInput.SetValue("")
 
 	next, cmd := Update(
-		tea.KeyMsg{Type: tea.KeyEnter},
+		tea.KeyMsg{
+			Type: tea.KeyEnter,
+		},
 		m,
 	)
 
 	if next.State != StateRangeSelection {
-		t.Error("empty range should keep the range screen open")
+		t.Error(
+			"empty range should keep the range screen open",
+		)
 	}
 
-	if next.IsDownloading || cmd != nil {
-		t.Error("empty range must not start downloading")
+	if next.IsDownloading {
+		t.Error(
+			"empty range must not start downloading",
+		)
 	}
 
 	if len(next.Logs) == 0 {
-		t.Error("empty range should produce an error message")
+		t.Error(
+			"empty range should produce an error message",
+		)
+	}
+
+	if cmd == nil {
+		t.Error(
+			"empty range should schedule an error notification",
+		)
 	}
 }
 
