@@ -4,6 +4,8 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/muesli/reflow/wordwrap"
+	"github.com/muesli/reflow/wrap"
 )
 
 func isMainViewState(state AppState) bool {
@@ -71,6 +73,23 @@ func logContent(logs []string) string {
 	)
 }
 
+func wrappedLogContent(m Model) string {
+	width := max(
+		1,
+		m.LogViewport.Width,
+	)
+
+	content := wordwrap.String(
+		logContent(m.Logs),
+		width,
+	)
+
+	return wrap.String(
+		content,
+		width,
+	)
+}
+
 func syncLogViewport(
 	m Model,
 	forceBottom bool,
@@ -78,7 +97,7 @@ func syncLogViewport(
 	wasAtBottom := m.LogViewport.AtBottom()
 
 	m.LogViewport.SetContent(
-		logContent(m.Logs),
+		wrappedLogContent(m),
 	)
 
 	if forceBottom || wasAtBottom {
@@ -115,10 +134,20 @@ func handleLogOverlayUpdate(
 ) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
+		wasAtBottom := m.LogViewport.AtBottom()
+
 		m.Width = msg.Width
 		m.Height = msg.Height
 
 		m = resizeLogViewport(m)
+
+		m.LogViewport.SetContent(
+			wrappedLogContent(m),
+		)
+
+		if wasAtBottom {
+			m.LogViewport.GotoBottom()
+		}
 
 		return m, nil
 
@@ -181,7 +210,7 @@ func appendLogLine(
 	}
 
 	m.LogViewport.SetContent(
-		logContent(m.Logs),
+		wrappedLogContent(m),
 	)
 
 	if followBottom {
