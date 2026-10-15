@@ -1,7 +1,6 @@
 package atsumoe
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -148,12 +147,21 @@ func (p *Provider) ListEntries(
 	}, entries, nil
 }
 
-// TODO: Implement page image retrieval.
 func (p *Provider) GetPageImageURLs(
 	entryURL string,
 	log *logger.Logger,
 ) ([]string, error) {
-	return nil, errors.New(
-		"Atsu.moe page retrieval is not implemented yet",
+	imageURLs, err := atsumoescraper.GetPageImageURLs(
+		entryURL,
+		p.domain,
+		log,
 	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to get Atsu.moe page images: %w",
+			err,
+		)
+	}
+
+	return imageURLs, nil
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
@@ -298,5 +299,75 @@ func TestListEntriesInvalidWorkURL(t *testing.T) {
 	)
 	if err == nil {
 		t.Fatal("expected an error for an unexpected work URL")
+	}
+}
+
+func TestGetPageImageURLs(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/api/read/chapter": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			jsonResponse(w, `{
+				"readChapter": {
+					"id": "ZfvD517i",
+					"number": 2,
+					"pages": [
+						{
+							"id": "ZfvD517i-1",
+							"image": "/static/pages/jIg3F/ZfvD517i/1.webp",
+							"number": 1
+						},
+						{
+							"id": "ZfvD517i-0",
+							"image": "/static/pages/jIg3F/ZfvD517i/0.webp",
+							"number": 0
+						}
+					]
+				}
+			}`)
+		},
+	})
+
+	entryURL := provider.domain +
+		"/api/read/chapter?mangaId=jIg3F&chapterId=ZfvD517i"
+
+	imageURLs, err := provider.GetPageImageURLs(entryURL, nil)
+	if err != nil {
+		t.Fatalf("GetPageImageURLs() error: %v", err)
+	}
+
+	if len(imageURLs) != 2 {
+		t.Fatalf(
+			"expected 2 image URLs, got %d",
+			len(imageURLs),
+		)
+	}
+
+	// Relative image paths are joined against the CDN host derived
+	// from the provider domain.
+	base, err := url.Parse(provider.domain)
+	if err != nil {
+		t.Fatalf("failed to parse provider domain: %v", err)
+	}
+
+	expectedHost := "cdn." + base.Host
+
+	expected := []string{
+		"http://" + expectedHost +
+			"/static/pages/jIg3F/ZfvD517i/0.webp",
+		"http://" + expectedHost +
+			"/static/pages/jIg3F/ZfvD517i/1.webp",
+	}
+
+	for i, want := range expected {
+		if imageURLs[i] != want {
+			t.Errorf(
+				"image %d: expected %q, got %q",
+				i,
+				want,
+				imageURLs[i],
+			)
+		}
 	}
 }
