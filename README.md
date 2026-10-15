@@ -105,6 +105,7 @@ The image is OCI-compatible and can also be used with Docker. Depending on your 
 | MangaDex | Multilingual | https://mangadex.org |
 | Mangavyvy | English | https://mangavyvy.com |
 | MangaFreak | English | https://ww3.mangafreak.me |
+| Atsumoe | English | https://atsu.moe |
 | Anime-Sama | French | https://anime-sama.pw |
 
 > [!NOTE]

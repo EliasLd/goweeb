@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/EliasLd/goweeb/internal/source/animesama"
+	"github.com/EliasLd/goweeb/internal/source/atsumoe"
 	"github.com/EliasLd/goweeb/internal/source/mangadex"
 	"github.com/EliasLd/goweeb/internal/source/mangafreak"
 	"github.com/EliasLd/goweeb/internal/source/mangavyvy"
@@ -28,6 +29,12 @@ var providers = map[string]providerRegistration{
 		Label: "Anime-Sama (French)",
 		New: func(customDomain string) sourcetypes.Provider {
 			return animesama.New(customDomain)
+		},
+	},
+	"atsumoe": {
+		Label: "Atsumoe (English)",
+		New: func(customDomain string) sourcetypes.Provider {
+			return atsumoe.New(customDomain)
 		},
 	},
 	"mangafreak": {
