@@ -101,15 +101,51 @@ func (p *Provider) ListScanPaths(
 	return items, nil
 }
 
-// TODO: Implement chapter listing.
 func (p *Provider) ListEntries(
 	workURL string,
 	scanPath string,
 	log *logger.Logger,
 ) (sourcetypes.Work, []sourcetypes.Entry, error) {
-	return sourcetypes.Work{}, nil, errors.New(
-		"Atsu.moe chapter listing is not implemented yet",
+	mangaID, err := atsumoescraper.MangaIDFromURL(workURL)
+	if err != nil {
+		return sourcetypes.Work{}, nil, err
+	}
+
+	title, err := atsumoescraper.GetMangaTitle(p.domain, mangaID, log)
+	if err != nil {
+		return sourcetypes.Work{}, nil, fmt.Errorf(
+			"failed to get Atsu.moe manga title: %w",
+			err,
+		)
+	}
+
+	chapters, err := atsumoescraper.ListChapters(
+		p.domain,
+		mangaID,
+		scanPath,
+		log,
 	)
+	if err != nil {
+		return sourcetypes.Work{}, nil, fmt.Errorf(
+			"failed to list Atsu.moe chapters: %w",
+			err,
+		)
+	}
+
+	entries := make([]sourcetypes.Entry, 0, len(chapters))
+
+	for _, chapter := range chapters {
+		entries = append(entries, sourcetypes.Entry{
+			Number: chapter.Number,
+			Label:  chapter.Label,
+			URL:    chapter.URL,
+		})
+	}
+
+	return sourcetypes.Work{
+		Title: title,
+		Kind:  sourcetypes.ItemChapter,
+	}, entries, nil
 }
 
 // TODO: Implement page image retrieval.

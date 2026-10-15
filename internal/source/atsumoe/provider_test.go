@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 )
 
 func newTestProvider(
@@ -131,6 +133,169 @@ func TestListScanPathsInvalidWorkURL(t *testing.T) {
 	provider := newTestProvider(t, nil)
 
 	_, err := provider.ListScanPaths("https://atsu.moe/not-manga/x", nil)
+	if err == nil {
+		t.Fatal("expected an error for an unexpected work URL")
+	}
+}
+
+func TestListEntries(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/api/manga/info": func(w http.ResponseWriter, _ *http.Request) {
+			jsonResponse(w, `{
+				"id": "nh6Ii",
+				"title": "One-Punch Man",
+				"type": "Manga",
+				"isAdult": false,
+				"chapters": []
+			}`)
+		},
+		"/api/manga/allChapters": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			jsonResponse(w, `{
+				"chapters": [
+					{
+						"id": "c2",
+						"scanlationMangaId": "S1",
+						"title": "# 2",
+						"number": 2,
+						"index": 2,
+						"pageCount": 19
+					},
+					{
+						"id": "c1other",
+						"scanlationMangaId": "S2",
+						"title": "# 1",
+						"number": 1,
+						"index": 1,
+						"pageCount": 18
+					},
+					{
+						"id": "c1",
+						"scanlationMangaId": "S1",
+						"title": "# 1",
+						"number": 1,
+						"index": 1,
+						"pageCount": 20
+					}
+				]
+			}`)
+		},
+	})
+
+	work, entries, err := provider.ListEntries(
+		provider.domain+"/manga/nh6Ii",
+		"S1",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("ListEntries() error: %v", err)
+	}
+
+	if work.Title != "One-Punch Man" {
+		t.Errorf("unexpected work title: %q", work.Title)
+	}
+
+	if work.Kind != sourcetypes.ItemChapter {
+		t.Errorf("unexpected work kind: %d", work.Kind)
+	}
+
+	if len(entries) != 2 {
+		t.Fatalf(
+			"expected 2 entries, got %d",
+			len(entries),
+		)
+	}
+
+	if entries[0].Number.String() != "1" ||
+		entries[0].Label != "# 1" {
+		t.Errorf(
+			"unexpected first entry: %q / %q",
+			entries[0].Number.String(),
+			entries[0].Label,
+		)
+	}
+
+	if entries[1].Number.String() != "2" ||
+		entries[1].Label != "# 2" {
+		t.Errorf(
+			"unexpected second entry: %q / %q",
+			entries[1].Number.String(),
+			entries[1].Label,
+		)
+	}
+
+	expectedURL := provider.domain +
+		"/api/read/chapter?chapterId=c1&mangaId=nh6Ii"
+
+	if entries[0].URL != expectedURL {
+		t.Errorf("expected URL %q, got %q", expectedURL, entries[0].URL)
+	}
+}
+
+func TestListEntriesAllScanlations(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/api/manga/info": func(w http.ResponseWriter, _ *http.Request) {
+			jsonResponse(w, `{
+				"id": "nh6Ii",
+				"title": "One-Punch Man",
+				"chapters": []
+			}`)
+		},
+		"/api/manga/allChapters": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			jsonResponse(w, `{
+				"chapters": [
+					{
+						"id": "c1",
+						"scanlationMangaId": "S1",
+						"title": "# 1",
+						"number": 1,
+						"index": 1,
+						"pageCount": 20
+					},
+					{
+						"id": "c1other",
+						"scanlationMangaId": "S2",
+						"title": "# 1",
+						"number": 1,
+						"index": 1,
+						"pageCount": 18
+					}
+				]
+			}`)
+		},
+	})
+
+	// An empty scan path keeps chapters from every scanlation group.
+	_, entries, err := provider.ListEntries(
+		provider.domain+"/manga/nh6Ii",
+		"",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("ListEntries() error: %v", err)
+	}
+
+	if len(entries) != 2 {
+		t.Fatalf(
+			"expected 2 entries, got %d",
+			len(entries),
+		)
+	}
+}
+
+func TestListEntriesInvalidWorkURL(t *testing.T) {
+	provider := newTestProvider(t, nil)
+
+	_, _, err := provider.ListEntries(
+		provider.domain,
+		"S1",
+		nil,
+	)
 	if err == nil {
 		t.Fatal("expected an error for an unexpected work URL")
 	}
