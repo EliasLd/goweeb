@@ -2,6 +2,7 @@ package atsumoe
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/EliasLd/goweeb/internal/logger"
@@ -57,14 +58,47 @@ func (p *Provider) Search(
 	return out, nil
 }
 
-// TODO: Implement scanlation selection.
+// Atsu.moe exposes one chapter list per scanlation group, displayed
+// on the public manga page.
 func (p *Provider) ListScanPaths(
 	workURL string,
 	log *logger.Logger,
 ) ([]common.SelectableItem, error) {
-	return nil, errors.New(
-		"Atsu.moe scan selection is not implemented yet",
-	)
+	mangaID, err := atsumoescraper.MangaIDFromURL(workURL)
+	if err != nil {
+		return nil, err
+	}
+
+	scanlators, err := atsumoescraper.GetScanlators(p.domain, mangaID, log)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to get Atsu.moe scanlators: %w",
+			err,
+		)
+	}
+
+	if len(scanlators) == 0 {
+		// Some manga are published without any scanlation group.
+		// Keep a single automatically selectable path covering every
+		// chapter of the manga.
+		return []common.SelectableItem{
+			{
+				Label: "Atsu.moe",
+				Value: "",
+			},
+		}, nil
+	}
+
+	items := make([]common.SelectableItem, 0, len(scanlators))
+
+	for _, scanlator := range scanlators {
+		items = append(items, common.SelectableItem{
+			Label: scanlator.Name,
+			Value: scanlator.ID,
+		})
+	}
+
+	return items, nil
 }
 
 // TODO: Implement chapter listing.
