@@ -1,9 +1,13 @@
 package convert
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
+	"image/png"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -14,6 +18,10 @@ import (
 
 	"github.com/EliasLd/goweeb/internal/logger"
 )
+
+var pngMagicNumber = []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+
+var pngIHDRChunk = []byte{0x49, 0x48, 0x44, 0x52}
 
 // Opens the file at path and checks
 // if it is encoded in WEBP format
@@ -64,6 +72,79 @@ func WebPToJPG(srcPath, destPath string) error {
 	return nil
 }
 
+// IsSixteenBitPNG checks whether the file at path contains a PNG with
+// a bit depth greater than 8. gopdf rejects such files with
+// "16-bit depth not supported", so they must be converted before
+// being embedded into a PDF.
+//
+// This happens when a website serves pages whose content does not
+// match their name, for example Anime-Sama serving 16-bit PNGs under a
+// .jpg name on some manga such as Bleach.
+//
+// PNG layout check: 8 signature bytes, a 4-byte chunk length, the
+// "IHDR" chunk type, then the IHDR data whose 5th byte is the bit
+// depth (width [16:20], height [20:24], bit depth [24]).
+func IsSixteenBitPNG(path string) (bool, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	header := make([]byte, 25)
+
+	if _, err := io.ReadFull(f, header); err != nil {
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			// Too short to be a 16-bit PNG.
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	if !bytes.Equal(header[0:8], pngMagicNumber) ||
+		!bytes.Equal(header[12:16], pngIHDRChunk) {
+		return false, nil
+	}
+
+	return header[24] > 8, nil
+}
+
+// PNGToJPG converts the PNG image at srcPath into a JPEG encoded at
+// destPath.
+//
+// The source handle is closed before creating the destination file so
+// in-place conversions never truncate a file that is still open.
+func PNGToJPG(srcPath, destPath string) error {
+	f, err := os.Open(srcPath)
+	if err != nil {
+		return fmt.Errorf("failed to open PNG file: %w", err)
+	}
+
+	img, err := png.Decode(f)
+	closeErr := f.Close()
+	if err != nil {
+		return fmt.Errorf("failed to decode PNG image: %w", err)
+	}
+
+	if closeErr != nil {
+		return fmt.Errorf("failed to close PNG file: %w", closeErr)
+	}
+
+	out, err := os.Create(destPath)
+	if err != nil {
+		return fmt.Errorf("failed to create JPEG file: %w", err)
+	}
+	defer out.Close()
+
+	opt := jpeg.Options{Quality: 90}
+	if err := jpeg.Encode(out, img, &opt); err != nil {
+		return fmt.Errorf("failed to encode JPEG: %w", err)
+	}
+
+	return nil
+}
+
 func ImagesToPDF(imagesDir, outputPDFPath string, log *logger.Logger) error {
 	files, err := os.ReadDir(imagesDir)
 	if err != nil {
@@ -108,6 +189,25 @@ func ImagesToPDF(imagesDir, outputPDFPath string, log *logger.Logger) error {
 					log.Error("Failed to convert WebP: %v\n", err)
 					continue
 				}
+			}
+		}
+
+		// Handle 16-bit PNGs that gopdf cannot embed directly, such as
+		// Anime-Sama pages served as 16-bit PNGs named .jpg.
+		isSixteenBitPNG, err := IsSixteenBitPNG(imagePath)
+		if err != nil {
+			return fmt.Errorf(
+				"failed to check whether %s is a 16-bit PNG: %w",
+				imagePath,
+				err,
+			)
+		}
+
+		if isSixteenBitPNG {
+			err := PNGToJPG(imagePath, imagePath)
+			if err != nil {
+				log.Error("failed to convert PNG: %v\n", err)
+				continue
 			}
 		}
 
