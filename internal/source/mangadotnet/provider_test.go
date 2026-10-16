@@ -329,3 +329,49 @@ func TestListEntriesInvalidWorkURL(t *testing.T) {
 		t.Fatal("expected an error for an unexpected work URL")
 	}
 }
+
+func TestGetPageImageURLs(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/api/uploads/888840/images": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			jsonResponse(w, `{
+				"chapter": {"id": 888840, "page_count": 2},
+				"manga": {"id": 101, "title": "Blue Lock"},
+				"images": [
+					{
+						"url": "/chapters/manga_101/user_0_ch1_es_e2a0987dd63ee762/001.webp",
+						"filename": "001.webp"
+					},
+					{
+						"url": "/chapters/manga_101/user_0_ch1_es_e2a0987dd63ee762/002.webp",
+						"filename": "002.webp"
+					}
+				]
+			}`)
+		},
+	})
+
+	entryURL := provider.domain + "/chapter/888840?source=user"
+
+	imageURLs, err := provider.GetPageImageURLs(entryURL, nil)
+	if err != nil {
+		t.Fatalf("GetPageImageURLs() error: %v", err)
+	}
+
+	if len(imageURLs) != 2 {
+		t.Fatalf(
+			"expected 2 image URLs, got %d",
+			len(imageURLs),
+		)
+	}
+
+	// Relative image paths are joined against the provider domain.
+	expected := provider.domain +
+		"/chapters/manga_101/user_0_ch1_es_e2a0987dd63ee762/001.webp"
+
+	if imageURLs[0] != expected {
+		t.Errorf("expected URL %q, got %q", expected, imageURLs[0])
+	}
+}

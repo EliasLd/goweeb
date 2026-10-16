@@ -99,9 +99,6 @@ func (p *Provider) ListScanPaths(
 	return items, nil
 }
 
-// The remaining Provider method is a temporary stub. Page retrieval is
-// added in the next implementation step.
-
 func (p *Provider) ListEntries(
 	workURL string,
 	scanPath string,
@@ -153,7 +150,17 @@ func (p *Provider) GetPageImageURLs(
 	entryURL string,
 	log *logger.Logger,
 ) ([]string, error) {
-	return nil, fmt.Errorf(
-		"mangadot.net page image retrieval is not implemented yet",
+	imageURLs, err := mangadotnetscraper.GetPageImageURLs(
+		entryURL,
+		p.domain,
+		log,
 	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to get mangadot.net page images: %w",
+			err,
+		)
+	}
+
+	return imageURLs, nil
 }
