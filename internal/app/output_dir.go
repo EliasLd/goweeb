@@ -2,7 +2,6 @@ package app
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -14,12 +13,13 @@ func DefaultTUIScanDir() string {
 		return forcedDir
 	}
 
-	home, err := os.UserHomeDir()
+	currentDir, err := os.Getwd()
+
 	if err != nil {
 		return ""
 	}
 
-	return filepath.Join(home, "Documents")
+	return currentDir
 }
 
 // DefaultCLIScanDir returns the default output directory used by the CLI.
