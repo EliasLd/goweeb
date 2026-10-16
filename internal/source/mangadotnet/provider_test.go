@@ -7,6 +7,36 @@ import (
 	"testing"
 )
 
+func newTestProvider(
+	t *testing.T,
+	handlers map[string]http.HandlerFunc,
+) *Provider {
+	t.Helper()
+
+	mux := http.NewServeMux()
+
+	for path, handler := range handlers {
+		mux.HandleFunc(path, handler)
+	}
+
+	server := httptest.NewServer(mux)
+	t.Cleanup(server.Close)
+
+	return New(server.URL)
+}
+
+func jsonResponse(
+	w http.ResponseWriter,
+	body string,
+) {
+	w.Header().Set(
+		"Content-Type",
+		"application/json",
+	)
+
+	_, _ = fmt.Fprint(w, body)
+}
+
 func TestNew(t *testing.T) {
 	cases := []struct {
 		name         string
@@ -131,5 +161,76 @@ func TestSearchErrorPropagation(t *testing.T) {
 	_, err := provider.Search("blue lock", nil)
 	if err == nil {
 		t.Fatal("expected an error from the scraper")
+	}
+}
+
+func TestListScanPaths(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/api/manga/101/chapters/filter-options": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			jsonResponse(w, `{
+				"languages": ["en", "es", "fr"],
+				"groups": [
+					{
+						"id": "18210",
+						"name": "K Manga",
+						"slug": "k-manga",
+						"is_scanlator": false
+					},
+					{
+						"id": "scanlator:Stick",
+						"name": "Stick",
+						"slug": null,
+						"is_scanlator": false
+					}
+				]
+			}`)
+		},
+	})
+
+	items, err := provider.ListScanPaths(
+		provider.domain+"/manga/101",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("ListScanPaths() error: %v", err)
+	}
+
+	if len(items) != 2 {
+		t.Fatalf(
+			"expected 2 scan paths, got %d",
+			len(items),
+		)
+	}
+
+	if items[0].Label != "K Manga" || items[0].Value != "18210" {
+		t.Errorf(
+			"unexpected first scan path: %q / %q",
+			items[0].Label,
+			items[0].Value,
+		)
+	}
+
+	if items[1].Label != "Stick" ||
+		items[1].Value != "scanlator:Stick" {
+		t.Errorf(
+			"unexpected second scan path: %q / %q",
+			items[1].Label,
+			items[1].Value,
+		)
+	}
+}
+
+func TestListScanPathsInvalidWorkURL(t *testing.T) {
+	provider := newTestProvider(t, nil)
+
+	_, err := provider.ListScanPaths(
+		provider.domain+"/not-manga/101",
+		nil,
+	)
+	if err == nil {
+		t.Fatal("expected an error for an unexpected work URL")
 	}
 }

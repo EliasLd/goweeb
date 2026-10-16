@@ -63,17 +63,44 @@ func (p *Provider) mangaURL(mangaID string) string {
 	return p.domain + "/manga/" + mangaID
 }
 
-// The remaining Provider methods are temporary stubs. Scan selection,
-// chapter listing and page retrieval are added in the following
-// implementation steps.
+// MangaDot exposes one chapter list per upload group. Group filter
+// options are either numeric upload ids or "scanlator:" pseudo-ids and
+// are forwarded verbatim to the chapter listing step.
 func (p *Provider) ListScanPaths(
 	workURL string,
 	log *logger.Logger,
 ) ([]common.SelectableItem, error) {
-	return nil, fmt.Errorf(
-		"mangadot.net scan selection is not implemented yet",
+	mangaID, err := mangadotnetscraper.MangaIDFromURL(workURL)
+	if err != nil {
+		return nil, err
+	}
+
+	scanPaths, err := mangadotnetscraper.ListScanPaths(
+		p.domain,
+		mangaID,
+		log,
 	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to get mangadot.net scan paths: %w",
+			err,
+		)
+	}
+
+	items := make([]common.SelectableItem, 0, len(scanPaths))
+
+	for _, scanPath := range scanPaths {
+		items = append(items, common.SelectableItem{
+			Label: scanPath.Label,
+			Value: scanPath.Value,
+		})
+	}
+
+	return items, nil
 }
+
+// The remaining Provider methods are temporary stubs. Chapter listing
+// and page retrieval are added in the following implementation steps.
 
 func (p *Provider) ListEntries(
 	workURL string,
