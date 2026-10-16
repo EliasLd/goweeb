@@ -99,17 +99,54 @@ func (p *Provider) ListScanPaths(
 	return items, nil
 }
 
-// The remaining Provider methods are temporary stubs. Chapter listing
-// and page retrieval are added in the following implementation steps.
+// The remaining Provider method is a temporary stub. Page retrieval is
+// added in the next implementation step.
 
 func (p *Provider) ListEntries(
 	workURL string,
 	scanPath string,
 	log *logger.Logger,
 ) (sourcetypes.Work, []sourcetypes.Entry, error) {
-	return sourcetypes.Work{}, nil, fmt.Errorf(
-		"mangadot.net chapter listing is not implemented yet",
+	mangaID, err := mangadotnetscraper.MangaIDFromURL(workURL)
+	if err != nil {
+		return sourcetypes.Work{}, nil, err
+	}
+
+	title, err := mangadotnetscraper.GetMangaTitle(p.domain, mangaID, log)
+	if err != nil {
+		return sourcetypes.Work{}, nil, fmt.Errorf(
+			"failed to get mangadot.net manga title: %w",
+			err,
+		)
+	}
+
+	chapters, err := mangadotnetscraper.ListChapters(
+		p.domain,
+		mangaID,
+		scanPath,
+		log,
 	)
+	if err != nil {
+		return sourcetypes.Work{}, nil, fmt.Errorf(
+			"failed to list mangadot.net chapters: %w",
+			err,
+		)
+	}
+
+	entries := make([]sourcetypes.Entry, 0, len(chapters))
+
+	for _, chapter := range chapters {
+		entries = append(entries, sourcetypes.Entry{
+			Number: chapter.Number,
+			Label:  chapter.Label,
+			URL:    chapter.URL,
+		})
+	}
+
+	return sourcetypes.Work{
+		Title: title,
+		Kind:  sourcetypes.ItemChapter,
+	}, entries, nil
 }
 
 func (p *Provider) GetPageImageURLs(

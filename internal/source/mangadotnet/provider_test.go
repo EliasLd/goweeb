@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 )
 
 func newTestProvider(
@@ -228,6 +230,99 @@ func TestListScanPathsInvalidWorkURL(t *testing.T) {
 
 	_, err := provider.ListScanPaths(
 		provider.domain+"/not-manga/101",
+		nil,
+	)
+	if err == nil {
+		t.Fatal("expected an error for an unexpected work URL")
+	}
+}
+
+func TestListEntries(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/api/manga/101": func(w http.ResponseWriter, _ *http.Request) {
+			jsonResponse(w, `{
+				"manga": {
+					"id": 101,
+					"title": "Blue Lock"
+				},
+				"total_chapters": 3
+			}`)
+		},
+		"/api/manga/101/chapters/list": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			jsonResponse(w, `[
+				{
+					"id": 890000,
+					"chapter_number": 2.5,
+					"chapter_title": "Chapter 2.5",
+					"page_count": 20,
+					"source": "user",
+					"date_added": "2026-10-13 16:17:51.726423+00"
+				},
+				{
+					"id": 888840,
+					"chapter_number": 1,
+					"chapter_title": null,
+					"page_count": 21,
+					"source": "user",
+					"date_added": "2026-06-10 12:00:00.000000+00"
+				}
+			]`)
+		},
+	})
+
+	work, entries, err := provider.ListEntries(
+		provider.domain+"/manga/101",
+		"18210",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("ListEntries() error: %v", err)
+	}
+
+	if work.Title != "Blue Lock" {
+		t.Errorf("unexpected work title: %q", work.Title)
+	}
+
+	if work.Kind != sourcetypes.ItemChapter {
+		t.Errorf("unexpected work kind: %d", work.Kind)
+	}
+
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries, got %d", len(entries))
+	}
+
+	if entries[0].Number.String() != "1" ||
+		entries[0].Label != "Chapter 1" {
+		t.Errorf(
+			"unexpected first entry: %q / %q",
+			entries[0].Number.String(),
+			entries[0].Label,
+		)
+	}
+
+	expectedURL := provider.domain + "/chapter/888840?source=user"
+
+	if entries[0].URL != expectedURL {
+		t.Errorf("expected URL %q, got %q", expectedURL, entries[0].URL)
+	}
+
+	if entries[1].Number.String() != "2.5" {
+		t.Errorf(
+			"unexpected second entry: %q",
+			entries[1].Number.String(),
+		)
+	}
+}
+
+func TestListEntriesInvalidWorkURL(t *testing.T) {
+	provider := newTestProvider(t, nil)
+
+	_, _, err := provider.ListEntries(
+		provider.domain,
+		"18210",
 		nil,
 	)
 	if err == nil {
