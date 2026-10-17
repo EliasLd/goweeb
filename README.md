@@ -103,6 +103,7 @@ The image is OCI-compatible and can also be used with Docker. Depending on your 
 | --- | --- | --- |
 | WeebCentral | English | https://weebcentral.com |
 | MangaDex | Multilingual | https://mangadex.org |
+| MangaDot | English | https://mangadot.net |
 | Mangavyvy | English | https://mangavyvy.com |
 | MangaFreak | English | https://ww3.mangafreak.me |
 | Atsumoe | English | https://atsu.moe |

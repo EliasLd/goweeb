@@ -8,6 +8,7 @@ import (
 	"github.com/EliasLd/goweeb/internal/source/animesama"
 	"github.com/EliasLd/goweeb/internal/source/atsumoe"
 	"github.com/EliasLd/goweeb/internal/source/mangadex"
+	"github.com/EliasLd/goweeb/internal/source/mangadotnet"
 	"github.com/EliasLd/goweeb/internal/source/mangafreak"
 	"github.com/EliasLd/goweeb/internal/source/mangavyvy"
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
@@ -53,6 +54,12 @@ var providers = map[string]providerRegistration{
 		Label: "MangaDex (Multilingual)",
 		New: func(customDomain string) sourcetypes.Provider {
 			return mangadex.New(customDomain)
+		},
+	},
+	"mangadotnet": {
+		Label: "MangaDot (English)",
+		New: func(customDomain string) sourcetypes.Provider {
+			return mangadotnet.New(customDomain)
 		},
 	},
 	"mangavyvy": {
