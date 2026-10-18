@@ -24,6 +24,7 @@ const (
 	mouseZoneProviderConfirm = "provider-confirm"
 
 	mouseZoneOptionalEbook = "optional-ebook"
+	mouseZoneOptionalCBZ   = "optional-cbz"
 	mouseZoneSearchInput   = "search-input"
 
 	selectionItemZonePrefix = "selection-item-"
@@ -459,14 +460,36 @@ func handleOptionalMouse(
 	msg tea.MouseMsg,
 	m Model,
 ) (Model, tea.Cmd, bool) {
-	if !mouseZoneHit(
+	if mouseZoneHit(
 		mouseZoneOptionalEbook,
 		msg,
 	) {
-		return m, nil, false
+		return toggleOptionalSetting(
+			0,
+			m,
+		)
 	}
 
-	m.OptionalCursor = 0
+	if mouseZoneHit(
+		mouseZoneOptionalCBZ,
+		msg,
+	) {
+		return toggleOptionalSetting(
+			1,
+			m,
+		)
+	}
+
+	return m, nil, false
+}
+
+// toggleOptionalSetting moves the optional cursor onto the clicked
+// setting and reuses the keyboard path to toggle it.
+func toggleOptionalSetting(
+	cursor int,
+	m Model,
+) (Model, tea.Cmd, bool) {
+	m.OptionalCursor = cursor
 
 	next, cmd :=
 		handleOptionalSettingsUpdate(
@@ -654,6 +677,7 @@ func hoveredMouseZone(
 		return firstHoveredMouseZone(
 			msg,
 			mouseZoneOptionalEbook,
+			mouseZoneOptionalCBZ,
 		)
 	}
 

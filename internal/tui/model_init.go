@@ -84,6 +84,11 @@ func InitialModel() Model {
 			Checked: false,
 		},
 
+		CBZCheckbox: Checkbox{
+			Label:   "CBZ output",
+			Checked: false,
+		},
+
 		SearchInput: searchInput,
 		SearchList:  newInteractiveSearchList(),
 		SearchFocus: searchFocusInput,

@@ -181,6 +181,13 @@ func mainOptionsSummary(
 		)
 	}
 
+	if m.CBZCheckbox.Checked {
+		options = append(
+			options,
+			"CBZ",
+		)
+	}
+
 	if strings.TrimSpace(
 		m.DomainInput.Value(),
 	) != "" {
