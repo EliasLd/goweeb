@@ -10,21 +10,61 @@ type MangaResult struct {
 	URL   string
 }
 
-// Searches anime-sama catalog and returns the manga page URL
-func SearchCatalog(domain, query string, log *logger.Logger) ([]MangaResult, error) {
-	items, err := common.SearchHTMLCatalog(common.CatalogSearchConfig{
+// Builds the catalogue search configuration for a given domain. The
+// site was redesigned in 2026 and now renders its result cards as
+// "as-carte" elements; legacy selects the pre-redesign markup.
+func catalogSearchConfig(
+	domain string,
+	legacy bool,
+) common.CatalogSearchConfig {
+	cardSelector := "div.as-carte"
+	titleSelector := ".as-carte-titre"
+
+	if legacy {
+		cardSelector = "div.catalog-card"
+		titleSelector = ".card-title"
+	}
+
+	return common.CatalogSearchConfig{
 		Domain:       domain,
 		EndpointPath: "/catalogue/",
 		QueryParam:   "search",
 		ExtraParams: map[string]string{
 			"type[]": "Scans",
 		},
-		CardSelector:  "div.catalog-card",
+		CardSelector:  cardSelector,
 		LinkSelector:  "a",
-		TitleSelector: ".card-title",
-	}, query, log)
+		TitleSelector: titleSelector,
+	}
+}
+
+// Searches anime-sama catalog and returns the manga page URL
+func SearchCatalog(domain, query string, log *logger.Logger) ([]MangaResult, error) {
+	items, err := common.SearchHTMLCatalog(
+		catalogSearchConfig(domain, false),
+		query,
+		log,
+	)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(items) == 0 {
+		// Mirrors or lagging deployments may still serve the
+		// pre-redesign markup; retry the legacy selectors
+		// before giving up.
+		log.Debug(
+			"No redesigned cards, retrying legacy selectors\n",
+		)
+
+		items, err = common.SearchHTMLCatalog(
+			catalogSearchConfig(domain, true),
+			query,
+			log,
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if len(items) == 0 {
