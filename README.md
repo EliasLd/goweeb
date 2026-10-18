@@ -18,6 +18,7 @@ goweeb is a cross-platform manga downloader available as both an interactive **T
 - Interactive TUI and script-friendly CLI.
 - Multiple manga providers and languages.
 - Flexible chapter selection such as `1-10`, `10-`, `-5`, or `1-10,20,30-40`.
+- Multi-provider interactive search: query every provider at once, or filter by a single one.
 - Integer and decimal chapter support.
 - Automatic handling of unavailable chapters inside requested ranges.
 - PDF output, CBZ archives or ebook-friendly image folders.
@@ -29,6 +30,15 @@ goweeb is a cross-platform manga downloader available as both an interactive **T
 ### Interactive search
 
 Search for manga directly from the TUI and browse matching results as you type, with a fully keyboard-driven workflow from query to selection.
+
+By default, the search queries **every provider at the same time** and their results are shown as they arrive, tagged with the provider they come from:
+
+```text
+1. Blue Lock [MangaDex (Multilingual)]
+2. Blue Lock: Episode Nagi [Atsumoe (English)]
+```
+
+Results are sorted with the closest matches to the query first. `Ctrl+P` (or a click) opens the provider filter inside the search screen — searching all providers by default, or narrowing to a single one. Choosing a provider from the results automatically continues the workflow with it.
 
 ![goweeb interactive search demo](./assets/search-demo.gif)
 
@@ -172,13 +182,12 @@ Launch it and follow the interface:
 The workflow is straightforward:
 
 1. Enter a manga title.
-2. Select a provider.
-3. Optionally configure a custom provider domain.
-4. Configure the output options.
-5. Select the correct manga when multiple results are found.
-6. Select a scan version or language when applicable.
-7. Choose the chapters to download.
-8. Follow the download progress directly from the TUI.
+2. Configure the output options.
+3. Search: all providers are queried at once, or use the provider filter inside the search screen.
+4. Select the correct manga when multiple results are found.
+5. Select a scan version or language when applicable.
+6. Choose the chapters to download.
+7. Follow the download progress directly from the TUI.
 
 When only one manga or scan version is available, goweeb selects it automatically.
 
