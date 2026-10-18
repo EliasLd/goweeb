@@ -162,6 +162,7 @@ func startDownload(m Model) tea.Cmd {
 			MangaURL:      m.SelectedMangaURL,
 			ScanPath:      m.SelectedScanPath,
 			EbookFriendly: m.EbookCheckbox.Checked,
+			CBZ:           m.CBZCheckbox.Checked,
 		}
 
 		pr, pw := io.Pipe()

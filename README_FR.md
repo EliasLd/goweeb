@@ -20,7 +20,7 @@ goweeb est un téléchargeur de mangas multiplateforme disponible à la fois sou
 - Sélection flexible des chapitres avec des formats comme `1-10`, `10-`, `-5` ou `1-10,20,30-40`.
 - Prise en charge des numéros de chapitre entiers et décimaux.
 - Gestion automatique des chapitres indisponibles à l'intérieur des plages demandées.
-- Sortie en PDF ou sous forme de dossiers d'images adaptés aux liseuses.
+- Sortie en PDF, archives CBZ ou dossiers d'images adaptés aux liseuses.
 - Nouvelles tentatives HTTP automatiques en cas de connexion instable ou d'erreurs temporaires côté serveur.
 - Domaines personnalisés et miroirs compatibles pour les fournisseurs.
 - Binaires natifs pour Linux, macOS et Windows.
@@ -207,6 +207,7 @@ Lorsque vous utilisez un titre sans guillemets, placez-le après toutes les opti
 | `--range <selection>` | `-r` | Télécharger des chapitres précis, des plages ou plusieurs plages. |
 | `--scan-dir <folder>` | `-d` | Dossier de sortie. Par défaut : `scan` avec le CLI natif. |
 | `--ebook-friendly` | — | Enregistrer les images des chapitres dans des dossiers `Chapter XXX/` au lieu de générer des PDF. |
+| `--cbz` | — | Enregistrer chaque chapitre sous forme d'archive CBZ (pages numérotées `001.jpg`, `002.jpg`, …) au lieu de générer des PDF. Ne peut pas être combinée avec `--ebook-friendly`. |
 | `--domain <url>` | `-u` | Remplacer le domaine par défaut du fournisseur sélectionné. |
 | `--debug` | — | Activer les logs de debug détaillés. |
 
@@ -325,6 +326,38 @@ goweeb \
 ```
 
 Cette structure peut ensuite être traitée par des outils comme [Kindle Comic Converter](https://github.com/ciromattia/kcc) afin de préparer les chapitres pour Kindle, Kobo et d'autres liseuses.
+
+## Mode CBZ
+
+Avec `--cbz`, goweeb enregistre chaque chapitre sélectionné sous forme d'archive CBZ, un fichier par chapitre :
+
+```text
+One Piece/
+├── One Piece_1.cbz
+├── One Piece_2.cbz
+└── ...
+```
+
+Chaque archive contient les pages du chapitre à sa racine, numérotées séquentiellement afin que les lecteurs conservent l'ordre correct :
+
+```text
+001.jpg
+002.jpg
+003.jpg
+...
+```
+
+Les fichiers CBZ fonctionnent avec la plupart des lecteurs de bandes dessinées et peuvent être traités par des outils comme [Kindle Comic Converter](https://github.com/ciromattia/kcc), qui accepte directement le format CBZ en entrée.
+
+Exemple :
+
+```bash
+goweeb \
+  --source weebcentral \
+  --all \
+  --cbz \
+  "one piece"
+```
 
 ## Contribuer
 

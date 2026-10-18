@@ -267,6 +267,107 @@ func TestOptionalSettingsToggleEbookFriendly(t *testing.T) {
 	}
 }
 
+func TestOptionalSettingsToggleCBZ(t *testing.T) {
+	m := InitialModel()
+	m.State = StateOptionalSettings
+	m.OptionalCursor = 1
+
+	initial := m.CBZCheckbox.Checked
+
+	next, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeySpace,
+		},
+		m,
+	)
+
+	if next.CBZCheckbox.Checked == initial {
+		t.Fatal(
+			"CBZ checkbox was not toggled",
+		)
+	}
+}
+
+func TestOptionalSettingsModesAreMutuallyExclusive(t *testing.T) {
+	m := InitialModel()
+	m.State = StateOptionalSettings
+
+	// Checking CBZ unchecks ebook-friendly.
+	m.OptionalCursor = 1
+
+	checkedCBZ, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeySpace,
+		},
+		m,
+	)
+
+	if !checkedCBZ.CBZCheckbox.Checked {
+		t.Fatal("CBZ checkbox should be checked")
+	}
+
+	// The user moves to the ebook-friendly setting and checks it.
+	m = checkedCBZ
+	m.OptionalCursor = 0
+
+	checkedEbook, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeySpace,
+		},
+		m,
+	)
+
+	if !checkedEbook.EbookCheckbox.Checked {
+		t.Error("ebook-friendly checkbox should be checked")
+	}
+
+	if checkedEbook.CBZCheckbox.Checked {
+		t.Error(
+			"checking ebook-friendly should uncheck CBZ",
+		)
+	}
+
+	// Unchecking ebook-friendly keeps CBZ untouched.
+	m = checkedEbook
+
+	unchecked, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeySpace,
+		},
+		m,
+	)
+
+	if unchecked.EbookCheckbox.Checked {
+		t.Error("ebook-friendly should be unchecked again")
+	}
+
+	if unchecked.CBZCheckbox.Checked {
+		t.Error("CBZ should remain unchecked")
+	}
+
+	// Checking CBZ unchecks ebook-friendly in the other direction.
+	m = unchecked
+	m.EbookCheckbox.Checked = true
+	m.OptionalCursor = 1
+
+	final, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeySpace,
+		},
+		m,
+	)
+
+	if !final.CBZCheckbox.Checked {
+		t.Error("CBZ checkbox should be checked")
+	}
+
+	if final.EbookCheckbox.Checked {
+		t.Error(
+			"checking CBZ should uncheck ebook-friendly",
+		)
+	}
+}
+
 func TestDownloadSpinnerUpdatesWhileDownloading(
 	t *testing.T,
 ) {

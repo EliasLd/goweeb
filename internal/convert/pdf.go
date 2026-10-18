@@ -145,11 +145,13 @@ func PNGToJPG(srcPath, destPath string) error {
 	return nil
 }
 
-func ImagesToPDF(imagesDir, outputPDFPath string, log *logger.Logger) error {
+// listImageFiles returns the sorted image file basenames of
+// imagesDir, ignoring directories and unknown extensions. Callers
+// decide how to treat an empty list.
+func listImageFiles(imagesDir string) ([]string, error) {
 	files, err := os.ReadDir(imagesDir)
 	if err != nil {
-		log.Error("Failed to read image dir: %v", err)
-		return fmt.Errorf("Failed to read image dir: %v", err)
+		return nil, err
 	}
 
 	var imageFiles []string
@@ -164,11 +166,21 @@ func ImagesToPDF(imagesDir, outputPDFPath string, log *logger.Logger) error {
 		}
 	}
 
+	sort.Strings(imageFiles)
+
+	return imageFiles, nil
+}
+
+func ImagesToPDF(imagesDir, outputPDFPath string, log *logger.Logger) error {
+	imageFiles, err := listImageFiles(imagesDir)
+	if err != nil {
+		log.Error("Failed to read image dir: %v", err)
+		return fmt.Errorf("Failed to read image dir: %v", err)
+	}
+
 	if len(imageFiles) == 0 {
 		return fmt.Errorf("No JPG files found in %s", imagesDir)
 	}
-
-	sort.Strings(imageFiles)
 
 	pdf := gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{})

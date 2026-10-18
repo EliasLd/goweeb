@@ -62,6 +62,35 @@ func viewOptionalSettings(m Model) string {
 
 	view.WriteString(description)
 
+	view.WriteString("\n")
+
+	cbzCheckbox :=
+		m.CBZCheckbox.View(
+			m.OptionalCursor == 1,
+		)
+
+	cbzCheckbox =
+		markMouseZone(
+			mouseZoneOptionalCBZ,
+			cbzCheckbox,
+		)
+
+	view.WriteString(
+		cbzCheckbox,
+	)
+
+	view.WriteString("\n")
+
+	cbzDescription := optionalDescriptionStyle.
+		Width(contentWidth).
+		Render(
+			"Save manga chapters as CBZ comic archives " +
+				"(one .cbz file per chapter) instead of generating " +
+				"PDF files. Useful for comic readers and e-readers.",
+		)
+
+	view.WriteString(cbzDescription)
+
 	content := optionalViewStyle.Render(
 		view.String(),
 	)

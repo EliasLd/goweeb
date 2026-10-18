@@ -20,7 +20,7 @@ goweeb is a cross-platform manga downloader available as both an interactive **T
 - Flexible chapter selection such as `1-10`, `10-`, `-5`, or `1-10,20,30-40`.
 - Integer and decimal chapter support.
 - Automatic handling of unavailable chapters inside requested ranges.
-- PDF output or ebook-friendly image folders.
+- PDF output, CBZ archives or ebook-friendly image folders.
 - Automatic HTTP retries for unstable connections and temporary server failures.
 - Custom provider domains and compatible mirrors.
 - Native binaries for Linux, macOS and Windows.
@@ -207,6 +207,7 @@ When using an unquoted title, place it after all CLI options.
 | `--range <selection>` | `-r` | Download specific chapters, ranges, or multiple ranges. |
 | `--scan-dir <folder>` | `-d` | Output directory. Default: `scan` in the native CLI. |
 | `--ebook-friendly` | — | Store chapter images in `Chapter XXX/` folders instead of generating PDFs. |
+| `--cbz` | — | Save each chapter as a CBZ archive (pages numbered `001.jpg`, `002.jpg`, …) instead of generating PDFs. Cannot be combined with `--ebook-friendly`. |
 | `--domain <url>` | `-u` | Override the selected provider's default domain. |
 | `--debug` | — | Enable verbose debug logging. |
 
@@ -325,6 +326,38 @@ goweeb \
 ```
 
 This structure can then be processed by tools such as [Kindle Comic Converter](https://github.com/ciromattia/kcc) for Kindle, Kobo and other e-readers.
+
+## CBZ mode
+
+With `--cbz`, goweeb saves each selected chapter as a CBZ comic book archive, one file per chapter:
+
+```text
+One Piece/
+├── One Piece_1.cbz
+├── One Piece_2.cbz
+└── ...
+```
+
+Each archive contains the chapter pages at its root, numbered sequentially so readers keep the correct order:
+
+```text
+001.jpg
+002.jpg
+003.jpg
+...
+```
+
+CBZ files work with most comic readers and can be processed by tools such as [Kindle Comic Converter](https://github.com/ciromattia/kcc), which accepts CBZ as input directly.
+
+Example:
+
+```bash
+goweeb \
+  --source weebcentral \
+  --all \
+  --cbz \
+  "one piece"
+```
 
 ## Contributing
 
