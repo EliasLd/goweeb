@@ -279,6 +279,8 @@ func handleInteractiveSearchResult(
 				}
 			}
 
+			sortSearchItems(items, msg.query)
+
 			listCmd = m.SearchList.SetItems(items)
 		}
 	}
