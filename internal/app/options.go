@@ -46,6 +46,7 @@ type Options struct {
 	CustomDomain  string
 	Debug         bool
 	EbookFriendly bool
+	CBZ           bool
 	Source        string
 
 	MangaURL string
@@ -102,6 +103,10 @@ func configureUsage() {
 		fmt.Fprintln(out, "      Save chapters as image folders instead of PDF files")
 		fmt.Fprintln(out)
 
+		fmt.Fprintln(out, "  --cbz")
+		fmt.Fprintln(out, "      Save chapters as CBZ archives instead of PDF files")
+		fmt.Fprintln(out)
+
 		fmt.Fprintln(out, "Provider options:")
 		fmt.Fprintln(out, "  --domain <domain>")
 		fmt.Fprintln(out, "  -u <domain>")
@@ -128,6 +133,7 @@ func ParseFlags() Options {
 		rangeStr      string
 		scanDir       string
 		ebookFriendly bool
+		cbz           bool
 		customDomain  string
 		debug         bool
 	)
@@ -202,6 +208,13 @@ func ParseFlags() Options {
 		"ebook-friendly",
 		false,
 		"Save chapters as image folders instead of PDF files",
+	)
+
+	flag.BoolVar(
+		&cbz,
+		"cbz",
+		false,
+		"Save chapters as CBZ archives instead of PDF files",
 	)
 
 	// Misc.
@@ -286,6 +299,15 @@ func ParseFlags() Options {
 		os.Exit(2)
 	}
 
+	if ebookFriendly && cbz {
+		fmt.Fprintln(
+			os.Stderr,
+			"--ebook-friendly and --cbz cannot be used together",
+		)
+
+		os.Exit(2)
+	}
+
 	var selection RangeSelection
 
 	if all {
@@ -346,5 +368,6 @@ func ParseFlags() Options {
 		CustomDomain:  customDomain,
 		Debug:         debug,
 		EbookFriendly: ebookFriendly,
+		CBZ:           cbz,
 	}
 }

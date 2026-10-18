@@ -146,7 +146,7 @@ func downloadEntries(
 		)
 	}
 
-	if opts.EbookFriendly {
+	if opts.EbookFriendly || opts.CBZ {
 		if err := os.MkdirAll(
 			opts.ScanDir,
 			os.ModePerm,
@@ -231,6 +231,78 @@ func downloadEntries(
 			continue
 		}
 
+		// Handle CBZ output. Files are staged like PDFs: pages are
+		// downloaded into a per-chapter staging folder, packed into
+		// the archive, then the folder is removed.
+
+		if opts.CBZ {
+			imageDir := filepath.Join(
+				homeDir,
+				"Images",
+				opts.Slug,
+				chStr,
+			)
+
+			if err := fetch.DownloadImagesWithHeaders(
+				imageURLs,
+				imageDir,
+				requestHeaders,
+				log,
+			); err != nil {
+				log.Error(
+					"Failed to download %s: %v\n",
+					entry.Label,
+					err,
+				)
+
+				continue
+			}
+
+			if err := os.MkdirAll(
+				opts.ScanDir,
+				os.ModePerm,
+			); err != nil {
+				log.Error(
+					"Failed to create output dir: %v\n",
+					err,
+				)
+
+				return
+			}
+
+			cbzPath := filepath.Join(
+				opts.ScanDir,
+				fmt.Sprintf(
+					"%s_%s.cbz",
+					work.Title,
+					chStr,
+				),
+			)
+
+			if err := convert.ImagesToCBZ(
+				imageDir,
+				cbzPath,
+			); err != nil {
+				log.Error(
+					"Failed to create CBZ: %v\n",
+					err,
+				)
+
+				continue
+			}
+
+			// The staged images live inside the archive now.
+			_ = os.RemoveAll(imageDir)
+
+			log.Info(
+				"%s saved as %s\n",
+				entry.Label,
+				cbzPath,
+			)
+
+			continue
+		}
+
 		imageDir := filepath.Join(
 			homeDir,
 			"Images",
@@ -294,7 +366,7 @@ func downloadEntries(
 		)
 	}
 
-	if !opts.EbookFriendly {
+	if !opts.EbookFriendly && !opts.CBZ {
 		rootImagesDir := filepath.Join(
 			homeDir,
 			"Images",
