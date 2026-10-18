@@ -34,10 +34,6 @@ var (
 					Background(borderColor).
 					Foreground(brightAccentColor).
 					Bold(true)
-
-	disabledButtonStyle = buttonBaseStyle.
-				Foreground(mutedColor).
-				Faint(true)
 )
 
 func renderButton(

@@ -240,7 +240,7 @@ func renderMainSearchAction(
 
 	style := mainSearchButtonStyle
 
-	if m.Cursor == 3 {
+	if m.Cursor == 2 {
 		style =
 			mainSearchButtonFocusedStyle
 	}
@@ -266,13 +266,6 @@ func renderMainStatus(
 	case m.IsDownloading:
 		return mainBusyStatusStyle.Render(
 			"● Downloading",
-		)
-
-	case strings.TrimSpace(
-		m.SelectedProvider,
-	) == "":
-		return mainIdleStatusStyle.Render(
-			"○ Select a provider to start",
 		)
 
 	case m.SearchReady:
@@ -330,13 +323,6 @@ func renderMainDeck(
 		width-mainDeckStyle.GetHorizontalFrameSize(),
 	)
 
-	provider := "Select provider"
-
-	if m.SelectedProviderLabel != "" {
-		provider =
-			m.SelectedProviderLabel
-	}
-
 	destinationEnabled :=
 		!app.OutputDirLocked()
 
@@ -356,24 +342,10 @@ func renderMainDeck(
 			)
 	}
 
-	providerRow := renderMainSettingRow(
-		"Provider",
-		provider,
-		m.Cursor == 1,
-		true,
-		innerWidth,
-	)
-
-	providerRow =
-		markMouseZone(
-			mouseZoneMainProvider,
-			providerRow,
-		)
-
 	options := renderMainSettingRow(
 		"Options",
 		mainOptionsSummary(m),
-		m.Cursor == 2,
+		m.Cursor == 1,
 		true,
 		innerWidth,
 	)
@@ -392,8 +364,6 @@ func renderMainDeck(
 	content := lipgloss.JoinVertical(
 		lipgloss.Left,
 		destination,
-		"",
-		providerRow,
 		"",
 		options,
 		"",

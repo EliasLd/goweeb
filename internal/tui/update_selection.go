@@ -34,8 +34,6 @@ func handleProviderSelectionUpdate(
 		m.SelectedProviderLabel = newProviderLabel
 		m.DomainInput.SetValue(newDomain)
 
-		m = updateSearchReady(m)
-
 		// Changing provider configuration invalidates
 		// selections made with the previous configuration.
 		if oldProvider != newProvider ||
@@ -49,9 +47,45 @@ func handleProviderSelectionUpdate(
 			m.SelectedRange = app.RangeSelection{}
 		}
 
-		m.State = StateForm
-		m.Cursor = 1
-		m = updateFocus(m)
+		// The provider screen is only reachable from the search
+		// view, so selection returns to it and refreshes the
+		// search under the new filter.
+		m.SearchGeneration++
+
+		m.SearchInFlight = false
+		m.SearchProvidersPending = 0
+
+		m.SearchPending = false
+		m.SearchPendingQuery = ""
+		m.SearchPendingGeneration = 0
+
+		m.SearchResultsQuery = ""
+		m.SearchHasSearched = false
+		m.SearchErrors = nil
+
+		var searchCmd tea.Cmd
+
+		clearCmd := m.SearchList.SetItems(nil)
+
+		m.State = StateInteractiveSearch
+		m = setInteractiveSearchFocus(
+			m,
+			searchFocusInput,
+		)
+		m = applySearchPlaceholder(m)
+		m = resizeInteractiveSearch(m)
+
+		// Re-run the query under the new filter when it is
+		// already typed.
+		query := currentInteractiveSearchQuery(m)
+
+		if len(query) >= minInteractiveSearchLength {
+			m, searchCmd = startInteractiveSearchRequest(
+				m,
+				query,
+				m.SearchGeneration,
+			)
+		}
 
 		m.Logs = append(
 			m.Logs,
@@ -61,14 +95,21 @@ func handleProviderSelectionUpdate(
 			),
 		)
 
-		return m, nil
+		return m, tea.Batch(
+			clearCmd,
+			searchCmd,
+		)
 	}
 
 	if m.ProviderSelectionModel.Cancelled {
 		m.ProviderSelectionModel.Cancelled = false
-		m.State = StateForm
-		m.Cursor = 1
-		m = updateFocus(m)
+
+		m.State = StateInteractiveSearch
+		m = setInteractiveSearchFocus(
+			m,
+			searchFocusInput,
+		)
+		m = resizeInteractiveSearch(m)
 
 		return m, nil
 	}

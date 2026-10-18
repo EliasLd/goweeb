@@ -17,6 +17,7 @@ const (
 	interactiveSearchMargin                   = 8
 	searchFocusInput              searchFocus = iota
 	searchFocusResults
+	searchFocusProvider
 )
 
 func interactiveSeachWidth(
@@ -54,6 +55,26 @@ func newInteractiveSearchList() list.Model {
 	return l
 }
 
+// applySearchPlaceholder matches the search input placeholder with
+// the current provider filter.
+func applySearchPlaceholder(m Model) Model {
+	providerLabel := strings.TrimSpace(
+		m.SelectedProviderLabel,
+	)
+
+	if providerLabel == "" {
+		m.SearchInput.Placeholder =
+			"Search across all providers..."
+	} else {
+		m.SearchInput.Placeholder = fmt.Sprintf(
+			"Search on %s...",
+			providerLabel,
+		)
+	}
+
+	return m
+}
+
 func openInteractiveSearch(m Model) (Model, tea.Cmd) {
 	// Invalidate debounce/results belonging to a previous search session.
 	m.SearchGeneration++
@@ -70,19 +91,7 @@ func openInteractiveSearch(m Model) (Model, tea.Cmd) {
 
 	m.SearchInput.SetValue("")
 
-	providerLabel := strings.TrimSpace(
-		m.SelectedProviderLabel,
-	)
-
-	if providerLabel == "" {
-		m.SearchInput.Placeholder =
-			"Search across all providers..."
-	} else {
-		m.SearchInput.Placeholder = fmt.Sprintf(
-			"Search on %s...",
-			providerLabel,
-		)
-	}
+	m = applySearchPlaceholder(m)
 
 	clearCmd := m.SearchList.SetItems(nil)
 
@@ -108,7 +117,7 @@ func closeInteractiveSearch(m Model) Model {
 	m.SearchInput.Blur()
 
 	m.State = StateForm
-	m.Cursor = 3
+	m.Cursor = 2
 
 	return updateFocus(m)
 }
@@ -126,6 +135,18 @@ func setInteractiveSearchFocus(
 		m.SearchList.SetDelegate(
 			itemDelegate{
 				Focused:    true,
+				ZonePrefix: "search-result-",
+			},
+		)
+
+	case searchFocusProvider:
+		// Neither the input nor the list is focused; the
+		// provider row carries the accent instead.
+		m.SearchInput.Blur()
+
+		m.SearchList.SetDelegate(
+			itemDelegate{
+				Focused:    false,
 				ZonePrefix: "search-result-",
 			},
 		)

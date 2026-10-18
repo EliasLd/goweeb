@@ -27,11 +27,11 @@ func handleFormUpdate(
 		return updateFocus(m), nil
 
 	case "down", "tab", "j":
-		if m.Cursor < 3 {
+		if m.Cursor < 2 {
 			m.Cursor++
 		}
 
-		if m.Cursor == 3 && !m.SearchReady {
+		if m.Cursor == 2 && !m.SearchReady {
 			m.Cursor--
 		}
 
@@ -41,16 +41,14 @@ func handleFormUpdate(
 		switch m.Cursor {
 		case 0:
 			return openDestinationPicker(m)
-		case 1:
-			return openProviderSelection(m), nil
 
-		case 2:
+		case 1:
 			m.OptionalCursor = 0
 			m.State = StateOptionalSettings
 
 			return m, nil
 
-		case 3:
+		case 2:
 			if m.SearchReady {
 				return openInteractiveSearch(m)
 			}

@@ -32,6 +32,16 @@ func handleInteractiveSearchUpdate(
 		switch msg.String() {
 		case "esc", "ctrl+c":
 			return closeInteractiveSearch(m), nil
+
+		case "ctrl+p":
+			return openProviderSelection(m), nil
+		}
+
+		if m.SearchFocus == searchFocusProvider {
+			return handleInteractiveSearchProvider(
+				msg,
+				m,
+			)
 		}
 
 		if m.SearchFocus == searchFocusInput {
@@ -55,6 +65,15 @@ func handleInteractiveSearchInput(
 	m Model,
 ) (Model, tea.Cmd) {
 	switch msg.String() {
+	case "up":
+		// The provider row sits above the input.
+		m = setInteractiveSearchFocus(
+			m,
+			searchFocusProvider,
+		)
+
+		return m, nil
+
 	case "down", "tab", "enter":
 		if interactiveSearchResultsSelectable(m) {
 			m = setInteractiveSearchFocus(
@@ -114,6 +133,33 @@ func handleInteractiveSearchInput(
 	)
 }
 
+// handleInteractiveSearchProvider drives the focus cycle while the
+// provider row is focused: down returns to the input, Enter opens
+// the provider selection screen.
+func handleInteractiveSearchProvider(
+	msg tea.KeyMsg,
+	m Model,
+) (Model, tea.Cmd) {
+	switch msg.String() {
+	case "up":
+		// Nothing above the provider row.
+		return m, nil
+
+	case "down", "tab":
+		m = setInteractiveSearchFocus(
+			m,
+			searchFocusInput,
+		)
+
+		return m, nil
+
+	case "enter", " ":
+		return openProviderSelection(m), nil
+	}
+
+	return m, nil
+}
+
 func handleInteractiveSearchResults(
 	msg tea.KeyMsg,
 	m Model,
@@ -124,6 +170,21 @@ func handleInteractiveSearchResults(
 			m = setInteractiveSearchFocus(
 				m,
 				searchFocusInput,
+			)
+
+			return m, nil
+		}
+
+	case "down":
+		items := m.SearchList.Items()
+
+		// The provider row wraps the focus cycle at the bottom
+		// of the results.
+		if len(items) > 0 &&
+			m.SearchList.Index() >= len(items)-1 {
+			m = setInteractiveSearchFocus(
+				m,
+				searchFocusProvider,
 			)
 
 			return m, nil
@@ -160,7 +221,7 @@ func handleInteractiveSearchResults(
 		m.SelectedMangaProvider = item.Provider
 
 		m.State = StateForm
-		m.Cursor = 3
+		m.Cursor = 2
 		m = updateFocus(m)
 
 		m.Logs = append(

@@ -109,5 +109,9 @@ func InitialModel() Model {
 		LogViewport:     logViewport,
 	}
 
+	// The search is ready from the start: the default search
+	// queries every provider.
+	m = updateSearchReady(m)
+
 	return updateFocus(m)
 }

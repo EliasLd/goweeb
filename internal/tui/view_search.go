@@ -29,15 +29,37 @@ func viewInteractiveSearch(
 		providerLabel = "All providers"
 	}
 
+	providerRow := fmt.Sprintf(
+		"Provider: %s ›",
+		providerLabel,
+	)
+
+	if m.SearchFocus == searchFocusProvider {
+		providerRow =
+			lipgloss.NewStyle().
+				Foreground(
+					brightAccentColor,
+				).
+				Render(
+					providerRow,
+				)
+	} else {
+		providerRow =
+			lipgloss.NewStyle().
+				Faint(true).
+				Render(
+					providerRow,
+				)
+	}
+
+	providerRow =
+		markMouseZone(
+			mouseZoneSearchProvider,
+			providerRow,
+		)
+
 	b.WriteString(
-		lipgloss.NewStyle().
-			Faint(true).
-			Render(
-				fmt.Sprintf(
-					"Provider: %s",
-					providerLabel,
-				),
-			),
+		providerRow,
 	)
 
 	b.WriteString("\n\n")
@@ -181,7 +203,7 @@ func viewInteractiveSearch(
 		m.Width,
 		m.Height,
 		content,
-		"↓/Tab results • ↑ back to search • Enter select • Esc back to main",
+		"↓/Tab results • ↑ back to search • Enter select • Ctrl+P provider • Esc back to main",
 		lipgloss.Center,
 		lipgloss.Top,
 	)

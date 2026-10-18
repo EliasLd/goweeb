@@ -4,8 +4,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/EliasLd/goweeb/internal/app"
 	"github.com/EliasLd/goweeb/internal/source/common"
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
+	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -150,7 +152,7 @@ func TestDownloadCompletionReturnsToForm(
 	}
 }
 
-func TestFormNavigationStartsOnProviderWhenOutputLocked(
+func TestFormNavigationStartsOnOptionsWhenOutputLocked(
 	t *testing.T,
 ) {
 	t.Setenv(
@@ -176,7 +178,7 @@ func TestFormNavigationStartsOnProviderWhenOutputLocked(
 
 	if next.Cursor != 2 {
 		t.Errorf(
-			"cursor = %d, want 2 after navigating down from provider",
+			"cursor = %d, want 2 after navigating down from options",
 			next.Cursor,
 		)
 	}
@@ -210,7 +212,7 @@ func TestFormNavigationCannotEnterLockedOutputDir(
 
 func TestOptionalSettingsOpensFromForm(t *testing.T) {
 	m := InitialModel()
-	m.Cursor = 2
+	m.Cursor = 1
 
 	next, _ := Update(
 		tea.KeyMsg{
@@ -409,6 +411,294 @@ func TestDownloadSpinnerStopsWhenDownloadIsInactive(
 	if cmd != nil {
 		t.Error(
 			"inactive download spinner should not schedule another tick",
+		)
+	}
+}
+
+func TestProviderSelectionOpensFromSearch(t *testing.T) {
+	m := InitialModel()
+	m.State = StateInteractiveSearch
+
+	next, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeyCtrlP,
+		},
+		m,
+	)
+
+	if next.State != StateProviderSelection {
+		t.Fatalf(
+			"state = %v, want StateProviderSelection",
+			next.State,
+		)
+	}
+
+	// No provider has been selected so far: the all-providers
+	// entry must be the checked one.
+	if len(next.ProviderSelectionModel.Options) == 0 {
+		t.Fatal("provider options are empty")
+	}
+
+	allOption := next.ProviderSelectionModel.Options[0]
+
+	if allOption.ID != "" || !allOption.Checkbox.Checked {
+		t.Errorf(
+			"first option = %q (checked %v), want the all-providers option checked",
+			allOption.ID,
+			allOption.Checkbox.Checked,
+		)
+	}
+}
+
+func TestProviderSelectionCancelReturnsToSearch(t *testing.T) {
+	m := InitialModel()
+	m.State = StateInteractiveSearch
+
+	m, _ = Update(
+		tea.KeyMsg{
+			Type: tea.KeyCtrlP,
+		},
+		m,
+	)
+
+	next, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeyEsc,
+		},
+		m,
+	)
+
+	if next.State != StateInteractiveSearch {
+		t.Fatalf(
+			"state = %v, want StateInteractiveSearch",
+			next.State,
+		)
+	}
+}
+
+func TestProviderSelectionConfirmRunsSearchWithFilter(t *testing.T) {
+	m := InitialModel()
+	m.DestinationDir = app.DefaultTUIScanDir()
+	m.State = StateInteractiveSearch
+	m.SearchInput.SetValue("blue lock")
+
+	m, _ = Update(
+		tea.KeyMsg{
+			Type: tea.KeyCtrlP,
+		},
+		m,
+	)
+
+	// Pick a specific provider: manga option index 1.
+	m.ProviderSelectionModel.Cursor = 1
+
+	m, _ = Update(
+		tea.KeyMsg{
+			Type: tea.KeyEnter,
+		},
+		m,
+	)
+
+	if m.ProviderSelectionModel.SelectedID == "" {
+		t.Fatal("selecting a provider should record its id")
+	}
+
+	// Confirm.
+	next, cmd := Update(
+		tea.KeyMsg{
+			Type: tea.KeyEnter,
+		},
+		m,
+	)
+
+	if next.State != StateInteractiveSearch {
+		t.Fatalf(
+			"state = %v, want StateInteractiveSearch",
+			next.State,
+		)
+	}
+
+	if next.SelectedProvider !=
+		next.ProviderSelectionModel.SelectedID {
+		t.Errorf(
+			"selected provider = %q, want %q",
+			next.SelectedProvider,
+			next.ProviderSelectionModel.SelectedID,
+		)
+	}
+
+	// Confirming the filter must refresh the search with the query
+	// typed before opening the provider screen.
+	if cmd == nil {
+		t.Fatal("confirm should start a new search command")
+	}
+
+	if !next.SearchInFlight {
+		t.Error("the refreshed search should be in flight")
+	}
+
+	if next.SearchProvidersPending != 1 {
+		t.Errorf(
+			"pending providers = %d, want 1",
+			next.SearchProvidersPending,
+		)
+	}
+
+	if len(next.SearchList.Items()) != 0 {
+		t.Error("results should be cleared for the new filter")
+	}
+}
+
+func TestInteractiveSearchFocusReachesProviderRow(
+	t *testing.T,
+) {
+	m := InitialModel()
+	m.State = StateInteractiveSearch
+	m.SearchInput.SetValue("blue lock")
+	m.SearchResultsQuery = "blue lock"
+	m.SearchHasSearched = true
+
+	_ = m.SearchList.SetItems(
+		[]list.Item{
+			SelectionItem{Label: "Blue Lock", Value: "u"},
+		},
+	)
+
+	m = setInteractiveSearchFocus(m, searchFocusInput)
+
+	// Up from the input focuses the provider row.
+	next, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeyUp,
+		},
+		m,
+	)
+
+	if next.SearchFocus != searchFocusProvider {
+		t.Fatalf(
+			"focus = %v, want searchFocusProvider",
+			next.SearchFocus,
+		)
+	}
+
+	// Down from the provider row returns to the input.
+	next, _ = Update(
+		tea.KeyMsg{
+			Type: tea.KeyDown,
+		},
+		next,
+	)
+
+	if next.SearchFocus != searchFocusInput {
+		t.Fatalf(
+			"focus = %v, want searchFocusInput",
+			next.SearchFocus,
+		)
+	}
+
+	// Down at the bottom of the results wraps to the provider row.
+	resultsFocusModel :=
+		setInteractiveSearchFocus(
+			next,
+			searchFocusResults,
+		)
+
+	wrapped, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeyDown,
+		},
+		resultsFocusModel,
+	)
+
+	if wrapped.SearchFocus != searchFocusProvider {
+		t.Fatalf(
+			"focus = %v, want searchFocusProvider",
+			wrapped.SearchFocus,
+		)
+	}
+
+	// Enter on the provider row opens the provider screen.
+	opened, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeyEnter,
+		},
+		wrapped,
+	)
+
+	if opened.State != StateProviderSelection {
+		t.Fatalf(
+			"state = %v, want StateProviderSelection",
+			opened.State,
+		)
+	}
+}
+
+func TestProviderSelectionCanSelectAllProvidersAgain(
+	t *testing.T,
+) {
+	m := InitialModel()
+	m.DestinationDir = app.DefaultTUIScanDir()
+	m.State = StateInteractiveSearch
+
+	// Simulate a previous choice of a single provider.
+	m.SelectedProvider = "mangadex"
+	m.SelectedProviderLabel = "MangaDex (Multilingual)"
+
+	m, _ = Update(
+		tea.KeyMsg{
+			Type: tea.KeyCtrlP,
+		},
+		m,
+	)
+
+	if m.ProviderSelectionModel.SelectedID != "mangadex" {
+		t.Fatalf(
+			"selected id = %q, want mangadex",
+			m.ProviderSelectionModel.SelectedID,
+		)
+	}
+
+	// The cursor starts on the all-providers entry: select it.
+	next, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeyEnter,
+		},
+		m,
+	)
+
+	if next.ProviderSelectionModel.SelectedID != "" {
+		t.Fatalf(
+			"selected id = %q, want the empty all-providers id",
+			next.ProviderSelectionModel.SelectedID,
+		)
+	}
+
+	// …and confirm the all-providers filter.
+	confirmed, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeyEnter,
+		},
+		next,
+	)
+
+	if confirmed.State != StateInteractiveSearch {
+		t.Fatalf(
+			"state = %v, want StateInteractiveSearch",
+			confirmed.State,
+		)
+	}
+
+	if confirmed.SelectedProvider != "" {
+		t.Errorf(
+			"selected provider = %q, want empty (all providers)",
+			confirmed.SelectedProvider,
+		)
+	}
+
+	if confirmed.SelectedProviderLabel != "All providers" {
+		t.Errorf(
+			"selected provider label = %q, want All providers",
+			confirmed.SelectedProviderLabel,
 		)
 	}
 }

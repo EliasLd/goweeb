@@ -33,9 +33,6 @@ func updateSearchReady(
 		!m.IsDownloading &&
 			strings.TrimSpace(
 				m.DestinationDir,
-			) != "" &&
-			strings.TrimSpace(
-				m.SelectedProvider,
 			) != ""
 
 	return m
