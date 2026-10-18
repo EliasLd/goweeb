@@ -93,6 +93,12 @@ func TestInitialModel(t *testing.T) {
 			"no provider should be selected initially",
 		)
 	}
+
+	if m.SelectedMangaProvider != "" {
+		t.Error(
+			"no manga provider should be adopted initially",
+		)
+	}
 }
 
 func TestInitialModelSkipsLockedOutputDir(

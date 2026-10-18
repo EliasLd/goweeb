@@ -64,7 +64,9 @@ func openInteractiveSearch(m Model) (Model, tea.Cmd) {
 
 	m.SearchResultsQuery = ""
 	m.SearchHasSearched = false
-	m.SearchError = ""
+	m.SearchErrors = nil
+	m.SearchInFlight = false
+	m.SearchProvidersPending = 0
 
 	m.SearchInput.SetValue("")
 
@@ -73,13 +75,14 @@ func openInteractiveSearch(m Model) (Model, tea.Cmd) {
 	)
 
 	if providerLabel == "" {
-		providerLabel = m.SelectedProvider
+		m.SearchInput.Placeholder =
+			"Search across all providers..."
+	} else {
+		m.SearchInput.Placeholder = fmt.Sprintf(
+			"Search on %s...",
+			providerLabel,
+		)
 	}
-
-	m.SearchInput.Placeholder = fmt.Sprintf(
-		"Search on %s...",
-		providerLabel,
-	)
 
 	clearCmd := m.SearchList.SetItems(nil)
 
@@ -177,8 +180,7 @@ func interactiveSearchResultsCurrent(
 	query := currentInteractiveSearchQuery(m)
 
 	return query != "" &&
-		query == m.SearchResultsQuery &&
-		m.SearchError == ""
+		query == m.SearchResultsQuery
 }
 
 func interactiveSearchResultsSelectable(

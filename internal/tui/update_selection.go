@@ -116,7 +116,7 @@ func handleSelectionUpdate(
 		)
 
 		return m, fetchEntries(
-			m.SelectedProvider,
+			m.SelectedMangaProvider,
 			m.SelectedMangaURL,
 			m.SelectedScanPath,
 			strings.TrimSpace(
