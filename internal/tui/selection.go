@@ -14,6 +14,13 @@ import (
 type SelectionItem struct {
 	Label string
 	Value string
+
+	// Provider that produced the item, set on search results only.
+	Provider string
+
+	// Full provider label as shown in the selection lists, set on
+	// search results only.
+	ProviderLabel string
 }
 
 // Implements list.Item interface
@@ -48,6 +55,15 @@ func (
 		index+1,
 		i.Label,
 	)
+
+	// Search results carry the provider they come from.
+	if i.ProviderLabel != "" {
+		str = fmt.Sprintf(
+			"%s [%s]",
+			str,
+			i.ProviderLabel,
+		)
+	}
 
 	availableWidth := max(
 		1,

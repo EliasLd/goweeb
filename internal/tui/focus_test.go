@@ -6,13 +6,12 @@ func TestUpdateSearchReady(t *testing.T) {
 	m := InitialModel()
 
 	m.DestinationDir = "/tmp/manga"
-	m.SelectedProvider = "mangadex"
 
 	m = updateSearchReady(m)
 
 	if !m.SearchReady {
 		t.Fatal(
-			"search should be ready when destination and provider are set",
+			"search should be ready when the destination is set",
 		)
 	}
 
@@ -23,17 +22,6 @@ func TestUpdateSearchReady(t *testing.T) {
 	if m.SearchReady {
 		t.Error(
 			"search should not be ready with an empty destination",
-		)
-	}
-
-	m.DestinationDir = "/tmp/manga"
-	m.SelectedProvider = ""
-
-	m = updateSearchReady(m)
-
-	if m.SearchReady {
-		t.Error(
-			"search should not be ready without a provider",
 		)
 	}
 }

@@ -37,7 +37,22 @@ func NewProviderSelectionModel(
 	currentProvider string,
 	currentDomain string,
 ) ProviderSelectionModel {
-	options := make([]ProviderOption, 0, len(providers))
+	options := make(
+		[]ProviderOption,
+		0,
+		len(providers)+1,
+	)
+
+	// The search screen queries every provider at once by default,
+	// so the selection screen always offers an all-providers choice.
+	options = append(
+		options,
+		ProviderOption{
+			ID:       "",
+			Label:    "All providers",
+			Checkbox: Checkbox{Label: "All providers", Checked: currentProvider == ""},
+		},
+	)
 
 	for _, provider := range providers {
 		options = append(options, ProviderOption{
@@ -48,6 +63,12 @@ func NewProviderSelectionModel(
 				Checked: provider.ID == currentProvider,
 			},
 		})
+	}
+
+	// A custom domain is inherently tied to one provider; it must
+	// not leak into the all-providers search.
+	if currentProvider == "" {
+		currentDomain = ""
 	}
 
 	domain := textinput.New()
@@ -61,6 +82,10 @@ func NewProviderSelectionModel(
 		Options:     options,
 		SelectedID:  currentProvider,
 		DomainInput: domain,
+	}
+
+	if currentProvider == "" {
+		model.SelectedLabel = "All providers"
 	}
 
 	for _, option := range options {
@@ -121,14 +146,15 @@ func (m ProviderSelectionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case m.Cursor == m.confirmCursor():
-				if m.SelectedID != "" {
-					m.Confirmed = true
-				}
+				// The All providers option is always available,
+				// so confirming is always valid.
+				m.Confirmed = true
 				return m, nil
 			}
 		}
 
-		if m.Cursor == m.domainCursor() {
+		if m.Cursor == m.domainCursor() &&
+			m.SelectedID != "" {
 			var cmd tea.Cmd
 			m.DomainInput, cmd = m.DomainInput.Update(msg)
 			return m, cmd
@@ -177,8 +203,11 @@ func (m ProviderSelectionModel) View() string {
 	domainView :=
 		m.DomainInput.View()
 
+	// The domain is dimmed when unfocused and when it cannot be
+	// used (the all-providers search has no single provider).
 	if m.Cursor !=
-		m.domainCursor() {
+		m.domainCursor() ||
+		m.SelectedID == "" {
 
 		domainView =
 			lipgloss.NewStyle().
@@ -199,27 +228,23 @@ func (m ProviderSelectionModel) View() string {
 	)
 	b.WriteString("\n\n")
 
-	if m.SelectedID == "" {
-		b.WriteString(
-			disabledButtonStyle.Render(
-				"Confirm",
-			),
+	// The All providers option is a first-class choice, so the
+	// confirm button stays selectable in every state.
+	button :=
+		renderButton(
+			"Confirm",
+			m.Cursor ==
+				m.confirmCursor(),
+			buttonPrimary,
 		)
-	} else {
-		button :=
-			renderButton(
-				"Confirm",
-				m.Cursor ==
-					m.confirmCursor(),
-				buttonPrimary,
-			)
-		button =
-			markMouseZone(
-				mouseZoneProviderConfirm,
-				button,
-			)
-		b.WriteString(button)
-	}
+
+	button =
+		markMouseZone(
+			mouseZoneProviderConfirm,
+			button,
+		)
+
+	b.WriteString(button)
 
 	return renderViewWithFooter(
 		m.Width,
@@ -238,9 +263,9 @@ func (m *ProviderSelectionModel) selectCurrentProvider() {
 
 	selected := &m.Options[m.Cursor]
 
-	// Avoid accidentally keeping a custom domain belonging
-	// to another provider.
-	if m.SelectedID != "" && m.SelectedID != selected.ID {
+	// Avoid accidentally keeping a custom domain that belongs to
+	// another selection: a domain only applies to a single provider.
+	if selected.ID != m.SelectedID {
 		m.DomainInput.SetValue("")
 	}
 
@@ -257,7 +282,10 @@ func (m *ProviderSelectionModel) selectCurrentProvider() {
 func (m *ProviderSelectionModel) updateFocus() {
 	m.DomainInput.Blur()
 
-	if m.Cursor == m.domainCursor() {
+	// The domain is only meaningful when a single provider is
+	// selected.
+	if m.Cursor == m.domainCursor() &&
+		m.SelectedID != "" {
 		m.DomainInput.Focus()
 	}
 }

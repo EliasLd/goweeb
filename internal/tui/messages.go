@@ -23,8 +23,15 @@ type interactiveSearchDebounceMsg struct {
 type interactiveSearchResultMsg struct {
 	query      string
 	generation uint64
-	results    []sourcetypes.SearchResult
-	err        error
+
+	// Provider that produced these results; the fan-out search
+	// sends one message per provider, even in single-provider
+	// mode, so results carry their origin.
+	provider      string
+	providerLabel string
+
+	results []sourcetypes.SearchResult
+	err     error
 }
 
 type scanPathResultMsg struct {

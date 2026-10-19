@@ -12,7 +12,6 @@ var mouseZones = zone.New()
 
 const (
 	mouseZoneMainDestination = "main-destination"
-	mouseZoneMainProvider    = "main-provider"
 	mouseZoneMainOptions     = "main-options"
 	mouseZoneMainSearch      = "main-search"
 
@@ -23,9 +22,10 @@ const (
 	mouseZoneProviderDomain  = "provider-domain"
 	mouseZoneProviderConfirm = "provider-confirm"
 
-	mouseZoneOptionalEbook = "optional-ebook"
-	mouseZoneOptionalCBZ   = "optional-cbz"
-	mouseZoneSearchInput   = "search-input"
+	mouseZoneOptionalEbook  = "optional-ebook"
+	mouseZoneOptionalCBZ    = "optional-cbz"
+	mouseZoneSearchInput    = "search-input"
+	mouseZoneSearchProvider = "search-provider"
 
 	selectionItemZonePrefix = "selection-item-"
 
@@ -198,22 +198,11 @@ func handleMainMouse(
 		}
 
 	case mouseZoneHit(
-		mouseZoneMainProvider,
+		mouseZoneMainOptions,
 		msg,
 	):
 		if m.Cursor != 1 {
 			m.Cursor = 1
-			m = updateFocus(m)
-
-			return m, nil, true
-		}
-
-	case mouseZoneHit(
-		mouseZoneMainOptions,
-		msg,
-	):
-		if m.Cursor != 2 {
-			m.Cursor = 2
 			m = updateFocus(m)
 
 			return m, nil, true
@@ -227,8 +216,8 @@ func handleMainMouse(
 			return m, nil, true
 		}
 
-		if m.Cursor != 3 {
-			m.Cursor = 3
+		if m.Cursor != 2 {
+			m.Cursor = 2
 			m = updateFocus(m)
 
 			return m, nil, true
@@ -387,6 +376,13 @@ func handleSearchMouse(
 	msg tea.MouseMsg,
 	m Model,
 ) (Model, tea.Cmd, bool) {
+	if mouseZoneHit(
+		mouseZoneSearchProvider,
+		msg,
+	) {
+		return openProviderSelection(m), nil, true
+	}
+
 	if mouseZoneHit(
 		mouseZoneSearchInput,
 		msg,
@@ -593,7 +589,6 @@ func hoveredMouseZone(
 		zones := []string{
 			mouseZoneMainLogs,
 			mouseZoneMainDestination,
-			mouseZoneMainProvider,
 			mouseZoneMainOptions,
 		}
 
@@ -647,6 +642,7 @@ func hoveredMouseZone(
 		if zoneID :=
 			firstHoveredMouseZone(
 				msg,
+				mouseZoneSearchProvider,
 				mouseZoneSearchInput,
 			); zoneID != "" {
 			return zoneID

@@ -29,44 +29,91 @@ func debounceInteractiveSearch(
 	)
 }
 
-// Searches a provider's catalog asynchronously.
+// searchTargets resolves the providers a fan-out search queries.
+func searchTargets(
+	providerFilter string,
+) []source.ProviderInfo {
+	if strings.TrimSpace(providerFilter) == "" {
+		return source.AvailableProviders()
+	}
+
+	for _, provider := range source.AvailableProviders() {
+		if provider.ID == strings.TrimSpace(providerFilter) {
+			return []source.ProviderInfo{provider}
+		}
+	}
+
+	return nil
+}
+
+// Searches a provider's catalog asynchronously. When the filter is
+// empty, every provider is queried concurrently, each provider
+// sending its own result message.
 func searchInteractiveCatalog(
-	providerName string,
+	providerFilter string,
 	query string,
 	customDomain string,
 	generation uint64,
 ) tea.Cmd {
-	return func() tea.Msg {
-		log := logger.New(
-			io.Discard,
-			logger.LevelInfo,
-		)
-
-		provider, err := source.New(
-			providerName,
-			strings.TrimSpace(customDomain),
-		)
-
-		if err != nil {
-			return interactiveSearchResultMsg{
-				query:      query,
-				generation: generation,
-				err:        err,
-			}
-		}
-
-		results, err := provider.Search(
-			query,
-			log,
-		)
-
-		return interactiveSearchResultMsg{
-			query:      query,
-			generation: generation,
-			results:    results,
-			err:        err,
-		}
+	targets := searchTargets(providerFilter)
+	if len(targets) == 0 {
+		return nil
 	}
+
+	// A custom domain belongs to a single provider: it cannot be
+	// honored by the all-providers search.
+	domain := customDomain
+
+	if strings.TrimSpace(providerFilter) == "" {
+		domain = ""
+	}
+
+	cmds := make([]tea.Cmd, 0, len(targets))
+
+	for _, target := range targets {
+		target := target
+
+		cmds = append(
+			cmds,
+			func() tea.Msg {
+				log := logger.New(
+					io.Discard,
+					logger.LevelInfo,
+				)
+
+				provider, err := source.New(
+					target.ID,
+					domain,
+				)
+
+				if err != nil {
+					return interactiveSearchResultMsg{
+						query:         query,
+						generation:    generation,
+						provider:      target.ID,
+						providerLabel: target.Label,
+						err:           err,
+					}
+				}
+
+				results, err := provider.Search(
+					query,
+					log,
+				)
+
+				return interactiveSearchResultMsg{
+					query:         query,
+					generation:    generation,
+					provider:      target.ID,
+					providerLabel: target.Label,
+					results:       results,
+					err:           err,
+				}
+			},
+		)
+	}
+
+	return tea.Batch(cmds...)
 }
 
 // Fetches the available scan versions asynchronously.
@@ -155,7 +202,7 @@ func startDownload(m Model) tea.Cmd {
 	return func() tea.Msg {
 		opts := app.Options{
 			Slug:          m.SearchInput.Value(),
-			Source:        m.SelectedProvider,
+			Source:        m.SelectedMangaProvider,
 			Selection:     m.SelectedRange,
 			ScanDir:       app.ResolveOutputDir(m.DestinationDir),
 			CustomDomain:  strings.TrimSpace(m.DomainInput.Value()),

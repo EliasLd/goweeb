@@ -23,15 +23,43 @@ func viewInteractiveSearch(
 
 	b.WriteString("\n\n")
 
+	providerLabel := m.SelectedProviderLabel
+
+	if providerLabel == "" {
+		providerLabel = "All providers"
+	}
+
+	providerRow := fmt.Sprintf(
+		"Provider: %s ›",
+		providerLabel,
+	)
+
+	if m.SearchFocus == searchFocusProvider {
+		providerRow =
+			lipgloss.NewStyle().
+				Foreground(
+					brightAccentColor,
+				).
+				Render(
+					providerRow,
+				)
+	} else {
+		providerRow =
+			lipgloss.NewStyle().
+				Faint(true).
+				Render(
+					providerRow,
+				)
+	}
+
+	providerRow =
+		markMouseZone(
+			mouseZoneSearchProvider,
+			providerRow,
+		)
+
 	b.WriteString(
-		lipgloss.NewStyle().
-			Faint(true).
-			Render(
-				fmt.Sprintf(
-					"Provider: %s",
-					m.SelectedProviderLabel,
-				),
-			),
+		providerRow,
 	)
 
 	b.WriteString("\n\n")
@@ -53,6 +81,8 @@ func viewInteractiveSearch(
 
 	query := currentInteractiveSearchQuery(m)
 
+	pending := m.SearchProvidersPending
+
 	switch {
 	case len(query) <
 		minInteractiveSearchLength:
@@ -67,11 +97,20 @@ func viewInteractiveSearch(
 	case m.SearchInFlight &&
 		m.SearchRequestGeneration ==
 			m.SearchGeneration:
+		status := "Searching..."
+
+		if pending > 1 {
+			status = fmt.Sprintf(
+				"Searching... (%d left)",
+				pending,
+			)
+		}
+
 		b.WriteString(
 			lipgloss.NewStyle().
 				Faint(true).
 				Render(
-					"Searching...",
+					status,
 				),
 		)
 
@@ -86,12 +125,17 @@ func viewInteractiveSearch(
 				),
 		)
 
-	case m.SearchError != "":
+	case m.SearchProvidersPending == 0 &&
+		len(m.SearchErrors) > 0 &&
+		len(m.SearchList.Items()) == 0:
 		b.WriteString(
 			errorStyle.Render(
 				fmt.Sprintf(
-					"Search failed: %s",
-					m.SearchError,
+					"Search failed on: %s",
+					strings.Join(
+						m.SearchErrors,
+						", ",
+					),
 				),
 			),
 		)
@@ -106,6 +150,27 @@ func viewInteractiveSearch(
 					fmt.Sprintf(
 						"No results found for %q.",
 						query,
+					),
+				),
+		)
+	}
+
+	// Some providers failed while others produced results.
+	if m.SearchProvidersPending == 0 &&
+		len(m.SearchErrors) > 0 &&
+		len(m.SearchList.Items()) > 0 {
+		b.WriteString("\n\n")
+
+		b.WriteString(
+			lipgloss.NewStyle().
+				Faint(true).
+				Render(
+					fmt.Sprintf(
+						"Some providers failed: %s",
+						strings.Join(
+							m.SearchErrors,
+							", ",
+						),
 					),
 				),
 		)
@@ -138,7 +203,7 @@ func viewInteractiveSearch(
 		m.Width,
 		m.Height,
 		content,
-		"↓/Tab results • ↑ back to search • Enter select • Esc back to main",
+		"↓/Tab results • ↑ back to search • Enter select • Ctrl+P provider • Esc back to main",
 		lipgloss.Center,
 		lipgloss.Top,
 	)

@@ -48,7 +48,14 @@ type Model struct {
 
 	SelectedProvider      string
 	SelectedProviderLabel string
-	SearchReady           bool
+
+	// Provider adopted from the manga selected in the search view;
+	// it drives the scan/chapter/download flow. Kept separate from
+	// SelectedProvider (the persistent search filter) so selecting
+	// a result leaves the filter untouched.
+	SelectedMangaProvider string
+
+	SearchReady bool
 
 	// Chapter range selection.
 	RangeInput  textinput.Model
@@ -70,7 +77,13 @@ type Model struct {
 
 	SearchResultsQuery string
 	SearchHasSearched  bool
-	SearchError        string
+
+	// Number of providers of the active fan-out request that have
+	// not answered yet.
+	SearchProvidersPending int
+
+	// Provider labels that failed during the current request.
+	SearchErrors []string
 
 	// Selection screens.
 	ProviderSelectionModel ProviderSelectionModel

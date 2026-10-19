@@ -18,6 +18,7 @@ goweeb est un téléchargeur de mangas multiplateforme disponible à la fois sou
 - TUI interactif et CLI adapté aux scripts.
 - Plusieurs fournisseurs de mangas et plusieurs langues.
 - Sélection flexible des chapitres avec des formats comme `1-10`, `10-`, `-5` ou `1-10,20,30-40`.
+- Recherche interactive multi-fournisseurs : interrogez tous les fournisseurs à la fois, ou filtrez sur un seul.
 - Prise en charge des numéros de chapitre entiers et décimaux.
 - Gestion automatique des chapitres indisponibles à l'intérieur des plages demandées.
 - Sortie en PDF, archives CBZ ou dossiers d'images adaptés aux liseuses.
@@ -28,7 +29,16 @@ goweeb est un téléchargeur de mangas multiplateforme disponible à la fois sou
 
 ### Recherche interactive
 
-Recherchez un manga directement depuis le TUI et parcourez les résultats correspondants au fur et à mesure de votre saisie, avec une navigation entièrement au clavier, de la recherche jusqu’à la sélection.
+Recherchez un manga directement depuis le TUI et parcourez les résultats correspondants au fur et à mesure de votre saisie, avec une navigation entièrement au clavier, de la recherche jusqu'à la sélection.
+
+Par défaut, la recherche interroge **tous les fournisseurs à la fois** et affiche leurs résultats dès qu'ils arrivent, en les étiquetant avec le fournisseur dont ils proviennent :
+
+```text
+1. Blue Lock [MangaDex (Multilingual)]
+2. Blue Lock: Episode Nagi [Atsumoe (English)]
+```
+
+Les résultats sont triés avec les correspondances les plus proches de la recherche en premier. `Ctrl+P` (ou un clic) ouvre le filtre de fournisseur dans l'écran de recherche — tous les fournisseurs par défaut, ou un seul en particulier. Choisir un fournisseur depuis les résultats poursuit automatiquement le flux avec celui-ci.
 
 ![Démo de la recherche interactive de goweeb](./assets/search-demo.gif)
 
@@ -172,13 +182,12 @@ Lancez-le puis laissez-vous guider par l'interface :
 Le fonctionnement est simple :
 
 1. Saisissez le titre d'un manga.
-2. Sélectionnez un fournisseur.
-3. Configurez éventuellement un domaine personnalisé pour ce fournisseur.
-4. Configurez les options de sortie.
-5. Sélectionnez le bon manga lorsque plusieurs résultats sont trouvés.
-6. Sélectionnez une version du scan ou une langue lorsque cela est nécessaire.
-7. Choisissez les chapitres à télécharger.
-8. Suivez directement la progression du téléchargement dans le TUI.
+2. Configurez les options de sortie.
+3. Recherchez : tous les fournisseurs sont interrogés à la fois, ou utilisez le filtre de fournisseur dans l'écran de recherche.
+4. Sélectionnez le bon manga lorsque plusieurs résultats sont trouvés.
+5. Sélectionnez une version du scan ou une langue lorsque cela est nécessaire.
+6. Choisissez les chapitres à télécharger.
+7. Suivez directement la progression du téléchargement dans le TUI.
 
 Lorsqu'un seul manga ou une seule version de scan est disponible, goweeb le sélectionne automatiquement.
 

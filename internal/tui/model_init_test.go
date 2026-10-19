@@ -69,9 +69,10 @@ func TestInitialModel(t *testing.T) {
 		)
 	}
 
-	if m.SearchReady {
+	if !m.SearchReady {
 		t.Error(
-			"search should not be ready initially",
+			"search should be ready initially - " +
+				"the default search queries all providers",
 		)
 	}
 
@@ -91,6 +92,12 @@ func TestInitialModel(t *testing.T) {
 	if m.SelectedProvider != "" {
 		t.Error(
 			"no provider should be selected initially",
+		)
+	}
+
+	if m.SelectedMangaProvider != "" {
+		t.Error(
+			"no manga provider should be adopted initially",
 		)
 	}
 }

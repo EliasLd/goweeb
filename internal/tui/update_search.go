@@ -5,6 +5,8 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+
+	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 )
 
 func handleInteractiveSearchUpdate(
@@ -30,6 +32,16 @@ func handleInteractiveSearchUpdate(
 		switch msg.String() {
 		case "esc", "ctrl+c":
 			return closeInteractiveSearch(m), nil
+
+		case "ctrl+p":
+			return openProviderSelection(m), nil
+		}
+
+		if m.SearchFocus == searchFocusProvider {
+			return handleInteractiveSearchProvider(
+				msg,
+				m,
+			)
 		}
 
 		if m.SearchFocus == searchFocusInput {
@@ -53,6 +65,15 @@ func handleInteractiveSearchInput(
 	m Model,
 ) (Model, tea.Cmd) {
 	switch msg.String() {
+	case "up":
+		// The provider row sits above the input.
+		m = setInteractiveSearchFocus(
+			m,
+			searchFocusProvider,
+		)
+
+		return m, nil
+
 	case "down", "tab", "enter":
 		if interactiveSearchResultsSelectable(m) {
 			m = setInteractiveSearchFocus(
@@ -86,7 +107,7 @@ func handleInteractiveSearchInput(
 	m.SearchPendingQuery = ""
 	m.SearchPendingGeneration = 0
 
-	m.SearchError = ""
+	m.SearchErrors = nil
 	m.SearchHasSearched = false
 
 	if len(after) < minInteractiveSearchLength {
@@ -112,6 +133,33 @@ func handleInteractiveSearchInput(
 	)
 }
 
+// handleInteractiveSearchProvider drives the focus cycle while the
+// provider row is focused: down returns to the input, Enter opens
+// the provider selection screen.
+func handleInteractiveSearchProvider(
+	msg tea.KeyMsg,
+	m Model,
+) (Model, tea.Cmd) {
+	switch msg.String() {
+	case "up":
+		// Nothing above the provider row.
+		return m, nil
+
+	case "down", "tab":
+		m = setInteractiveSearchFocus(
+			m,
+			searchFocusInput,
+		)
+
+		return m, nil
+
+	case "enter", " ":
+		return openProviderSelection(m), nil
+	}
+
+	return m, nil
+}
+
 func handleInteractiveSearchResults(
 	msg tea.KeyMsg,
 	m Model,
@@ -122,6 +170,21 @@ func handleInteractiveSearchResults(
 			m = setInteractiveSearchFocus(
 				m,
 				searchFocusInput,
+			)
+
+			return m, nil
+		}
+
+	case "down":
+		items := m.SearchList.Items()
+
+		// The provider row wraps the focus cycle at the bottom
+		// of the results.
+		if len(items) > 0 &&
+			m.SearchList.Index() >= len(items)-1 {
+			m = setInteractiveSearchFocus(
+				m,
+				searchFocusProvider,
 			)
 
 			return m, nil
@@ -150,8 +213,15 @@ func handleInteractiveSearchResults(
 		m.SelectedMangaURL = item.Value
 		m.SelectedScanPath = ""
 
+		// Adopting the provider of the selected result keeps the
+		// scan versions / chapters / download flow pointed at the
+		// provider the result came from. The persistent search
+		// filter (SelectedProvider) only changes on the provider
+		// screen.
+		m.SelectedMangaProvider = item.Provider
+
 		m.State = StateForm
-		m.Cursor = 3
+		m.Cursor = 2
 		m = updateFocus(m)
 
 		m.Logs = append(
@@ -163,7 +233,7 @@ func handleInteractiveSearchResults(
 		)
 
 		return m, fetchScanPaths(
-			m.SelectedProvider,
+			m.SelectedMangaProvider,
 			m.SelectedMangaURL,
 			m.DomainInput.Value(),
 		)
@@ -220,31 +290,84 @@ func startInteractiveSearchRequest(
 ) (Model, tea.Cmd) {
 	m.SearchInFlight = true
 	m.SearchRequestGeneration = generation
+	m.SearchProvidersPending =
+		len(searchTargets(m.SelectedProvider))
 
 	m.SearchPending = false
 	m.SearchPendingQuery = ""
 	m.SearchPendingGeneration = 0
 
-	m.SearchError = ""
+	m.SearchErrors = nil
+	m.SearchResultsQuery = ""
+	m.SearchHasSearched = false
 
-	return m, searchInteractiveCatalog(
+	// The request shows fresh results only; stale ones are
+	// discarded upfront.
+	clearCmd := m.SearchList.SetItems(nil)
+
+	searchCmd := searchInteractiveCatalog(
 		m.SelectedProvider,
 		query,
 		m.DomainInput.Value(),
 		generation,
 	)
+
+	if searchCmd == nil {
+		// Nothing matched the filter; nothing is in flight.
+		m.SearchInFlight = false
+		m.SearchProvidersPending = 0
+	}
+
+	return m, tea.Batch(
+		searchCmd,
+		clearCmd,
+	)
 }
 
+// newSearchItems maps provider results to selectable items carrying
+// their provider origin.
+func newSearchItems(
+	results []sourcetypes.SearchResult,
+	provider string,
+	providerLabel string,
+) []list.Item {
+	items := make(
+		[]list.Item,
+		len(results),
+	)
+
+	for i, result := range results {
+		items[i] = SelectionItem{
+			Label:         result.Title,
+			Value:         result.URL,
+			Provider:      provider,
+			ProviderLabel: providerLabel,
+		}
+	}
+
+	return items
+}
+
+// Maps provider results to selectable items carrying their origin.
 func handleInteractiveSearchResult(
 	msg interactiveSearchResultMsg,
 	m Model,
 ) (Model, tea.Cmd) {
 	// Only the request currently tracked as active may
 	// clear SearchInFlight.
-	if m.SearchInFlight &&
-		msg.generation ==
-			m.SearchRequestGeneration {
-		m.SearchInFlight = false
+	isRequestResult :=
+		m.SearchInFlight &&
+			msg.generation ==
+				m.SearchRequestGeneration
+
+	if isRequestResult &&
+		m.SearchProvidersPending > 0 {
+		m.SearchProvidersPending--
+
+		if m.SearchProvidersPending == 0 {
+			m.SearchInFlight = false
+			m.SearchHasSearched = true
+		}
 	}
 
 	var listCmd tea.Cmd
@@ -257,29 +380,40 @@ func handleInteractiveSearchResult(
 				currentInteractiveSearchQuery(m)
 
 	if isCurrentResult {
-		m.SearchHasSearched = true
-		m.SearchResultsQuery = msg.query
-
 		if msg.err != nil {
-			m.SearchError = msg.err.Error()
-
-			listCmd = m.SearchList.SetItems(nil)
+			// A failing provider must not wipe the results
+			// other providers produced.
+			m.SearchErrors = append(
+				m.SearchErrors,
+				msg.providerLabel,
+			)
 		} else {
-			m.SearchError = ""
+			m.SearchResultsQuery = msg.query
 
-			items := make(
-				[]list.Item,
-				len(msg.results),
+			items := newSearchItems(
+				msg.results,
+				msg.provider,
+				msg.providerLabel,
 			)
 
-			for i, result := range msg.results {
-				items[i] = SelectionItem{
-					Label: result.Title,
-					Value: result.URL,
-				}
-			}
+			// Merge the new results with the ones other
+			// providers already delivered, keeping the most
+			// accurate matches on top.
+			var merged []list.Item
 
-			listCmd = m.SearchList.SetItems(items)
+			merged = append(
+				merged,
+				m.SearchList.Items()...,
+			)
+
+			merged = append(
+				merged,
+				items...,
+			)
+
+			sortSearchItems(merged, msg.query)
+
+			listCmd = m.SearchList.SetItems(merged)
 		}
 	}
 
