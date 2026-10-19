@@ -190,6 +190,44 @@ func TestListScanPaths(t *testing.T) {
 				]
 			}`)
 		},
+		"/api/manga/101/chapters/list": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			// The group uploads 2 chapters in English; the
+			// scanlator-only path uploads 2 chapters, one in
+			// French and one in English.
+			jsonResponse(w, `[
+				{
+					"id": 1,
+					"chapter_number": 1,
+					"page_count": 20,
+					"language": "en",
+					"groups": [{"id": 18210, "name": "K Manga"}]
+				},
+				{
+					"id": 2,
+					"chapter_number": 2,
+					"page_count": 20,
+					"language": "en",
+					"groups": [{"id": 18210, "name": "K Manga"}]
+				},
+				{
+					"id": 3,
+					"chapter_number": 1,
+					"page_count": 10,
+					"language": "fr",
+					"scanlator_name": "Stick"
+				},
+				{
+					"id": 4,
+					"chapter_number": 2,
+					"page_count": 10,
+					"language": "en",
+					"scanlator_name": "Stick"
+				}
+			]`)
+		},
 	})
 
 	items, err := provider.ListScanPaths(
@@ -207,7 +245,10 @@ func TestListScanPaths(t *testing.T) {
 		)
 	}
 
-	if items[0].Label != "K Manga" || items[0].Value != "18210" {
+	// The two paths tie at 2 chapters: alphabetical order keeps
+	// K Manga first, deterministically.
+	if items[0].Label != "K Manga (2 chapters, English)" ||
+		items[0].Value != "18210" {
 		t.Errorf(
 			"unexpected first scan path: %q / %q",
 			items[0].Label,
@@ -215,7 +256,7 @@ func TestListScanPaths(t *testing.T) {
 		)
 	}
 
-	if items[1].Label != "Stick" ||
+	if items[1].Label != "Stick (2 chapters, English/French)" ||
 		items[1].Value != "scanlator:Stick" {
 		t.Errorf(
 			"unexpected second scan path: %q / %q",
