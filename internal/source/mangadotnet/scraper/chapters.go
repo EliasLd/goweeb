@@ -51,14 +51,66 @@ func (s flexString) String() string {
 }
 
 // chapterRow keeps only the fields needed for the chapter listing; the
-// API sends more (volume_number, uploader_*, groups, comment_count...).
+// API sends more (volume_number, uploader_*, comment_count...). The
+// language, scanlator and group fields also back the scan-path
+// counting.
 type chapterRow struct {
-	ID            flexString `json:"id"`
-	ChapterNumber flexString `json:"chapter_number"`
-	ChapterTitle  string     `json:"chapter_title"`
-	DateAdded     string     `json:"date_added"`
-	PageCount     int        `json:"page_count"`
-	Source        string     `json:"source"`
+	ID            flexString     `json:"id"`
+	ChapterNumber flexString     `json:"chapter_number"`
+	ChapterTitle  string         `json:"chapter_title"`
+	DateAdded     string         `json:"date_added"`
+	PageCount     int            `json:"page_count"`
+	Source        string         `json:"source"`
+	Language      string         `json:"language"`
+	ScanlatorName string         `json:"scanlator_name"`
+	Groups        []chapterGroup `json:"groups"`
+}
+
+// chapterGroup mirrors a nested groups entry. The id can arrive as a
+// JSON number or a string, hence the flexible unmarshalling.
+type chapterGroup struct {
+	ID   flexString `json:"id"`
+	Name string     `json:"name"`
+}
+
+// chapterRowValid reports whether a row is a usable chapter: numeric
+// id, parseable chapter number, at least one page. The same validity
+// rule backs the scan-path counts, so "(N chapters)" describes what
+// the download flow will list.
+func chapterRowValid(
+	row chapterRow,
+	log *logger.Logger,
+) bool {
+	drop := func(reason string) {
+		if log != nil {
+			log.Debug(
+				"Skipping mangadot.net chapter row %q: %s\n",
+				row.ID.String(),
+				reason,
+			)
+		}
+	}
+
+	chapterID := strings.TrimSpace(row.ID.String())
+
+	if _, err := strconv.ParseInt(chapterID, 10, 64); err != nil {
+		drop("invalid id")
+		return false
+	}
+
+	if _, err := common.ParseChapterNumber(
+		strings.TrimSpace(row.ChapterNumber.String()),
+	); err != nil {
+		drop("invalid chapter number")
+		return false
+	}
+
+	if row.PageCount <= 0 {
+		drop("no page")
+		return false
+	}
+
+	return true
 }
 
 // chapterRecord pairs a parsed chapter with its upload date. Dates
@@ -218,33 +270,16 @@ func parseChapterRow(
 	row chapterRow,
 	log *logger.Logger,
 ) (chapterRecord, bool) {
-	drop := func(reason string) {
-		if log != nil {
-			log.Debug(
-				"Skipping mangadot.net chapter row %q: %s\n",
-				row.ID.String(),
-				reason,
-			)
-		}
+	if !chapterRowValid(row, log) {
+		return chapterRecord{}, false
 	}
 
 	chapterID := strings.TrimSpace(row.ID.String())
-
-	if _, err := strconv.ParseInt(chapterID, 10, 64); err != nil {
-		drop("invalid id")
-		return chapterRecord{}, false
-	}
 
 	number, err := common.ParseChapterNumber(
 		strings.TrimSpace(row.ChapterNumber.String()),
 	)
 	if err != nil {
-		drop("invalid chapter number")
-		return chapterRecord{}, false
-	}
-
-	if row.PageCount <= 0 {
-		drop("no page")
 		return chapterRecord{}, false
 	}
 
@@ -254,7 +289,13 @@ func parseChapterRow(
 		strings.TrimSpace(row.Source),
 	)
 	if err != nil {
-		drop("invalid chapter URL")
+		if log != nil {
+			log.Debug(
+				"Skipping mangadot.net chapter row %q: invalid chapter URL\n",
+				row.ID.String(),
+			)
+		}
+
 		return chapterRecord{}, false
 	}
 
