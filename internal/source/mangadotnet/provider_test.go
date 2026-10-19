@@ -245,7 +245,8 @@ func TestListScanPaths(t *testing.T) {
 		)
 	}
 
-	// At this step the lists keep the API order.
+	// The two paths tie at 2 chapters: alphabetical order keeps
+	// K Manga first, deterministically.
 	if items[0].Label != "K Manga (2 chapters, English)" ||
 		items[0].Value != "18210" {
 		t.Errorf(

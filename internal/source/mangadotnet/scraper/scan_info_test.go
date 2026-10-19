@@ -173,14 +173,15 @@ func TestListScanPaths(t *testing.T) {
 		count int
 		label string
 	}{
-		// Chapter 3 has no page and does not count; a row
-		// listing both K Manga and Side Group counts for
-		// both; a row with no group and no scanlator counts
-		// for nothing.
+		// Most chapters first. Chapter 3 has no page and does
+		// not count; a row listing both K Manga and Side Group
+		// counts for both; a row with no group and no
+		// scanlator counts for nothing. Ties (all at 1)
+		// order alphabetically.
 		{"18210", 2, "K Manga (2 chapters, English/French)"},
 		{"18192", 1, "LeerCapitulo (1 chapter, Spanish)"},
-		{"scanlator:Stick", 1, "Stick (1 chapter, English)"},
 		{"99999", 1, "Side Group (1 chapter, French)"},
+		{"scanlator:Stick", 1, "Stick (1 chapter, English)"},
 	}
 
 	for i, want := range expected {

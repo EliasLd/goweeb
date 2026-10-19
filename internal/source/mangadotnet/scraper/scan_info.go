@@ -313,6 +313,19 @@ func countScanPaths(
 		})
 	}
 
+	// Most chapters first; ties order alphabetically (case-
+	// insensitive), so the list is deterministic whatever the API
+	// order was. A scan path with no valid chapter still shows up,
+	// last.
+	sort.SliceStable(enriched, func(i, j int) bool {
+		if enriched[i].Count != enriched[j].Count {
+			return enriched[i].Count > enriched[j].Count
+		}
+
+		return strings.ToLower(enriched[i].Label) <
+			strings.ToLower(enriched[j].Label)
+	})
+
 	return enriched
 }
 
