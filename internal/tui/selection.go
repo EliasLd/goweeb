@@ -30,6 +30,11 @@ func (i SelectionItem) FilterValue() string { return i.Label }
 type itemDelegate struct {
 	Focused    bool
 	ZonePrefix string
+
+	// Show the `[Provider Label]` suffix appended to search
+	// results; dropped when the search is filtered to a single
+	// provider the user explicitly chose.
+	ShowProviderTag bool
 }
 
 func (d itemDelegate) Height() int                             { return 1 }
@@ -56,8 +61,9 @@ func (
 		i.Label,
 	)
 
-	// Search results carry the provider they come from.
-	if i.ProviderLabel != "" {
+	// Search results carry the provider they come from; the
+	// tag only makes sense while several providers contribute.
+	if d.ShowProviderTag && i.ProviderLabel != "" {
 		str = fmt.Sprintf(
 			"%s [%s]",
 			str,

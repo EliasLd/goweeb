@@ -343,10 +343,6 @@ func handleProviderMouse(
 		mouseZoneProviderConfirm,
 		msg,
 	) {
-		if pm.SelectedID == "" {
-			return m, nil, true
-		}
-
 		if pm.Cursor !=
 			pm.confirmCursor() {
 
@@ -396,10 +392,7 @@ func handleSearchMouse(
 			m.SearchInput.Focus()
 
 			m.SearchList.SetDelegate(
-				itemDelegate{
-					Focused:    false,
-					ZonePrefix: "search-result-",
-				},
+				searchItemDelegate(m, false),
 			)
 		}
 
@@ -428,10 +421,7 @@ func handleSearchMouse(
 		m.SearchInput.Blur()
 
 		m.SearchList.SetDelegate(
-			itemDelegate{
-				Focused:    true,
-				ZonePrefix: "search-result-",
-			},
+			searchItemDelegate(m, true),
 		)
 
 		if !alreadyFocused {
