@@ -343,10 +343,6 @@ func handleProviderMouse(
 		mouseZoneProviderConfirm,
 		msg,
 	) {
-		if pm.SelectedID == "" {
-			return m, nil, true
-		}
-
 		if pm.Cursor !=
 			pm.confirmCursor() {
 
