@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/EliasLd/goweeb/internal/app"
@@ -466,5 +467,67 @@ func TestInteractiveSearchKeepsFilterAfterResultSelection(
 			"selected manga provider = %q, want mangadotnet",
 			opened.SelectedMangaProvider,
 		)
+	}
+}
+
+func TestInteractiveSearchTagsFollowProviderFilter(
+	t *testing.T,
+) {
+	m := InitialModel()
+	m.State = StateInteractiveSearch
+	m.Width = 80
+
+	m.SearchInput.SetValue("blue lock")
+	m.SearchResultsQuery = "blue lock"
+
+	listCmd := m.SearchList.SetItems(
+		[]list.Item{
+			SelectionItem{
+				Label:         "Blue Lock",
+				Value:         "mangadex/blue-lock",
+				Provider:      "mangadex",
+				ProviderLabel: "MangaDex (Multilingual)",
+			},
+		},
+	)
+	_ = listCmd
+
+	m = setInteractiveSearchFocus(
+		m,
+		searchFocusInput,
+	)
+
+	allView := viewInteractiveSearch(m)
+
+	if !strings.Contains(
+		allView,
+		"[MangaDex (Multilingual)]",
+	) {
+		t.Error(
+			"an all-provider search should tag results with their provider",
+		)
+	}
+
+	// Filtering to one provider drops the tags: the user
+	// explicitly chose that provider, so they add nothing.
+	m.SelectedProvider = "mangadex"
+	m = setInteractiveSearchFocus(
+		m,
+		searchFocusInput,
+	)
+
+	filteredView := viewInteractiveSearch(m)
+
+	if strings.Contains(
+		filteredView,
+		"[MangaDex (Multilingual)]",
+	) {
+		t.Error(
+			"a single-provider search should not tag results",
+		)
+	}
+
+	if !strings.Contains(filteredView, "Blue Lock") {
+		t.Error("the result itself should still render")
 	}
 }

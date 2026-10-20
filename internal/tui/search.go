@@ -39,7 +39,14 @@ func interactiveSeachWidth(
 func newInteractiveSearchList() list.Model {
 	l := list.New(
 		[]list.Item{},
-		itemDelegate{Focused: false, ZonePrefix: "search-result-"},
+		// Tags are on until a single provider gets confirmed;
+		// every path into the search view recomputes the
+		// delegate through setInteractiveSearchFocus.
+		itemDelegate{
+			Focused:         false,
+			ZonePrefix:      "search-result-",
+			ShowProviderTag: true,
+		},
 		60,
 		14,
 	)
@@ -122,6 +129,23 @@ func closeInteractiveSearch(m Model) Model {
 	return updateFocus(m)
 }
 
+// searchItemDelegate builds the delegate for the search results
+// list. Provider tags only decorate results while the filter spans
+// all providers; with a single provider selected the user already
+// knows where results come from.
+func searchItemDelegate(
+	m Model,
+	focused bool,
+) itemDelegate {
+	return itemDelegate{
+		Focused:    focused,
+		ZonePrefix: "search-result-",
+		ShowProviderTag: strings.TrimSpace(
+			m.SelectedProvider,
+		) == "",
+	}
+}
+
 func setInteractiveSearchFocus(
 	m Model,
 	focus searchFocus,
@@ -133,10 +157,7 @@ func setInteractiveSearchFocus(
 		m.SearchInput.Blur()
 
 		m.SearchList.SetDelegate(
-			itemDelegate{
-				Focused:    true,
-				ZonePrefix: "search-result-",
-			},
+			searchItemDelegate(m, true),
 		)
 
 	case searchFocusProvider:
@@ -145,20 +166,14 @@ func setInteractiveSearchFocus(
 		m.SearchInput.Blur()
 
 		m.SearchList.SetDelegate(
-			itemDelegate{
-				Focused:    false,
-				ZonePrefix: "search-result-",
-			},
+			searchItemDelegate(m, false),
 		)
 
 	default:
 		m.SearchInput.Focus()
 
 		m.SearchList.SetDelegate(
-			itemDelegate{
-				Focused:    false,
-				ZonePrefix: "search-result-",
-			},
+			searchItemDelegate(m, false),
 		)
 	}
 
