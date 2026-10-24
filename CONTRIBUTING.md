@@ -219,6 +219,24 @@ go test ./...
 
 and make sure the project builds successfully.
 
+### Live provider health checks
+
+Unit tests mirror the websites without ever contacting them; whether a provider **still works against its real website** is covered by a dedicated live suite in `internal/e2e`. For every registered provider it runs the complete PDF pipeline once — search → first scan path → first chapter — verifies the produced file on disk and deletes it at the end.
+
+These checks are **not** part of `go test ./...`, which stays hermetic: they are gated both by a build tag and by an opt-in environment variable. To run a single provider locally:
+
+```bash
+GOWEEB_LIVE=1 go test -tags live ./internal/e2e \
+  -run "TestLiveProvider/mangadotnet$" -v -timeout 10m
+```
+
+The same suite runs in the **Provider checks** workflow (`.github/workflows/providers.yml`): one job per provider, on the manual dispatch and on a nightly schedule. The workflow is informational and never gates contributions: provider sites can legitimately reject the runner's datacenter IP or break for reasons outside the codebase, so red boxes are investigated, not assumed to be regressions.
+
+When registering a new provider, also remember to:
+
+* add the provider to the job matrix of `providers.yml`;
+* add a stable search query for it to `liveQueries` in `internal/e2e/providers_live_test.go` — without one, the provider skips with a clear message (a missing matrix entry would simply not be checked).
+
 ### Provider implementation recommendations
 
 When adding a scraper:
