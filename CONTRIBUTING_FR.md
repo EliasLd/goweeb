@@ -220,6 +220,24 @@ go test ./...
 
 et vérifiez que le projet compile correctement.
 
+### Vérifications de santé des providers en conditions réelles
+
+Les tests unitaires reproduisent les sites web sans jamais les contacter ; vérifier qu'un provider **fonctionne toujours contre son vrai site** est couvert par une suite dédiée dans `internal/e2e`. Pour chaque provider enregistré, elle exécute une fois complet le pipeline PDF — recherche → première version de scan → premier chapitre —, vérifie le fichier produit sur le disque puis le supprime.
+
+Ces vérifications **ne font pas** partie de `go test ./...`, qui reste hermétique : elles sont protégées à la fois par un build tag et par une variable d'environnement à définir explicitement. Pour tester un seul provider en local :
+
+```bash
+GOWEEB_LIVE=1 go test -tags live ./internal/e2e \
+  -run "TestLiveProvider/mangadotnet$" -v -timeout 10m
+```
+
+La même suite est exécutée par le workflow **Provider checks** (`.github/workflows/providers.yml`) : un job par provider, déclenché manuellement et chaque nuit. Le workflow est indicatif et ne bloque jamais les contributions : les sites peuvent légitimement rejeter l'IP du runner ou tomber en panne pour des raisons extérieures au dépôt, donc une case rouge se vérifie, elle ne trahit pas automatiquement une régression.
+
+Lors de l'enregistrement d'un nouveau provider, pensez aussi à :
+
+* l'ajouter à la matrice de jobs de `providers.yml` ;
+* lui ajouter une requête de recherche stable dans `liveQueries` du fichier `internal/e2e/providers_live_test.go` — sans elle, le provider est ignoré avec un message explicite (une entrée de matrice manquante signifie simplement qu'il n'est pas vérifié).
+
 ### Recommandations pour l'implémentation d'un provider
 
 Lors de l'ajout d'un scraper :
