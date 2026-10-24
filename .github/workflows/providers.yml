@@ -1,0 +1,56 @@
+name: Provider checks
+
+# Live health checks for the source providers: every provider walks
+# one real chapter through the whole PDF pipeline against its actual
+# website (see internal/e2e). These are informational checks, not
+# merge gates: runner IPs face bot protection on some sites, and
+# live sites break for operational reasons that no code change can
+# fix. They are never triggered on push or pull requests.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * *" # nightly 04:00 UTC, default branch only
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  live:
+    name: ${{ matrix.provider }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        provider:
+          - animesama
+          - atsumoe
+          - mangafreak
+          - weebcentral
+          - mangadex
+          - mangadotnet
+          - mangavyvy
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Vet live suite
+        run: go vet -tags live ./internal/e2e
+
+      - name: Run live health check
+        env:
+          GOWEEB_LIVE: "1"
+        run: |
+          go test -tags live ./internal/e2e \
+            -run "TestLiveProvider/${{ matrix.provider }}$" \
+            -count=1 -v -timeout 10m
