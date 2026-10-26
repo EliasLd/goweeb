@@ -22,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    continue-on-error: ${{ matrix.edge_block_expected == true }}
+
     strategy:
       fail-fast: false
       matrix:
@@ -33,6 +35,16 @@ jobs:
           - mangadex
           - mangadotnet
           - mangavyvy
+        # weebcentral rides behind Cloudflare bot protection that
+        # rejects datacenter IPs at the edge (403 in ~0.1s), so its
+        # job is tolerated for now (yellow, not red): the runner
+        # can never prove the provider wrong, and the provider is
+        # verified green from residential IPs. Revisit after the
+        # browser header profile has proven itself against the
+        # runner — then move weebcentral out of this include block.
+        include:
+          - provider: weebcentral
+            edge_block_expected: true
 
     steps:
       - name: Checkout repository

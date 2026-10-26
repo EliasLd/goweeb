@@ -33,6 +33,10 @@ func SearchCatalog(
 			CardSelector:  "article",
 			LinkSelector:  `a[href*="/series/"]`,
 			TitleSelector: "h2",
+
+			// Browser profile: give the search request the
+			// best odds against the site's bot protection.
+			Headers: weebcentralFetchHeaders,
 		},
 		query,
 		log,
