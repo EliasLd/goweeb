@@ -21,6 +21,12 @@ type CatalogSearchConfig struct {
 	CardSelector  string // e.g. "div.catalog-card"
 	LinkSelector  string // e.g. "a"; empty means the card itself is the link
 	TitleSelector string // e.g. ".card-title"
+
+	// Extra headers copied onto the catalog request after the
+	// default browser User-Agent, so a provider can send a
+	// specific profile against the site's bot protection (or
+	// override the User-Agent itself).
+	Headers map[string]string
 }
 
 func SearchHTMLCatalog(
@@ -95,6 +101,10 @@ func SearchHTMLCatalog(
 		"User-Agent",
 		"Mozilla/5.0",
 	)
+
+	for key, value := range cfg.Headers {
+		req.Header.Set(key, value)
+	}
 
 	// Retry transient HTTP failures and interrupted
 	// response body reads.

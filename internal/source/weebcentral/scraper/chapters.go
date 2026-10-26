@@ -113,7 +113,7 @@ func GetScanInfo(
 		)
 	}
 
-	req.Header.Set("User-Agent", "Mozilla/5.0")
+	applyNavigationHeaders(req)
 
 	result, err := httpx.ReadAll(
 		client,
