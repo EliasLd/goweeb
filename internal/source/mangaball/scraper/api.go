@@ -43,6 +43,65 @@ func parseBaseDomain(domain string) (*url.URL, error) {
 	return baseURL, nil
 }
 
+// TitleIDFromURL extracts the title ID from a MangaBall title page URL.
+//
+// Expected shape: {domain}/title-detail/{titleID}-{slug}. The Mongo-style
+// title ID never contains a dash, so the slug (which may itself contain
+// dashes) starts at the first one. Without a slug, the whole segment is
+// the title ID.
+//
+// For example, given https://mangaball.com/title-detail/6851544a702284f8341782f2-berserk,
+// this returns 6851544a702284f8341782f2.
+func TitleIDFromURL(workURL string) (string, error) {
+	workURL = strings.TrimSpace(workURL)
+
+	parsed, err := url.Parse(workURL)
+	if err != nil {
+		return "", fmt.Errorf(
+			"invalid MangaBall title URL %q: %w",
+			workURL,
+			err,
+		)
+	}
+
+	path := strings.TrimSuffix(parsed.Path, "/")
+	segments := strings.Split(path, "/")
+
+	// Expected: ["", "title-detail", "{titleID}-{slug}"]
+	if len(segments) != 3 || segments[1] != "title-detail" {
+		return "", fmt.Errorf(
+			"unexpected MangaBall title URL: %q",
+			workURL,
+		)
+	}
+
+	token, err := url.PathUnescape(segments[2])
+	if err != nil {
+		return "", fmt.Errorf(
+			"unexpected MangaBall title URL: %q",
+			workURL,
+		)
+	}
+
+	titleID := token
+
+	// Strip the slug part; everything before the first dash is the id.
+	if dash := strings.Index(token, "-"); dash > 0 {
+		titleID = token[:dash]
+	}
+
+	titleID = strings.TrimSpace(titleID)
+
+	if titleID == "" {
+		return "", fmt.Errorf(
+			"unexpected MangaBall title URL: %q",
+			workURL,
+		)
+	}
+
+	return titleID, nil
+}
+
 // callAPI fetches a MangaBall API endpoint. Transient failures are
 // retried and the response body is returned as-is for decoding.
 func callAPI(

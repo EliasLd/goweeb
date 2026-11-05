@@ -2,6 +2,7 @@ package mangaball
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/EliasLd/goweeb/internal/logger"
@@ -57,14 +58,51 @@ func (p *Provider) Search(
 	return out, nil
 }
 
-// TODO: Implement language selection.
+// MangaBall exposes one chapter list per language; each language's
+// chapter count is shown in the label to help pick a path.
 func (p *Provider) ListScanPaths(
 	workURL string,
 	log *logger.Logger,
 ) ([]common.SelectableItem, error) {
-	return nil, errors.New(
-		"MangaBall scan path selection is not implemented yet",
+	titleID, err := mangaballscraper.TitleIDFromURL(workURL)
+	if err != nil {
+		return nil, err
+	}
+
+	paths, err := mangaballscraper.GetLanguagePaths(
+		p.domain,
+		titleID,
+		log,
 	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to get MangaBall languages: %w",
+			err,
+		)
+	}
+
+	if len(paths) == 0 {
+		// A title without any chapter still needs one
+		// automatically selectable path; the entry listing
+		// will answer "no chapters" downstream.
+		return []common.SelectableItem{
+			{
+				Label: "MangaBall",
+				Value: "",
+			},
+		}, nil
+	}
+
+	items := make([]common.SelectableItem, 0, len(paths))
+
+	for _, path := range paths {
+		items = append(items, common.SelectableItem{
+			Label: path.Label,
+			Value: path.Code,
+		})
+	}
+
+	return items, nil
 }
 
 // TODO: Implement chapter listing.
