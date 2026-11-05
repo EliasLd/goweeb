@@ -1,7 +1,6 @@
 package mangaball
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -154,12 +153,29 @@ func (p *Provider) ListEntries(
 	}, entries, nil
 }
 
-// TODO: Implement page image retrieval.
+// MangaBall embeds each chapter's page list in its server-rendered
+// reader page. The storage CDNs only accept downloads carrying the
+// site's origin as referer, so it is added here.
 func (p *Provider) GetPageImageURLs(
 	entryURL string,
 	log *logger.Logger,
 ) ([]string, error) {
-	return nil, errors.New(
-		"MangaBall page image retrieval is not implemented yet",
+	urls, err := mangaballscraper.GetPageImageURLs(
+		entryURL,
+		log,
 	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to get MangaBall page images: %w",
+			err,
+		)
+	}
+
+	return urls, nil
+}
+
+func (p *Provider) ImageRequestHeaders() map[string]string {
+	return map[string]string{
+		"Referer": p.domain + "/",
+	}
 }

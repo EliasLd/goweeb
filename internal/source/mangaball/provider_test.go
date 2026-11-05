@@ -315,3 +315,84 @@ func TestListEntriesInvalidWorkURL(t *testing.T) {
 		t.Fatal("expected an error for an unexpected work URL")
 	}
 }
+
+func TestGetPageImageURLs(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/chapter-detail/": func(
+			w http.ResponseWriter,
+			r *http.Request,
+		) {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, `{"chapter":{"id":"x"},`+
+				`\"pages\":[\"https://cdn.example/001.webp\",`+
+				`\"https://cdn.example/002.webp\"]}`)
+		},
+	})
+
+	imageURLs, err := provider.GetPageImageURLs(
+		provider.domain+"/chapter-detail/685d80ded41ee75a90bbadd1",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("GetPageImageURLs() error: %v", err)
+	}
+
+	if len(imageURLs) != 2 {
+		t.Fatalf("expected 2 image URLs, got %d", len(imageURLs))
+	}
+
+	if imageURLs[1] != "https://cdn.example/002.webp" {
+		t.Errorf("unexpected last page: %q", imageURLs[1])
+	}
+}
+
+// The chapter-copy page payloads escape the JSON quotes as \" — the
+// scraper must reproduce the unescaping faithfully.
+func TestGetPageImageURLsEscapedPayload(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/chapter-detail/": func(
+			w http.ResponseWriter,
+			r *http.Request,
+		) {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, `"$L19",{"chapter":{"id":"x"},`+
+				`\"pages\":[\"https://cdn.example/001.webp\"]}`)
+		},
+	})
+
+	imageURLs, err := provider.GetPageImageURLs(
+		provider.domain+"/chapter-detail/685d80ded41ee75a90bbadd1",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("GetPageImageURLs() error: %v", err)
+	}
+
+	if len(imageURLs) != 1 ||
+		imageURLs[0] != "https://cdn.example/001.webp" {
+		t.Fatalf("unexpected image URLs: %v", imageURLs)
+	}
+}
+
+func TestGetPageImageURLsInvalidEntryURL(t *testing.T) {
+	provider := newTestProvider(t, nil)
+
+	_, err := provider.GetPageImageURLs(
+		provider.domain+"/not-a-chapter/685d80ded41ee75a90bbadd1",
+		nil,
+	)
+	if err == nil {
+		t.Fatal("expected an error for an unexpected entry URL")
+	}
+}
+
+func TestImageRequestHeaders(t *testing.T) {
+	provider := New("https://mangaball.com/")
+
+	headers := provider.ImageRequestHeaders()
+
+	// The storage CDNs require the site's origin as referer.
+	if headers["Referer"] != "https://mangaball.com/" {
+		t.Errorf("referer = %q, want the site origin", headers["Referer"])
+	}
+}
