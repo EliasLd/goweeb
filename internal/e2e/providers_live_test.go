@@ -46,6 +46,7 @@ func TestMain(m *testing.M) {
 var liveQueries = map[string]string{
 	"animesama":   "bleach",
 	"atsumoe":     "blue lock",
+	"mangaball":   "childhood friend complex",
 	"mangafreak":  "one piece",
 	"weebcentral": "berserk",
 	"mangadex":    "berserk",
