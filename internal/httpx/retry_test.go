@@ -1,6 +1,7 @@
 package httpx
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -107,5 +108,54 @@ func TestNoRetryLongRetryAfter(t *testing.T) {
 	got, err := ReadAll(srv.Client(), req, nil)
 	if err != nil || got.StatusCode != 429 || calls != 1 {
 		t.Fatalf("got=%+v err=%v calls=%d", got, err, calls)
+	}
+}
+
+func TestReadAllRetries503Then200WithReplayedBody(t *testing.T) {
+	const payload = `{"keyword":"berserk","limit":25}`
+	var (
+		calls int
+		sent  []string
+	)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		b, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("server read: %v", err)
+		}
+		sent = append(sent, string(b))
+		if calls < 3 {
+			w.WriteHeader(503)
+			return
+		}
+		io.WriteString(w, "hello")
+	}))
+	defer srv.Close()
+
+	// json/api POSTs are the reason replayable bodies must work: a
+	// consumed body re-sent empty would silently change the request
+	// after the first attempt.
+	req, _ := http.NewRequest("POST", srv.URL, bytes.NewReader([]byte(payload)))
+	got, err := ReadAll(srv.Client(), req, nil)
+	if err != nil || string(got.Body) != "hello" || calls != 3 {
+		t.Fatalf("got=%+v err=%v calls=%d", got, err, calls)
+	}
+	for attempt, body := range sent {
+		if body != payload {
+			t.Fatalf("attempt %d sent %q, want the original payload (bodies must replay)", attempt+1, body)
+		}
+	}
+}
+
+func TestDoRejectsNonReplayableBody(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer srv.Close()
+
+	pr, pw := io.Pipe()
+	defer pw.Close()
+	req, _ := http.NewRequest("POST", srv.URL, pr)
+
+	if _, err := Do(srv.Client(), req, nil); err == nil {
+		t.Fatal("expected an error for a request body the retry loop cannot replay")
 	}
 }
