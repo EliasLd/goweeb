@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 )
 
 func TestNew(t *testing.T) {
@@ -223,6 +225,90 @@ func TestListScanPathsInvalidWorkURL(t *testing.T) {
 
 	_, err := provider.ListScanPaths(
 		provider.domain+"/not-a-title/6851544a702284f8341782f2",
+		nil,
+	)
+	if err == nil {
+		t.Fatal("expected an error for an unexpected work URL")
+	}
+}
+
+func TestListEntries(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/api/v1/title/detail": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprint(w,
+				`{"status":"success","code":200,"data":{"name":"Berserk"}}`)
+		},
+		"/api/v1/title/chapter-listing": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprint(w, listingResponse(
+				`[
+					{"id":"id-2","number":2,"name":"Chapter 2","lang":"en","site":"mangadex"},
+					{"id":"id-1-b","number":1,"name":"Chapter 1","lang":"en","site":"comick"},
+					{"id":"id-1-a","number":1,"name":"Chapter 1","lang":"en","site":"mangadex"}
+				]`,
+			))
+		},
+	})
+
+	work, entries, err := provider.ListEntries(
+		provider.domain+"/title-detail/6851544a702284f8341782f2-berserk",
+		"en",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("ListEntries() error: %v", err)
+	}
+
+	if work.Title != "Berserk" {
+		t.Errorf("unexpected work title: %q", work.Title)
+	}
+
+	if work.Kind != sourcetypes.ItemChapter {
+		t.Errorf("unexpected work kind: %d", work.Kind)
+	}
+
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries, got %d", len(entries))
+	}
+
+	if entries[0].Number.String() != "1" ||
+		entries[0].Label != "Chapter 1" {
+		t.Errorf(
+			"unexpected first entry: %q / %q",
+			entries[0].Number.String(),
+			entries[0].Label,
+		)
+	}
+
+	// Duplicate sources join the entry URL; the page step picks
+	// the fullest copy later.
+	expectedURL := provider.domain + "/chapter-detail/id-1-b,id-1-a"
+
+	if entries[0].URL != expectedURL {
+		t.Errorf("expected URL %q, got %q", expectedURL, entries[0].URL)
+	}
+
+	if entries[1].Number.String() != "2" {
+		t.Errorf(
+			"unexpected second entry: %q",
+			entries[1].Number.String(),
+		)
+	}
+}
+
+func TestListEntriesInvalidWorkURL(t *testing.T) {
+	provider := newTestProvider(t, nil)
+
+	_, _, err := provider.ListEntries(
+		provider.domain+"/not-a-title/6851544a702284f8341782f2",
+		"en",
 		nil,
 	)
 	if err == nil {

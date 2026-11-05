@@ -11,6 +11,18 @@ import (
 	"testing"
 )
 
+// listingResponse wraps chapter rows in the API envelope a listing
+// page answers with. total must match the served rows (the real API
+// reports 0 for an empty listing).
+func listingResponse(rowsJSON string, total int) string {
+	return fmt.Sprintf(
+		`{"status":"success","code":200,"data":`+rowsJSON+
+			`,"available_languages":["en","fr"],`+
+			`"pagination":{"page":1,"limit":5000,"total":%d,"total_pages":1}}`,
+		total,
+	)
+}
+
 // paginationOf builds the listing metadata a server page answers with.
 func paginationOf(
 	page int,

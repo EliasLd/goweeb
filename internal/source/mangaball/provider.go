@@ -105,15 +105,53 @@ func (p *Provider) ListScanPaths(
 	return items, nil
 }
 
-// TODO: Implement chapter listing.
+// MangaBall's scan path is the publication language; the listing is
+// one chapter list per language, oldest first.
 func (p *Provider) ListEntries(
 	workURL string,
 	scanPath string,
 	log *logger.Logger,
 ) (sourcetypes.Work, []sourcetypes.Entry, error) {
-	return sourcetypes.Work{}, nil, errors.New(
-		"MangaBall chapter listing is not implemented yet",
+	titleID, err := mangaballscraper.TitleIDFromURL(workURL)
+	if err != nil {
+		return sourcetypes.Work{}, nil, err
+	}
+
+	title, err := mangaballscraper.GetTitleName(p.domain, titleID, log)
+	if err != nil {
+		return sourcetypes.Work{}, nil, fmt.Errorf(
+			"failed to get MangaBall title: %w",
+			err,
+		)
+	}
+
+	chapters, err := mangaballscraper.ListChapters(
+		p.domain,
+		titleID,
+		scanPath,
+		log,
 	)
+	if err != nil {
+		return sourcetypes.Work{}, nil, fmt.Errorf(
+			"failed to list MangaBall chapters: %w",
+			err,
+		)
+	}
+
+	entries := make([]sourcetypes.Entry, 0, len(chapters))
+
+	for _, chapter := range chapters {
+		entries = append(entries, sourcetypes.Entry{
+			Number: chapter.Number,
+			Label:  chapter.Label,
+			URL:    chapter.URL,
+		})
+	}
+
+	return sourcetypes.Work{
+		Title: title,
+		Kind:  sourcetypes.ItemChapter,
+	}, entries, nil
 }
 
 // TODO: Implement page image retrieval.

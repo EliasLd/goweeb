@@ -48,6 +48,7 @@ type chapterRows struct {
 	rows               []chapterRow
 	availableLanguages []string
 	complete           bool
+	declaredTotal      int
 }
 
 // LanguagePath is one selectable language of a title: the code is
@@ -129,6 +130,7 @@ func fetchChapterRows(
 		}
 	}
 
+	result.declaredTotal = declared
 	result.complete = declared == 0 ||
 		len(result.rows) >= declared
 
