@@ -174,8 +174,13 @@ func (p *Provider) GetPageImageURLs(
 	return urls, nil
 }
 
+// ImageRequestHeaders carries what the storage CDNs demand: the
+// site's origin as referer, and a user agent they accept — their bot
+// rules reject the downloader's bare "Mozilla/5.0" and empty UAs,
+// while a browser one and goweeb's own pass.
 func (p *Provider) ImageRequestHeaders() map[string]string {
 	return map[string]string{
-		"Referer": p.domain + "/",
+		"User-Agent": "goweeb (+https://github.com/EliasLd/goweeb)",
+		"Referer":    p.domain + "/",
 	}
 }

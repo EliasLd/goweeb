@@ -391,8 +391,13 @@ func TestImageRequestHeaders(t *testing.T) {
 
 	headers := provider.ImageRequestHeaders()
 
-	// The storage CDNs require the site's origin as referer.
+	// The storage CDNs require the site's origin as referer and
+	// reject the bare default user agent.
 	if headers["Referer"] != "https://mangaball.com/" {
 		t.Errorf("referer = %q, want the site origin", headers["Referer"])
+	}
+
+	if headers["User-Agent"] != "goweeb (+https://github.com/EliasLd/goweeb)" {
+		t.Errorf("user agent = %q, want the goweeb one (the CDNs reject bare Mozilla/5.0)", headers["User-Agent"])
 	}
 }
