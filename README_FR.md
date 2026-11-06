@@ -114,6 +114,7 @@ L'image est compatible OCI et peut également être utilisée avec Docker. Selon
 | WeebCentral | Anglais | https://weebcentral.com |
 | MangaDex | Multilingue | https://mangadex.org |
 | MangaDot | Anglais | https://mangadot.net |
+| MangaBall | Multilingue | https://mangaball.com |
 | Mangavyvy | Anglais | https://mangavyvy.com |
 | MangaFreak | Anglais | https://ww3.mangafreak.me |
 | Atsumoe | Anglais | https://atsu.moe |

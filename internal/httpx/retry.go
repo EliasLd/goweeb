@@ -24,7 +24,9 @@ type Response struct {
 	FinalURL   string
 }
 
-// Do retries transient GET failures and statuses. The caller must close the response body.
+// Do retries transient failures and statuses. Requests must be
+// body-less or carry a replayable body (http.Request.GetBody). The
+// caller must close the response body.
 func Do(client *http.Client, req *http.Request, log *logger.Logger) (*http.Response, error) {
 	return run(client, req, log, false, func(resp *http.Response) (*http.Response, bool, error) {
 		return resp, false, nil
@@ -48,8 +50,8 @@ func ReadAll(client *http.Client, req *http.Request, log *logger.Logger) (Respon
 	})
 }
 
-// DownloadToFile streams a GET into a temporary file, retries interrupted reads,
-// and only replaces dest after a complete download.
+// DownloadToFile streams a response into a temporary file, retries
+// interrupted reads, and only replaces dest after a complete download.
 func DownloadToFile(client *http.Client, req *http.Request, dest string, log *logger.Logger) error {
 	_, err := run(client, req, log, true, func(resp *http.Response) (struct{}, bool, error) {
 		if resp.StatusCode != http.StatusOK {
@@ -92,23 +94,38 @@ func run[T any](
 	if client == nil || req == nil || req.URL == nil {
 		return zero, errors.New("nil HTTP client or request")
 	}
-	if req.Method != http.MethodGet || req.Body != nil {
-		return zero, errors.New("HTTP retry only supports GET requests without a body")
+	if req.Body != nil && req.GetBody == nil {
+		return zero, errors.New("HTTP retry only supports request bodies that can be replayed (http.Request.GetBody)")
 	}
 
 	for attempt := 1; attempt <= MaxAttempts; attempt++ {
 		if err := req.Context().Err(); err != nil {
 			return zero, err
 		}
+
+		// Transport calls close the request body, so senders of a
+		// body re-open a pristine one before every attempt.
+		if fn := req.GetBody; fn != nil {
+			body, err := fn()
+			if err != nil {
+				return zero, fmt.Errorf(
+					"failed to replay HTTP request body: %w",
+					err,
+				)
+			}
+
+			req.Body = body
+		}
+
 		resp, err := client.Do(req.Clone(req.Context()))
 		if err != nil {
 			if resp != nil && resp.Body != nil {
 				resp.Body.Close()
 			}
 			if attempt == MaxAttempts || req.Context().Err() != nil || errors.Is(err, context.Canceled) {
-				return zero, fmt.Errorf("GET %s failed after %d attempt(s): %w", req.URL, attempt, err)
+				return zero, fmt.Errorf("%s %s failed after %d attempt(s): %w", req.Method, req.URL, attempt, err)
 			}
-			debug(log, "HTTP GET %s failed (%v), retrying (%d/%d)\n", req.URL, err, attempt+1, MaxAttempts)
+			debug(log, "HTTP %s %s failed (%v), retrying (%d/%d)\n", req.Method, req.URL, err, attempt+1, MaxAttempts)
 			if err := wait(req.Context(), retryDelay(attempt)); err != nil {
 				return zero, err
 			}
@@ -119,7 +136,7 @@ func run[T any](
 			delay, allowed := statusRetryDelay(resp, attempt)
 			if allowed {
 				resp.Body.Close()
-				debug(log, "HTTP GET %s returned %d, retrying (%d/%d)\n", req.URL, resp.StatusCode, attempt+1, MaxAttempts)
+				debug(log, "HTTP %s %s returned %d, retrying (%d/%d)\n", req.Method, req.URL, resp.StatusCode, attempt+1, MaxAttempts)
 				if err := wait(req.Context(), delay); err != nil {
 					return zero, err
 				}
@@ -136,16 +153,16 @@ func run[T any](
 				if !closeBody {
 					resp.Body.Close()
 				}
-				debug(log, "HTTP GET %s body read failed (%v), retrying (%d/%d)\n", req.URL, handleErr, attempt+1, MaxAttempts)
+				debug(log, "HTTP %s %s body read failed (%v), retrying (%d/%d)\n", req.Method, req.URL, handleErr, attempt+1, MaxAttempts)
 				if err := wait(req.Context(), retryDelay(attempt)); err != nil {
 					return zero, err
 				}
 				continue
 			}
-			return zero, fmt.Errorf("GET %s failed after %d attempt(s): %w", req.URL, attempt, handleErr)
+			return zero, fmt.Errorf("%s %s failed after %d attempt(s): %w", req.Method, req.URL, attempt, handleErr)
 		}
 		if attempt > 1 && resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			debug(log, "HTTP GET %s succeeded on attempt %d/%d\n", req.URL, attempt, MaxAttempts)
+			debug(log, "HTTP %s %s succeeded on attempt %d/%d\n", req.Method, req.URL, attempt, MaxAttempts)
 		}
 		return value, nil
 	}

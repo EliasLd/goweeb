@@ -35,15 +35,23 @@ jobs:
           - mangadex
           - mangadotnet
           - mangavyvy
-        # weebcentral rides behind Cloudflare bot protection that
-        # rejects datacenter IPs at the edge (403 in ~0.1s), so its
-        # job is tolerated for now (yellow, not red): the runner
-        # can never prove the provider wrong, and the provider is
-        # verified green from residential IPs. Revisit after the
-        # browser header profile has proven itself against the
-        # runner — then move weebcentral out of this include block.
+        # Weebcentral and mangaball are tolerated jobs (yellow, not
+        # red): only failures WITHOUT the flag mean "a provider
+        # broke". Both are Cloudflare-protected and their edge
+        # refuses runner/datacenter IPs before the site's app runs —
+        # the runner can never prove these providers wrong:
+        # - weebcentral: hard IP-reputation reject (403 in ~0.1s). A
+        #   browser header profile experiment did not convince the
+        #   edge.
+        # - mangaball: a managed "Just a moment…" JS challenge on the
+        #   API routes, which no HTTP client can answer by design.
+        # Both are verified green from residential IPs (local live
+        # checks + manual testing). Revisit on evidence: if one stops
+        # challenging runner IPs, move it back to a plain entry.
         include:
           - provider: weebcentral
+            edge_block_expected: true
+          - provider: mangaball
             edge_block_expected: true
 
     steps:
