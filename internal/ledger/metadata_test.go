@@ -139,6 +139,11 @@ func TestSetCoverFileClearsAndReloads(t *testing.T) {
 		)
 	}
 
+	// The accessor mirrors the recorded value.
+	if got := reloaded.CoverFile(); got != coverName {
+		t.Errorf("CoverFile() = %q, want %q", got, coverName)
+	}
+
 	if !reloaded.SetCoverFile("") {
 		t.Error("expected clearing to change the manifest")
 	}

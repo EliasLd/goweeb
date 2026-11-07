@@ -216,6 +216,12 @@ func (l *Ledger) Metadata() *sourcetypes.Metadata {
 	return l.manifest.Metadata
 }
 
+// CoverFile returns the recorded cover image file name — a plain
+// basename next to the manifest — empty when none was recorded.
+func (l *Ledger) CoverFile() string {
+	return l.manifest.CoverFile
+}
+
 // Record merges one completed artifact: an entry for the same number
 // and format is replaced, otherwise the chapter is appended. The
 // list stays sorted by number so the file reads in order and
