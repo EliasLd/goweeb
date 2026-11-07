@@ -21,6 +21,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/EliasLd/goweeb/internal/app"
@@ -152,9 +153,7 @@ func providerHealthCheck(
 	// error value, so the outcome is asserted on disk.
 	app.RunWithWorkflow(opts, log)
 
-	pdfs, err := filepath.Glob(
-		filepath.Join(opts.ScanDir, "*.pdf"),
-	)
+	pdfs, err := collectPDFOutputs(opts.ScanDir)
 	if err != nil {
 		t.Fatalf("list pdf outputs: %v", err)
 	}
@@ -168,6 +167,37 @@ func providerHealthCheck(
 	}
 
 	assertRealPDF(t, pdfs[0])
+}
+
+// collectPDFOutputs walks the output tree recursively. The series
+// layout nests outputs under a per-work folder and the naming
+// belongs to the application, so this check stays layout-agnostic
+// and only asserts the pipeline contract: one real PDF file.
+func collectPDFOutputs(root string) ([]string, error) {
+	var pdfs []string
+
+	err := filepath.WalkDir(
+		root,
+		func(path string, entry os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+
+			if entry.IsDir() ||
+				!strings.HasSuffix(entry.Name(), ".pdf") {
+				return nil
+			}
+
+			pdfs = append(pdfs, path)
+
+			return nil
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("walk %s: %w", root, err)
+	}
+
+	return pdfs, nil
 }
 
 // assertRealPDF checks the produced file is a real, non-empty PDF.
