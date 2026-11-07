@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/EliasLd/goweeb/internal/convert"
 	"github.com/EliasLd/goweeb/internal/fetch"
@@ -21,6 +22,34 @@ func chapterDigits(maxChapter int) int {
 	}
 
 	return d
+}
+
+// buildComicInfo assembles the CBZ metadata of one entry.
+//
+// Manga is always "Yes": goweeb downloads from manga providers and
+// pages already carry their final reading order. Count is the number
+// of entries available on the source, not just the downloaded ones.
+func buildComicInfo(
+	work sourcetypes.Work,
+	entry sourcetypes.Entry,
+	totalEntries int,
+) *convert.ComicInfo {
+	info := convert.ComicInfo{
+		Series: work.Title,
+		Number: entry.Number.String(),
+		Count:  totalEntries,
+		Title:  entry.Label,
+		Manga:  convert.MangaYes,
+	}
+
+	// The schema carries volumes as integers; a provider exposing
+	// fractional numbers stays Number-only.
+	if work.Kind == sourcetypes.ItemVolume &&
+		entry.Number.IsInteger() {
+		info.Volume, _ = strconv.Atoi(string(entry.Number))
+	}
+
+	return &info
 }
 
 func toSelectableManga(
@@ -114,6 +143,7 @@ func imageRequestHeaders(
 func downloadEntries(
 	provider sourcetypes.Provider,
 	work sourcetypes.Work,
+	totalEntries int,
 	entries []sourcetypes.Entry,
 	opts Options,
 	log *logger.Logger,
@@ -282,6 +312,7 @@ func downloadEntries(
 			if err := convert.ImagesToCBZ(
 				imageDir,
 				cbzPath,
+				buildComicInfo(work, entry, totalEntries),
 			); err != nil {
 				log.Error(
 					"Failed to create CBZ: %v\n",
@@ -527,6 +558,8 @@ func Run(
 		return
 	}
 
+	totalEntries := len(entries)
+
 	if !hasRangeSelection(opts.Selection) {
 		selection, err := PromptChapterRange(
 			entries,
@@ -569,6 +602,7 @@ func Run(
 	downloadEntries(
 		provider,
 		work,
+		totalEntries,
 		entries,
 		opts,
 		log,
@@ -622,6 +656,8 @@ func RunWithWorkflow(
 		return
 	}
 
+	totalEntries := len(entries)
+
 	logAvailableChapters(
 		entries,
 		log,
@@ -644,6 +680,7 @@ func RunWithWorkflow(
 	downloadEntries(
 		provider,
 		work,
+		totalEntries,
 		entries,
 		opts,
 		log,

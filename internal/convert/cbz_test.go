@@ -3,6 +3,7 @@ package convert
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/xml"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -106,7 +107,7 @@ func TestImagesToCBZ(t *testing.T) {
 
 	cbzPath := filepath.Join(dir, "out.cbz")
 
-	if err := ImagesToCBZ(dir, cbzPath); err != nil {
+	if err := ImagesToCBZ(dir, cbzPath, nil); err != nil {
 		t.Fatalf("ImagesToCBZ() error: %v", err)
 	}
 
@@ -170,7 +171,7 @@ func TestImagesToCBZKeepsContentVerbatim(t *testing.T) {
 
 	cbzPath := filepath.Join(dir, "out.cbz")
 
-	if err := ImagesToCBZ(dir, cbzPath); err != nil {
+	if err := ImagesToCBZ(dir, cbzPath, nil); err != nil {
 		t.Fatalf("ImagesToCBZ() error: %v", err)
 	}
 
@@ -196,8 +197,119 @@ func TestImagesToCBZEmptyDir(t *testing.T) {
 	err := ImagesToCBZ(
 		dir,
 		filepath.Join(dir, "out.cbz"),
+		nil,
 	)
 	if err == nil {
 		t.Fatal("expected an error when the directory has no images")
+	}
+}
+
+func TestImagesToCBZWritesComicInfo(t *testing.T) {
+	dir := t.TempDir()
+
+	for _, name := range []string{"001.jpg", "002.jpg", "003.jpg"} {
+		encodeTestJPEG(
+			t,
+			filepath.Join(dir, name),
+			color.RGBA{A: 0xFF},
+		)
+	}
+
+	cbzPath := filepath.Join(dir, "out.cbz")
+
+	info := ComicInfo{
+		Series: "One Piece",
+		Number: "10",
+		Count:  42,
+		Title:  "Chapter 10",
+		Manga:  MangaYes,
+	}
+
+	if err := ImagesToCBZ(dir, cbzPath, &info); err != nil {
+		t.Fatalf("ImagesToCBZ() error: %v", err)
+	}
+
+	reader := readTestZip(t, cbzPath)
+
+	if len(reader.File) != 4 {
+		t.Fatalf(
+			"archive contains %d entries, want 4",
+			len(reader.File),
+		)
+	}
+
+	metadata := reader.File[0]
+
+	if metadata.Name != "ComicInfo.xml" {
+		t.Fatalf(
+			"first entry = %q, want ComicInfo.xml",
+			metadata.Name,
+		)
+	}
+
+	if metadata.Method != zip.Deflate {
+		t.Errorf(
+			"entry %s must use zip.Deflate",
+			metadata.Name,
+		)
+	}
+
+	var decoded ComicInfo
+
+	if err := xml.Unmarshal(
+		readTestZipEntry(t, metadata),
+		&decoded,
+	); err != nil {
+		t.Fatalf(
+			"failed to parse ComicInfo.xml: %v",
+			err,
+		)
+	}
+
+	if decoded.Series != "One Piece" ||
+		decoded.Number != "10" ||
+		decoded.Count != 42 ||
+		decoded.Manga != MangaYes {
+		t.Errorf(
+			"unexpected metadata: %+v",
+			decoded,
+		)
+	}
+
+	// PageCount is filled by ImagesToCBZ with the real number of
+	// archived pages, and the caller's struct stays untouched.
+	if decoded.PageCount != 3 {
+		t.Errorf(
+			"PageCount = %d, want 3",
+			decoded.PageCount,
+		)
+	}
+
+	if info.PageCount != 0 {
+		t.Errorf(
+			"caller's ComicInfo.PageCount = %d, want untouched 0",
+			info.PageCount,
+		)
+	}
+
+	// Pages keep their verbatim ordering right after the metadata.
+	for i, want := range []string{"001.jpg", "002.jpg", "003.jpg"} {
+		file := reader.File[i+1]
+
+		if file.Name != want {
+			t.Errorf(
+				"entry %d = %q, want %q",
+				i+1,
+				file.Name,
+				want,
+			)
+		}
+
+		if file.Method != zip.Store {
+			t.Errorf(
+				"entry %s must use zip.Store",
+				file.Name,
+			)
+		}
 	}
 }

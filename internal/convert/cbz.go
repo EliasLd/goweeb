@@ -56,7 +56,15 @@ func addImageToZip(
 // order. The file contents are not re-encoded: websites may serve
 // formats other than JPEG under these names, and readers and tools
 // such as Kindle Comic Converter detect the actual format.
-func ImagesToCBZ(imagesDir, cbzPath string) error {
+//
+// When info is not nil, a ComicInfo.xml metadata entry is written at
+// the archive root before the pages; PageCount is filled inside with
+// the number of archived pages, the most reliable count.
+func ImagesToCBZ(
+	imagesDir string,
+	cbzPath string,
+	info *ComicInfo,
+) error {
 	names, err := listImageFiles(imagesDir)
 	if err != nil {
 		return fmt.Errorf(
@@ -81,6 +89,25 @@ func ImagesToCBZ(imagesDir, cbzPath string) error {
 	}
 
 	zipWriter := zip.NewWriter(out)
+
+	if info != nil {
+		// Copy so the caller never sees PageCount filled in.
+		comicInfo := *info
+		comicInfo.PageCount = len(names)
+
+		if err := addComicInfoToZip(
+			zipWriter,
+			&comicInfo,
+		); err != nil {
+			_ = zipWriter.Close()
+			_ = out.Close()
+
+			return fmt.Errorf(
+				"failed to write the metadata: %w",
+				err,
+			)
+		}
+	}
 
 	for _, name := range names {
 		imagePath := filepath.Join(imagesDir, name)
