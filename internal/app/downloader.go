@@ -228,13 +228,13 @@ func downloadEntries(
 				prefix = "Volume"
 			}
 
-			entryDir := filepath.Join(
+			entryDir := layoutEntryImageDir(
+				opts.Layout,
 				opts.ScanDir,
-				fmt.Sprintf(
-					"%s %s",
-					prefix,
-					entry.Number.Padded(digits),
-				),
+				work.Title,
+				prefix,
+				entry.Number,
+				digits,
 			)
 
 			if err := fetch.DownloadImagesWithHeaders(
@@ -288,8 +288,18 @@ func downloadEntries(
 				continue
 			}
 
-			if err := os.MkdirAll(
+			cbzPath := layoutEntryPath(
+				opts.Layout,
 				opts.ScanDir,
+				work.Title,
+				entry.Number,
+				digits,
+				".cbz",
+			)
+
+			// The archive may sit in a per-series subdirectory.
+			if err := os.MkdirAll(
+				filepath.Dir(cbzPath),
 				os.ModePerm,
 			); err != nil {
 				log.Error(
@@ -299,15 +309,6 @@ func downloadEntries(
 
 				return
 			}
-
-			cbzPath := filepath.Join(
-				opts.ScanDir,
-				fmt.Sprintf(
-					"%s_%s.cbz",
-					work.Title,
-					chStr,
-				),
-			)
 
 			if err := convert.ImagesToCBZ(
 				imageDir,
@@ -356,8 +357,18 @@ func downloadEntries(
 			continue
 		}
 
-		if err := os.MkdirAll(
+		pdfPath := layoutEntryPath(
+			opts.Layout,
 			opts.ScanDir,
+			work.Title,
+			entry.Number,
+			digits,
+			".pdf",
+		)
+
+		// The archive may sit in a per-series subdirectory.
+		if err := os.MkdirAll(
+			filepath.Dir(pdfPath),
 			os.ModePerm,
 		); err != nil {
 			log.Error(
@@ -367,15 +378,6 @@ func downloadEntries(
 
 			return
 		}
-
-		pdfPath := filepath.Join(
-			opts.ScanDir,
-			fmt.Sprintf(
-				"%s_%s.pdf",
-				work.Title,
-				chStr,
-			),
-		)
 
 		if err := convert.ImagesToPDF(
 			imageDir,

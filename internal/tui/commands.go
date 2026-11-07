@@ -210,6 +210,7 @@ func startDownload(m Model) tea.Cmd {
 			ScanPath:      m.SelectedScanPath,
 			EbookFriendly: m.EbookCheckbox.Checked,
 			CBZ:           m.CBZCheckbox.Checked,
+			Layout:        app.DefaultLayout,
 		}
 
 		pr, pw := io.Pipe()
