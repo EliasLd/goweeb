@@ -26,7 +26,7 @@ func TestSearchCatalog(t *testing.T) {
 					{
 						"id": 101,
 						"title": "Blue Lock",
-						"is_adult": 0,
+						"is_adult": false,
 						"chapter_count": 383,
 						"status": "Ongoing"
 					},
@@ -40,7 +40,7 @@ func TestSearchCatalog(t *testing.T) {
 					{
 						"id": 9999,
 						"title": "Doujinshi",
-						"is_adult": 1
+						"is_adult": true
 					},
 					{
 						"id": 0,

@@ -102,12 +102,12 @@ func TestSearch(t *testing.T) {
 					{
 						"id": 101,
 						"title": "Blue Lock",
-						"is_adult": 0
+						"is_adult": false
 					},
 					{
 						"id": 9999,
 						"title": "Doujinshi",
-						"is_adult": 1
+						"is_adult": true
 					},
 					{
 						"id": 2836,
