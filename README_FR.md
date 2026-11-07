@@ -21,7 +21,7 @@ goweeb est un téléchargeur de mangas multiplateforme disponible à la fois sou
 - Recherche interactive multi-fournisseurs : interrogez tous les fournisseurs à la fois, ou filtrez sur un seul.
 - Prise en charge des numéros de chapitre entiers et décimaux.
 - Gestion automatique des chapitres indisponibles à l'intérieur des plages demandées.
-- Sortie en PDF, archives CBZ ou dossiers d'images adaptés aux liseuses.
+- Sortie en PDF, archives CBZ (avec métadonnées ComicInfo.xml) ou dossiers d'images adaptés aux liseuses.
 - Nouvelles tentatives HTTP automatiques en cas de connexion instable ou d'erreurs temporaires côté serveur.
 - Domaines personnalisés et miroirs compatibles pour les fournisseurs.
 - Binaires natifs pour Linux, macOS et Windows.
@@ -218,6 +218,7 @@ Lorsque vous utilisez un titre sans guillemets, placez-le après toutes les opti
 | `--scan-dir <folder>` | `-d` | Dossier de sortie. Par défaut : `scan` avec le CLI natif. |
 | `--ebook-friendly` | — | Enregistrer les images des chapitres dans des dossiers `Chapter XXX/` au lieu de générer des PDF. |
 | `--cbz` | — | Enregistrer chaque chapitre sous forme d'archive CBZ (pages numérotées `001.jpg`, `002.jpg`, …) au lieu de générer des PDF. Ne peut pas être combinée avec `--ebook-friendly`. |
+| `--layout <scheme>` | — | Schéma de nommage des fichiers téléchargés. `series` (par défaut) regroupe les fichiers par œuvre avec des noms adaptés aux lecteurs ; `flat` conserve le nommage d'origine. Voir [Disposition de la sortie](#disposition-de-la-sortie). |
 | `--domain <url>` | `-u` | Remplacer le domaine par défaut du fournisseur sélectionné. |
 | `--debug` | — | Activer les logs de debug détaillés. |
 
@@ -260,6 +261,31 @@ Par exemple, si seuls les chapitres `1-50` et `70-100` sont disponibles, demande
 téléchargera les chapitres disponibles tout en ignorant automatiquement les chapitres `51-69`.
 
 Si ni `--all` ni `--range` ne sont fournis, goweeb vous demandera interactivement quels chapitres vous souhaitez télécharger.
+
+## Disposition de la sortie
+
+Par défaut, goweeb regroupe tous les téléchargements d'une œuvre dans un dossier nommé d'après la série, avec des noms de fichiers préfixés et adaptés aux lecteurs qui trient dans l'ordre de lecture. Ce schéma est reconnu par les bibliothèques comme Komga et Kavita :
+
+```text
+scan/
+└── One Piece/
+    ├── One Piece - c001.cbz
+    ├── One Piece - c006.5.cbz
+    └── One Piece - c010.cbz
+```
+
+Les titres de séries contenant des caractères interdits dans les chemins (barres obliques, deux-points, …) sont nettoyés dans les noms de dossiers et de fichiers.
+
+Utilisez `--layout flat` pour conserver le nommage plat historique :
+
+```text
+scan/
+├── One Piece_1.cbz
+├── One Piece_6.5.cbz
+└── One Piece_10.cbz
+```
+
+Le schéma `series` s'applique à tous les modes de sortie : archives CBZ et PDF, ainsi que les dossiers de chapitres en mode ebook-friendly.
 
 ## Exemples
 
@@ -314,15 +340,16 @@ Les domaines personnalisés peuvent être utiles lorsqu'un fournisseur change de
 Au lieu de créer un PDF par chapitre, goweeb enregistre les pages du manga dans des dossiers séparés pour chaque chapitre :
 
 ```text
-One Piece/
-├── Chapter 001/
-│   ├── 001.jpg
-│   ├── 002.jpg
-│   └── ...
-├── Chapter 002/
-│   ├── 001.jpg
-│   └── ...
-└── ...
+scan/
+└── One Piece/
+    ├── One Piece - c001/
+    │   ├── 001.jpg
+    │   ├── 002.jpg
+    │   └── ...
+    ├── One Piece - c002/
+    │   ├── 001.jpg
+    │   └── ...
+    └── ...
 ```
 
 Exemple :
@@ -342,20 +369,24 @@ Cette structure peut ensuite être traitée par des outils comme [Kindle Comic C
 Avec `--cbz`, goweeb enregistre chaque chapitre sélectionné sous forme d'archive CBZ, un fichier par chapitre :
 
 ```text
-One Piece/
-├── One Piece_1.cbz
-├── One Piece_2.cbz
-└── ...
+scan/
+└── One Piece/
+    ├── One Piece - c001.cbz
+    ├── One Piece - c002.cbz
+    └── ...
 ```
 
-Chaque archive contient les pages du chapitre à sa racine, numérotées séquentiellement afin que les lecteurs conservent l'ordre correct :
+Chaque archive contient un fichier de métadonnées `ComicInfo.xml` (titre de la série, numéro et libellé du chapitre, nombre de pages) ainsi que les pages du chapitre à sa racine, numérotées séquentiellement afin que les lecteurs conservent l'ordre correct :
 
 ```text
+ComicInfo.xml
 001.jpg
 002.jpg
 003.jpg
 ...
 ```
+
+Les bibliothèques de bandes dessinées comme [Komga](https://komga.org), Kavita et Mihon lisent `ComicInfo.xml` pour indexer automatiquement les chapitres téléchargés.
 
 Les fichiers CBZ fonctionnent avec la plupart des lecteurs de bandes dessinées et peuvent être traités par des outils comme [Kindle Comic Converter](https://github.com/ciromattia/kcc), qui accepte directement le format CBZ en entrée.
 

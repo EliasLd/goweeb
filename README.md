@@ -21,7 +21,7 @@ goweeb is a cross-platform manga downloader available as both an interactive **T
 - Multi-provider interactive search: query every provider at once, or filter by a single one.
 - Integer and decimal chapter support.
 - Automatic handling of unavailable chapters inside requested ranges.
-- PDF output, CBZ archives or ebook-friendly image folders.
+- PDF output, CBZ archives (with ComicInfo.xml metadata) or ebook-friendly image folders.
 - Automatic HTTP retries for unstable connections and temporary server failures.
 - Custom provider domains and compatible mirrors.
 - Native binaries for Linux, macOS and Windows.
@@ -218,6 +218,7 @@ When using an unquoted title, place it after all CLI options.
 | `--scan-dir <folder>` | `-d` | Output directory. Default: `scan` in the native CLI. |
 | `--ebook-friendly` | — | Store chapter images in `Chapter XXX/` folders instead of generating PDFs. |
 | `--cbz` | — | Save each chapter as a CBZ archive (pages numbered `001.jpg`, `002.jpg`, …) instead of generating PDFs. Cannot be combined with `--ebook-friendly`. |
+| `--layout <scheme>` | — | Naming scheme of downloaded files. `series` (default) groups files per work with reader-friendly names; `flat` keeps the original naming. See [Output layout](#output-layout). |
 | `--domain <url>` | `-u` | Override the selected provider's default domain. |
 | `--debug` | — | Enable verbose debug logging. |
 
@@ -260,6 +261,31 @@ For example, if only chapters `1-50` and `70-100` exist, requesting:
 downloads the available chapters while automatically skipping `51-69`.
 
 If neither `--all` nor `--range` is provided, goweeb asks you interactively which chapters to download.
+
+## Output layout
+
+By default, goweeb groups every download of a work under a folder named after the series, with padded, reader-friendly filenames that sort in reading order. The scheme is parsed by libraries such as Komga and Kavita:
+
+```text
+scan/
+└── One Piece/
+    ├── One Piece - c001.cbz
+    ├── One Piece - c006.5.cbz
+    └── One Piece - c010.cbz
+```
+
+Series names containing characters illegal in paths (slashes, colons, …) are sanitized for folder and file names.
+
+Use `--layout flat` to keep the historical flat naming instead:
+
+```text
+scan/
+├── One Piece_1.cbz
+├── One Piece_6.5.cbz
+└── One Piece_10.cbz
+```
+
+The `series` layout applies to every output mode: CBZ and PDF archives, and ebook-friendly chapters folders.
 
 ## Examples
 
@@ -314,15 +340,16 @@ Custom domains are useful when a provider changes domain while remaining compati
 Instead of creating one PDF per chapter, goweeb saves manga pages into separate chapter directories:
 
 ```text
-One Piece/
-├── Chapter 001/
-│   ├── 001.jpg
-│   ├── 002.jpg
-│   └── ...
-├── Chapter 002/
-│   ├── 001.jpg
-│   └── ...
-└── ...
+scan/
+└── One Piece/
+    ├── One Piece - c001/
+    │   ├── 001.jpg
+    │   ├── 002.jpg
+    │   └── ...
+    ├── One Piece - c002/
+    │   ├── 001.jpg
+    │   └── ...
+    └── ...
 ```
 
 Example:
@@ -342,20 +369,24 @@ This structure can then be processed by tools such as [Kindle Comic Converter](h
 With `--cbz`, goweeb saves each selected chapter as a CBZ comic book archive, one file per chapter:
 
 ```text
-One Piece/
-├── One Piece_1.cbz
-├── One Piece_2.cbz
-└── ...
+scan/
+└── One Piece/
+    ├── One Piece - c001.cbz
+    ├── One Piece - c002.cbz
+    └── ...
 ```
 
-Each archive contains the chapter pages at its root, numbered sequentially so readers keep the correct order:
+Each archive contains a `ComicInfo.xml` metadata file (series title, chapter number and label, page count) plus the chapter pages at its root, numbered sequentially so readers keep the correct order:
 
 ```text
+ComicInfo.xml
 001.jpg
 002.jpg
 003.jpg
 ...
 ```
+
+Comic libraries such as [Komga](https://komga.org), Kavita and Mihon read `ComicInfo.xml` to index downloaded chapters automatically.
 
 CBZ files work with most comic readers and can be processed by tools such as [Kindle Comic Converter](https://github.com/ciromattia/kcc), which accepts CBZ as input directly.
 
