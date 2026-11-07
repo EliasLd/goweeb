@@ -48,6 +48,7 @@ type Options struct {
 	EbookFriendly bool
 	CBZ           bool
 	Source        string
+	Layout        Layout
 
 	MangaURL string
 	ScanPath string
@@ -107,6 +108,12 @@ func configureUsage() {
 		fmt.Fprintln(out, "      Save chapters as CBZ archives instead of PDF files")
 		fmt.Fprintln(out)
 
+		fmt.Fprintln(out, "  --layout <scheme>")
+		fmt.Fprintln(out, "      Naming scheme of downloaded files")
+		fmt.Fprintln(out, "      series (default): {output}/{Series}/{Series} - c{number}")
+		fmt.Fprintln(out, "      flat:             {output}/{Series}_{number}")
+		fmt.Fprintln(out)
+
 		fmt.Fprintln(out, "Provider options:")
 		fmt.Fprintln(out, "  --domain <domain>")
 		fmt.Fprintln(out, "  -u <domain>")
@@ -136,6 +143,7 @@ func ParseFlags() Options {
 		cbz           bool
 		customDomain  string
 		debug         bool
+		layoutStr     string
 	)
 
 	// Chapter selection.
@@ -215,6 +223,13 @@ func ParseFlags() Options {
 		"cbz",
 		false,
 		"Save chapters as CBZ archives instead of PDF files",
+	)
+
+	flag.StringVar(
+		&layoutStr,
+		"layout",
+		string(DefaultLayout),
+		"Naming scheme of downloaded files ("+LayoutChoices()+")",
 	)
 
 	// Misc.
@@ -308,6 +323,16 @@ func ParseFlags() Options {
 		os.Exit(2)
 	}
 
+	layout, err := ParseLayout(layoutStr)
+	if err != nil {
+		fmt.Fprintln(
+			os.Stderr,
+			err,
+		)
+
+		os.Exit(2)
+	}
+
 	var selection RangeSelection
 
 	if all {
@@ -369,5 +394,6 @@ func ParseFlags() Options {
 		Debug:         debug,
 		EbookFriendly: ebookFriendly,
 		CBZ:           cbz,
+		Layout:        layout,
 	}
 }
