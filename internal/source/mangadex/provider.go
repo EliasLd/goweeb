@@ -56,13 +56,36 @@ func (p *Provider) Search(
 		out = append(
 			out,
 			sourcetypes.SearchResult{
-				Title: result.Title,
-				URL:   result.URL,
+				Title:    result.Title,
+				URL:      result.URL,
+				CoverURL: result.CoverURL,
 			},
 		)
 	}
 
 	return out, nil
+}
+
+// WorkMetadata reads the same endpoint the entry listing already
+// uses, with the author and cover relationships requested, so one
+// call answers both roles.
+func (p *Provider) WorkMetadata(
+	workURL string,
+	log *logger.Logger,
+) (sourcetypes.Metadata, error) {
+	detail, err := mangadexscraper.GetMangaDetail(
+		p.domain,
+		workURL,
+		log,
+	)
+	if err != nil {
+		return sourcetypes.Metadata{}, fmt.Errorf(
+			"failed to get MangaDex work metadata: %w",
+			err,
+		)
+	}
+
+	return detail.Metadata, nil
 }
 
 func (p *Provider) ListScanPaths(
