@@ -89,6 +89,11 @@ func InitialModel() Model {
 			Checked: false,
 		},
 
+		ContinueCheckbox: Checkbox{
+			Label:   "Skip already downloaded chapters",
+			Checked: false,
+		},
+
 		SearchInput: searchInput,
 		SearchList:  newInteractiveSearchList(),
 		SearchFocus: searchFocusInput,
