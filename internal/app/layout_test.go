@@ -200,6 +200,48 @@ func TestLedgerPath(t *testing.T) {
 	}
 }
 
+func TestCoverBasePathNextToTheManifest(t *testing.T) {
+	tests := []struct {
+		name   string
+		layout Layout
+		series string
+		want   string
+	}{
+		{
+			name:   "series layout",
+			layout: LayoutSeries,
+			series: "One Piece",
+			want:   filepath.Join("scan", "One Piece", "One Piece.cover"),
+		},
+		{
+			name:   "flat layout",
+			layout: LayoutFlat,
+			series: "One Piece",
+			want:   filepath.Join("scan", "One Piece.cover"),
+		},
+		{
+			name:   "series sanitizes like the manifest",
+			layout: LayoutSeries,
+			series: "Fate/Zero",
+			want:   filepath.Join("scan", "Fate Zero", "Fate Zero.cover"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := coverBasePath(tt.layout, "scan", tt.series)
+
+			if got != tt.want {
+				t.Errorf(
+					"coverBasePath() = %q, want %q",
+					got,
+					tt.want,
+				)
+			}
+		})
+	}
+}
+
 func TestLayoutEntryImageDir(t *testing.T) {
 	tests := []struct {
 		name   string

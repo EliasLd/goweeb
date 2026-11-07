@@ -40,9 +40,14 @@ func supportedProvidersList() string {
 
 // Holds parsed CLI arguments.
 type Options struct {
-	Slug          string
-	Selection     RangeSelection
-	Continue      bool
+	Slug      string
+	Selection RangeSelection
+	Continue  bool
+
+	// NoExternalCovers turns the external database layer of the
+	// work-description ladder off.
+	NoExternalCovers bool
+
 	ScanDir       string
 	CustomDomain  string
 	Debug         bool
@@ -99,6 +104,9 @@ func configureUsage() {
 		fmt.Fprintln(out, "  -c")
 		fmt.Fprintln(out, "      Skip chapters already downloaded in the output directory")
 		fmt.Fprintln(out)
+		fmt.Fprintln(out, "  --no-external-covers")
+		fmt.Fprintln(out, "      Disable the external database fallback for work covers")
+		fmt.Fprintln(out)
 
 		fmt.Fprintln(out, "Output:")
 		fmt.Fprintln(out, "  --scan-dir <directory>")
@@ -151,6 +159,8 @@ func ParseFlags() Options {
 		debug         bool
 		layoutStr     string
 		cont          bool
+
+		noExternalCovers bool
 	)
 
 	// Chapter selection.
@@ -191,6 +201,13 @@ func ParseFlags() Options {
 		"c",
 		false,
 		"Shorthand for --continue",
+	)
+
+	flag.BoolVar(
+		&noExternalCovers,
+		"no-external-covers",
+		false,
+		"Disable the external database fallback for work covers",
 	)
 
 	// Provider.
@@ -406,15 +423,16 @@ func ParseFlags() Options {
 	}
 
 	return Options{
-		Slug:          slug,
-		Selection:     selection,
-		Continue:      cont,
-		Source:        sourceName,
-		ScanDir:       ResolveOutputDir(scanDir),
-		CustomDomain:  customDomain,
-		Debug:         debug,
-		EbookFriendly: ebookFriendly,
-		CBZ:           cbz,
-		Layout:        layout,
+		Slug:             slug,
+		Selection:        selection,
+		Continue:         cont,
+		NoExternalCovers: noExternalCovers,
+		Source:           sourceName,
+		ScanDir:          ResolveOutputDir(scanDir),
+		CustomDomain:     customDomain,
+		Debug:            debug,
+		EbookFriendly:    ebookFriendly,
+		CBZ:              cbz,
+		Layout:           layout,
 	}
 }

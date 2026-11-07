@@ -44,11 +44,11 @@ func CoverExtension(coverURL string) string {
 	return extension
 }
 
-// downloadCoverTo fetches the cover into the destination base name,
+// DownloadCover fetches the cover into the destination base name,
 // choosing the extension from the URL, and returns the recorded file
 // name. The download is atomic (temporary file renamed into place on
 // success), so a half-written cover can never be recorded.
-func downloadCoverTo(
+func DownloadCover(
 	coverURL string,
 	basePath string,
 	headers map[string]string,
