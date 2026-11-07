@@ -162,6 +162,44 @@ func TestLayoutEntryPath(t *testing.T) {
 	}
 }
 
+func TestLedgerPath(t *testing.T) {
+	tests := []struct {
+		name   string
+		layout Layout
+		series string
+		want   string
+	}{{
+		name:   "series layout keeps the manifest next to the artifacts",
+		layout: LayoutSeries,
+		series: "One Piece",
+		want:   filepath.Join("scan", "One Piece", "One Piece.goweeb.json"),
+	}, {
+		name:   "flat layout keys the manifest by series at the root",
+		layout: LayoutFlat,
+		series: "One Piece",
+		want:   filepath.Join("scan", "One Piece.goweeb.json"),
+	}, {
+		name:   "series sanitizes the manifest path",
+		layout: LayoutSeries,
+		series: "Fate/Zero",
+		want:   filepath.Join("scan", "Fate Zero", "Fate Zero.goweeb.json"),
+	}}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ledgerPath(tt.layout, "scan", tt.series)
+
+			if got != tt.want {
+				t.Errorf(
+					"ledgerPath() = %q, want %q",
+					got,
+					tt.want,
+				)
+			}
+		})
+	}
+}
+
 func TestLayoutEntryImageDir(t *testing.T) {
 	tests := []struct {
 		name   string

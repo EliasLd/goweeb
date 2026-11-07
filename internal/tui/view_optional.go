@@ -91,6 +91,35 @@ func viewOptionalSettings(m Model) string {
 
 	view.WriteString(cbzDescription)
 
+	view.WriteString("\n")
+
+	continueCheckbox :=
+		m.ContinueCheckbox.View(
+			m.OptionalCursor == 2,
+		)
+
+	continueCheckbox =
+		markMouseZone(
+			mouseZoneOptionalContinue,
+			continueCheckbox,
+		)
+
+	view.WriteString(
+		continueCheckbox,
+	)
+
+	view.WriteString("\n")
+
+	continueDescription := optionalDescriptionStyle.
+		Width(contentWidth).
+		Render(
+			"Skip chapters already downloaded in the destination. " +
+				"The per-work ledger re-checks the files on disk, so " +
+				"manually deleted or damaged chapters download again.",
+		)
+
+	view.WriteString(continueDescription)
+
 	content := optionalViewStyle.Render(
 		view.String(),
 	)

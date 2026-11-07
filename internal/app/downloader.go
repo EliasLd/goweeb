@@ -8,6 +8,7 @@ import (
 
 	"github.com/EliasLd/goweeb/internal/convert"
 	"github.com/EliasLd/goweeb/internal/fetch"
+	"github.com/EliasLd/goweeb/internal/ledger"
 	"github.com/EliasLd/goweeb/internal/logger"
 	"github.com/EliasLd/goweeb/internal/source"
 	"github.com/EliasLd/goweeb/internal/source/common"
@@ -145,6 +146,7 @@ func downloadEntries(
 	work sourcetypes.Work,
 	totalEntries int,
 	entries []sourcetypes.Entry,
+	ledgerFile *ledger.Ledger,
 	opts Options,
 	log *logger.Logger,
 ) {
@@ -258,6 +260,14 @@ func downloadEntries(
 				entryDir,
 			)
 
+			recordDownloaded(
+				ledgerFile,
+				entry,
+				ledger.FormatFolder,
+				entryDir,
+				log,
+			)
+
 			continue
 		}
 
@@ -332,6 +342,14 @@ func downloadEntries(
 				cbzPath,
 			)
 
+			recordDownloaded(
+				ledgerFile,
+				entry,
+				ledger.FormatCBZ,
+				cbzPath,
+				log,
+			)
+
 			continue
 		}
 
@@ -396,6 +414,14 @@ func downloadEntries(
 			"%s saved as %s\n",
 			entry.Label,
 			pdfPath,
+		)
+
+		recordDownloaded(
+			ledgerFile,
+			entry,
+			ledger.FormatPDF,
+			pdfPath,
+			log,
 		)
 	}
 
@@ -538,6 +564,11 @@ func Run(
 		return
 	}
 
+	// Both flow into the ledger identity and are already carried by
+	// opts in the workflow mode.
+	opts.MangaURL = mangaURL
+	opts.ScanPath = scanPath
+
 	work, entries, err := provider.ListEntries(
 		mangaURL,
 		scanPath,
@@ -561,6 +592,8 @@ func Run(
 	}
 
 	totalEntries := len(entries)
+
+	ledgerFile := openLedger(opts, work, log)
 
 	if !hasRangeSelection(opts.Selection) {
 		selection, err := PromptChapterRange(
@@ -601,11 +634,29 @@ func Run(
 		return
 	}
 
+	if ledgerFile != nil {
+		entries = skipDownloaded(
+			ledgerFile,
+			outputFormat(opts),
+			entries,
+			log,
+		)
+
+		if len(entries) == 0 {
+			log.Info(
+				"Nothing new to download.\n",
+			)
+
+			return
+		}
+	}
+
 	downloadEntries(
 		provider,
 		work,
 		totalEntries,
 		entries,
+		ledgerFile,
 		opts,
 		log,
 	)
@@ -660,6 +711,8 @@ func RunWithWorkflow(
 
 	totalEntries := len(entries)
 
+	ledgerFile := openLedger(opts, work, log)
+
 	logAvailableChapters(
 		entries,
 		log,
@@ -679,11 +732,29 @@ func RunWithWorkflow(
 		return
 	}
 
+	if ledgerFile != nil {
+		entries = skipDownloaded(
+			ledgerFile,
+			outputFormat(opts),
+			entries,
+			log,
+		)
+
+		if len(entries) == 0 {
+			log.Info(
+				"Nothing new to download.\n",
+			)
+
+			return
+		}
+	}
+
 	downloadEntries(
 		provider,
 		work,
 		totalEntries,
 		entries,
+		ledgerFile,
 		opts,
 		log,
 	)

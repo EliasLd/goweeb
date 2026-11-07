@@ -103,6 +103,24 @@ func seriesBaseName(
 	)
 }
 
+// ledgerSuffix names the manifest file of a work.
+const ledgerSuffix = ".goweeb.json"
+
+// ledgerPath returns the path of a work's manifest. It lives inside
+// the work's folder in the series layout and at the output root in
+// the flat layout — always next to the artifacts it describes, so
+// the ledger can rely on plain file names during verification.
+func ledgerPath(layout Layout, scanDir, series string) string {
+	segment := sanitizeSegment(series)
+	name := segment + ledgerSuffix
+
+	if layout == LayoutFlat {
+		return filepath.Join(scanDir, name)
+	}
+
+	return filepath.Join(scanDir, segment, name)
+}
+
 // layoutEntryPath returns the output file path of one entry.
 //
 // The series layout zeroes pads the number so files sort in reading

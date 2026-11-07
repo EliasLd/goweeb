@@ -208,6 +208,7 @@ func startDownload(m Model) tea.Cmd {
 			CustomDomain:  strings.TrimSpace(m.DomainInput.Value()),
 			MangaURL:      m.SelectedMangaURL,
 			ScanPath:      m.SelectedScanPath,
+			Continue:      m.ContinueCheckbox.Checked,
 			EbookFriendly: m.EbookCheckbox.Checked,
 			CBZ:           m.CBZCheckbox.Checked,
 			Layout:        app.DefaultLayout,

@@ -290,6 +290,41 @@ func TestOptionalSettingsToggleCBZ(t *testing.T) {
 	}
 }
 
+func TestOptionalSettingsToggleContinue(t *testing.T) {
+	m := InitialModel()
+	m.State = StateOptionalSettings
+	m.OptionalCursor = 2
+
+	next, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeySpace,
+		},
+		m,
+	)
+
+	if !next.ContinueCheckbox.Checked {
+		t.Fatal("continue checkbox was not toggled on")
+	}
+
+	// The setting is independent of the two output modes.
+	if next.CBZCheckbox.Checked || next.EbookCheckbox.Checked {
+		t.Error(
+			"continue must not touch the output mode checkboxes",
+		)
+	}
+
+	again, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeySpace,
+		},
+		next,
+	)
+
+	if again.ContinueCheckbox.Checked {
+		t.Fatal("continue checkbox was not toggled off")
+	}
+}
+
 func TestOptionalSettingsModesAreMutuallyExclusive(t *testing.T) {
 	m := InitialModel()
 	m.State = StateOptionalSettings

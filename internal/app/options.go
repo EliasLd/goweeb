@@ -42,6 +42,7 @@ func supportedProvidersList() string {
 type Options struct {
 	Slug          string
 	Selection     RangeSelection
+	Continue      bool
 	ScanDir       string
 	CustomDomain  string
 	Debug         bool
@@ -94,6 +95,11 @@ func configureUsage() {
 		fmt.Fprintln(out, "        1,5,10          multiple individual chapters")
 		fmt.Fprintln(out)
 
+		fmt.Fprintln(out, "  --continue")
+		fmt.Fprintln(out, "  -c")
+		fmt.Fprintln(out, "      Skip chapters already downloaded in the output directory")
+		fmt.Fprintln(out)
+
 		fmt.Fprintln(out, "Output:")
 		fmt.Fprintln(out, "  --scan-dir <directory>")
 		fmt.Fprintln(out, "  -d <directory>")
@@ -144,6 +150,7 @@ func ParseFlags() Options {
 		customDomain  string
 		debug         bool
 		layoutStr     string
+		cont          bool
 	)
 
 	// Chapter selection.
@@ -171,6 +178,19 @@ func ParseFlags() Options {
 		"r",
 		"",
 		"Shorthand for --range",
+	)
+
+	flag.BoolVar(
+		&cont,
+		"continue",
+		false,
+		"Skip chapters already downloaded in the output directory",
+	)
+	flag.BoolVar(
+		&cont,
+		"c",
+		false,
+		"Shorthand for --continue",
 	)
 
 	// Provider.
@@ -388,6 +408,7 @@ func ParseFlags() Options {
 	return Options{
 		Slug:          slug,
 		Selection:     selection,
+		Continue:      cont,
 		Source:        sourceName,
 		ScanDir:       ResolveOutputDir(scanDir),
 		CustomDomain:  customDomain,

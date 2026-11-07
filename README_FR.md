@@ -22,6 +22,7 @@ goweeb est un téléchargeur de mangas multiplateforme disponible à la fois sou
 - Prise en charge des numéros de chapitre entiers et décimaux.
 - Gestion automatique des chapitres indisponibles à l'intérieur des plages demandées.
 - Sortie en PDF, archives CBZ (avec métadonnées ComicInfo.xml) ou dossiers d'images adaptés aux liseuses.
+- `--continue` reprend là où vous en étiez, grâce à un manifeste par œuvre dont les enregistrements sont revérifiés sur disque à chaque exécution.
 - Nouvelles tentatives HTTP automatiques en cas de connexion instable ou d'erreurs temporaires côté serveur.
 - Domaines personnalisés et miroirs compatibles pour les fournisseurs.
 - Binaires natifs pour Linux, macOS et Windows.
@@ -219,6 +220,7 @@ Lorsque vous utilisez un titre sans guillemets, placez-le après toutes les opti
 | `--ebook-friendly` | — | Enregistrer les images des chapitres dans des dossiers `Chapter XXX/` au lieu de générer des PDF. |
 | `--cbz` | — | Enregistrer chaque chapitre sous forme d'archive CBZ (pages numérotées `001.jpg`, `002.jpg`, …) au lieu de générer des PDF. Ne peut pas être combinée avec `--ebook-friendly`. |
 | `--layout <scheme>` | — | Schéma de nommage des fichiers téléchargés. `series` (par défaut) regroupe les fichiers par œuvre avec des noms adaptés aux lecteurs ; `flat` conserve le nommage d'origine. Voir [Disposition de la sortie](#disposition-de-la-sortie). |
+| `--continue` | `-c` | Ignorer les chapitres déjà téléchargés dans le dossier de sortie. Voir [Reprendre les téléchargements](#reprendre-les-téléchargements). |
 | `--domain <url>` | `-u` | Remplacer le domaine par défaut du fournisseur sélectionné. |
 | `--debug` | — | Activer les logs de debug détaillés. |
 
@@ -286,6 +288,53 @@ scan/
 ```
 
 Le schéma `series` s'applique à tous les modes de sortie : archives CBZ et PDF, ainsi que les dossiers de chapitres en mode ebook-friendly.
+
+## Reprendre les téléchargements
+
+`--continue` saute les chapitres déjà téléchargés dans le dossier de sortie :
+
+```bash
+goweeb --source mangadex --all --continue "one piece"
+```
+
+Elle se combine avec les autres options de sélection : `--all --continue` récupère uniquement les chapitres manquants, et `--range 1-100 --continue` récupère uniquement les chapitres manquants dans cette plage.
+
+goweeb conserve un petit manifeste JSON par œuvre dans son dossier de sortie :
+
+```text
+scan/
+└── One Piece/
+    ├── One Piece - c001.cbz
+    ├── One Piece - c002.cbz
+    └── One Piece.goweeb.json
+```
+
+Le manifeste enregistre ce qui a été produit, dans quel format et à partir de quelle source :
+
+```json
+{
+  "version": 1,
+  "series": "One Piece",
+  "provider": "mangadex",
+  "scanPath": "en",
+  "workUrl": "https://mangadex.org/title/...",
+  "kind": "chapter",
+  "chapters": [
+    {
+      "number": "6.5",
+      "label": "Chapter 6.5",
+      "url": "https://mangadex.org/chapter/...",
+      "format": "cbz",
+      "file": "One Piece - c006.5.cbz",
+      "downloadedAt": "2026-11-07T12:00:00Z"
+    }
+  ]
+}
+```
+
+Avec le schéma `flat`, le manifeste se trouve à la racine du dossier de sortie, nommé d'après la série.
+
+Les fichiers sur disque restent la source de vérité : chaque exécution revérifie les chapitres enregistrés par rapport aux fichiers réels, si bien que les chapitres supprimés ou endommagés à la main — ou tronqués par un téléchargement interrompu — sont simplement retéléchargés. Un chapitre existant dans un format sera tout de même téléchargé dans un autre format s'il est demandé.
 
 ## Exemples
 

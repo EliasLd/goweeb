@@ -42,6 +42,8 @@ type Model struct {
 	EbookCheckbox Checkbox
 	CBZCheckbox   Checkbox
 
+	ContinueCheckbox Checkbox
+
 	SearchInput textinput.Model
 	SearchList  list.Model
 	SearchFocus searchFocus
