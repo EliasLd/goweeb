@@ -94,6 +94,11 @@ func InitialModel() Model {
 			Checked: false,
 		},
 
+		ExternalCoversCheckbox: Checkbox{
+			Label:   "External cover fallback (AniList)",
+			Checked: true,
+		},
+
 		SearchInput: searchInput,
 		SearchList:  newInteractiveSearchList(),
 		SearchFocus: searchFocusInput,

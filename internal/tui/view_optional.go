@@ -120,6 +120,36 @@ func viewOptionalSettings(m Model) string {
 
 	view.WriteString(continueDescription)
 
+	view.WriteString("\n")
+
+	externalCoversCheckbox :=
+		m.ExternalCoversCheckbox.View(
+			m.OptionalCursor == 3,
+		)
+
+	externalCoversCheckbox =
+		markMouseZone(
+			mouseZoneOptionalExternalCovers,
+			externalCoversCheckbox,
+		)
+
+	view.WriteString(
+		externalCoversCheckbox,
+	)
+
+	view.WriteString("\n")
+
+	externalCoversDescription := optionalDescriptionStyle.
+		Width(contentWidth).
+		Render(
+			"When no provider offers a cover, look for one in the " +
+				"AniList database. Covers are attached only when a " +
+				"single work matches the title exactly - ambiguous " +
+				"titles get no cover.",
+		)
+
+	view.WriteString(externalCoversDescription)
+
 	content := optionalViewStyle.Render(
 		view.String(),
 	)

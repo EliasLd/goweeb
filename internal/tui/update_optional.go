@@ -4,7 +4,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-const optionalSettingCount = 3
+const optionalSettingCount = 4
 
 func handleOptionalSettingsUpdate(
 	msg tea.KeyMsg,
@@ -46,6 +46,10 @@ func handleOptionalSettingsUpdate(
 		case 2:
 			// Independent of the output mode.
 			m.ContinueCheckbox.Toggle()
+
+		case 3:
+			// Independent of the output mode.
+			m.ExternalCoversCheckbox.Toggle()
 		}
 	}
 

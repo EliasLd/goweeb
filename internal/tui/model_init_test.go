@@ -66,7 +66,15 @@ func TestInitialModel(t *testing.T) {
 		m.CBZCheckbox.Checked ||
 		m.ContinueCheckbox.Checked {
 		t.Error(
-			"all checkboxes should be unchecked initially",
+			"mode and skip checkboxes should be unchecked initially",
+		)
+	}
+
+	// The external-cover fallback starts enabled, matching the CLI
+	// default allow.
+	if !m.ExternalCoversCheckbox.Checked {
+		t.Error(
+			"the external covers fallback should start enabled",
 		)
 	}
 

@@ -25,8 +25,10 @@ const (
 	mouseZoneOptionalEbook    = "optional-ebook"
 	mouseZoneOptionalCBZ      = "optional-cbz"
 	mouseZoneOptionalContinue = "optional-continue"
-	mouseZoneSearchInput      = "search-input"
-	mouseZoneSearchProvider   = "search-provider"
+
+	mouseZoneOptionalExternalCovers = "optional-external-covers"
+	mouseZoneSearchInput            = "search-input"
+	mouseZoneSearchProvider         = "search-provider"
 
 	selectionItemZonePrefix = "selection-item-"
 
@@ -477,6 +479,16 @@ func handleOptionalMouse(
 		)
 	}
 
+	if mouseZoneHit(
+		mouseZoneOptionalExternalCovers,
+		msg,
+	) {
+		return toggleOptionalSetting(
+			3,
+			m,
+		)
+	}
+
 	return m, nil, false
 }
 
@@ -676,6 +688,7 @@ func hoveredMouseZone(
 			mouseZoneOptionalEbook,
 			mouseZoneOptionalCBZ,
 			mouseZoneOptionalContinue,
+			mouseZoneOptionalExternalCovers,
 		)
 	}
 

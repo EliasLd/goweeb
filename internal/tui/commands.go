@@ -201,14 +201,17 @@ func fetchEntries(
 func startDownload(m Model) tea.Cmd {
 	return func() tea.Msg {
 		opts := app.Options{
-			Slug:          m.SearchInput.Value(),
-			Source:        m.SelectedMangaProvider,
-			Selection:     m.SelectedRange,
-			ScanDir:       app.ResolveOutputDir(m.DestinationDir),
-			CustomDomain:  strings.TrimSpace(m.DomainInput.Value()),
-			MangaURL:      m.SelectedMangaURL,
-			ScanPath:      m.SelectedScanPath,
-			Continue:      m.ContinueCheckbox.Checked,
+			Slug:         m.SearchInput.Value(),
+			Source:       m.SelectedMangaProvider,
+			Selection:    m.SelectedRange,
+			ScanDir:      app.ResolveOutputDir(m.DestinationDir),
+			CustomDomain: strings.TrimSpace(m.DomainInput.Value()),
+			MangaURL:     m.SelectedMangaURL,
+			ScanPath:     m.SelectedScanPath,
+			Continue:     m.ContinueCheckbox.Checked,
+
+			NoExternalCovers: !m.ExternalCoversCheckbox.Checked,
+
 			EbookFriendly: m.EbookCheckbox.Checked,
 			CBZ:           m.CBZCheckbox.Checked,
 			Layout:        app.DefaultLayout,
