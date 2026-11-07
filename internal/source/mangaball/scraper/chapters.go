@@ -1,7 +1,6 @@
 package mangaballscraper
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"sort"
@@ -22,49 +21,6 @@ type Chapter struct {
 	Number common.ChapterNumber
 	Label  string
 	URL    string
-}
-
-type titleDetailResponse struct {
-	Data struct {
-		Name string `json:"name"`
-	} `json:"data"`
-}
-
-// GetTitleName fetches a title's display name. The chapter listing
-// carries no title, so this is a light dedicated call.
-func GetTitleName(
-	domain string,
-	titleID string,
-	log *logger.Logger,
-) (string, error) {
-	body, err := apiPost(
-		domain,
-		"title detail",
-		titleDetailPath,
-		map[string]string{"title_id": titleID},
-		log,
-	)
-	if err != nil {
-		return "", err
-	}
-
-	var response titleDetailResponse
-	if err := json.Unmarshal(body, &response); err != nil {
-		return "", fmt.Errorf(
-			"failed to decode MangaBall title detail: %w",
-			err,
-		)
-	}
-
-	name := strings.TrimSpace(response.Data.Name)
-	if name == "" {
-		return "", fmt.Errorf(
-			"MangaBall title %s has no name",
-			titleID,
-		)
-	}
-
-	return name, nil
 }
 
 // ListChapters returns the complete chapter list of one language,

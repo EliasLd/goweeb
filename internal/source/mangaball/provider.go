@@ -49,12 +49,35 @@ func (p *Provider) Search(
 
 	for _, result := range results {
 		out = append(out, sourcetypes.SearchResult{
-			Title: result.Title,
-			URL:   result.URL,
+			Title:    result.Title,
+			URL:      result.URL,
+			CoverURL: result.CoverURL,
 		})
 	}
 
 	return out, nil
+}
+
+// WorkMetadata reads the title detail document the listing flow
+// already relies on, deriving the metadata parts it also publishes.
+func (p *Provider) WorkMetadata(
+	workURL string,
+	log *logger.Logger,
+) (sourcetypes.Metadata, error) {
+	titleID, err := mangaballscraper.TitleIDFromURL(workURL)
+	if err != nil {
+		return sourcetypes.Metadata{}, err
+	}
+
+	detail, err := mangaballscraper.GetTitleDetail(p.domain, titleID, log)
+	if err != nil {
+		return sourcetypes.Metadata{}, fmt.Errorf(
+			"failed to get MangaBall work metadata: %w",
+			err,
+		)
+	}
+
+	return detail.Metadata, nil
 }
 
 // MangaBall exposes one chapter list per language; each language's
