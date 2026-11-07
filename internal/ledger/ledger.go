@@ -15,9 +15,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"slices"
 	"sort"
+	"strings"
 
 	"github.com/EliasLd/goweeb/internal/source/common"
+	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 )
 
 // Version is the schema version written into every manifest.
@@ -61,14 +65,20 @@ type Chapter struct {
 // header carries the work identity the filesystem cannot infer and
 // the library will rely on later to re-resolve the chapter list; the
 // chapter list is a cache that FindArtifact reconciles on disk.
+//
+// The optional metadata block is the work's description cache: it is
+// additive (works written by older versions load the same), and the
+// coverFile field names the cached cover image next to the document.
 type Manifest struct {
-	Version  int       `json:"version"`
-	Series   string    `json:"series"`
-	Provider string    `json:"provider"`
-	ScanPath string    `json:"scanPath"`
-	WorkURL  string    `json:"workUrl"`
-	Kind     Kind      `json:"kind"`
-	Chapters []Chapter `json:"chapters"`
+	Version   int                   `json:"version"`
+	Series    string                `json:"series"`
+	Provider  string                `json:"provider"`
+	ScanPath  string                `json:"scanPath"`
+	WorkURL   string                `json:"workUrl"`
+	Kind      Kind                  `json:"kind"`
+	Metadata  *sourcetypes.Metadata `json:"metadata,omitempty"`
+	CoverFile string                `json:"coverFile,omitempty"`
+	Chapters  []Chapter             `json:"chapters"`
 }
 
 // Identity describes the work a ledger belongs to. It is stamped
@@ -151,6 +161,59 @@ func nonNil(chapters []Chapter) []Chapter {
 	}
 
 	return chapters
+}
+
+// SetMetadata stores the work's description cache. Only lookups
+// that produced something are kept: empty metadata leaves the block
+// absent, so a later richer lookup can still win. Reports whether
+// the manifest changed.
+func (l *Ledger) SetMetadata(metadata sourcetypes.Metadata) bool {
+	if !metadata.Known() {
+		return false
+	}
+
+	if l.manifest.Metadata != nil &&
+		metadataEqual(*l.manifest.Metadata, metadata) {
+		return false
+	}
+
+	l.manifest.Metadata = &metadata
+
+	return true
+}
+
+// metadataEqual compares the description caches field by field.
+func metadataEqual(
+	a sourcetypes.Metadata,
+	b sourcetypes.Metadata,
+) bool {
+	return a.Author == b.Author &&
+		a.Artist == b.Artist &&
+		a.CoverURL == b.CoverURL &&
+		a.Description == b.Description &&
+		a.OriginalLanguage == b.OriginalLanguage &&
+		a.Year == b.Year &&
+		slices.Equal(a.Tags, b.Tags)
+}
+
+// SetCoverFile records the cached cover image file name, or clears
+// the record when the name is empty. Reports whether the manifest
+// changed.
+func (l *Ledger) SetCoverFile(name string) bool {
+	name = filepath.Base(strings.TrimSpace(name))
+
+	if name == l.manifest.CoverFile {
+		return false
+	}
+
+	l.manifest.CoverFile = name
+
+	return true
+}
+
+// Metadata returns the stored description cache, nil when unknown.
+func (l *Ledger) Metadata() *sourcetypes.Metadata {
+	return l.manifest.Metadata
 }
 
 // Record merges one completed artifact: an entry for the same number
