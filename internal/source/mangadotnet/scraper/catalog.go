@@ -17,6 +17,30 @@ type MangaResult struct {
 	Title string
 }
 
+// flexBool decodes the JSON flags the search API serves either as
+// 0/1 numbers or as true/false booleans. The site drifted between
+// the two shapes over time, so the field type is defined by a
+// custom decoder that refuses nothing the API sends.
+type flexBool bool
+
+func (f *flexBool) UnmarshalJSON(data []byte) error {
+	value := strings.Trim(string(data), "\" ")
+
+	switch value {
+	case "true", "1":
+		*f = true
+	case "false", "0", "null", "":
+		*f = false
+	default:
+		return fmt.Errorf(
+			"unexpected flag value %s",
+			data,
+		)
+	}
+
+	return nil
+}
+
 type searchResponse struct {
 	MangaList []searchItem `json:"manga_list"`
 }
@@ -24,7 +48,7 @@ type searchResponse struct {
 type searchItem struct {
 	ID      json.Number `json:"id"`
 	Title   string      `json:"title"`
-	IsAdult int         `json:"is_adult"`
+	IsAdult flexBool    `json:"is_adult"`
 }
 
 // SearchCatalog queries a manga by name. The API pagination sends
@@ -62,7 +86,7 @@ func SearchCatalog(
 		// Adult doujinshi are served by the API by default and are
 		// flagged with is_adult: 1. Keep a local safeguard on top of
 		// it, same as the other providers.
-		if item.IsAdult != 0 {
+		if item.IsAdult {
 			continue
 		}
 
