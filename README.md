@@ -22,6 +22,7 @@ goweeb is a cross-platform manga downloader available as both an interactive **T
 - Integer and decimal chapter support.
 - Automatic handling of unavailable chapters inside requested ranges.
 - PDF output, CBZ archives (with ComicInfo.xml metadata) or ebook-friendly image folders.
+- `--continue` resumes where you left off, backed by a per-work manifest whose records are re-verified against the files on disk on every run.
 - Automatic HTTP retries for unstable connections and temporary server failures.
 - Custom provider domains and compatible mirrors.
 - Native binaries for Linux, macOS and Windows.
@@ -219,6 +220,7 @@ When using an unquoted title, place it after all CLI options.
 | `--ebook-friendly` | — | Store chapter images in `Chapter XXX/` folders instead of generating PDFs. |
 | `--cbz` | — | Save each chapter as a CBZ archive (pages numbered `001.jpg`, `002.jpg`, …) instead of generating PDFs. Cannot be combined with `--ebook-friendly`. |
 | `--layout <scheme>` | — | Naming scheme of downloaded files. `series` (default) groups files per work with reader-friendly names; `flat` keeps the original naming. See [Output layout](#output-layout). |
+| `--continue` | `-c` | Skip chapters already downloaded in the output directory. See [Resuming downloads](#resuming-downloads). |
 | `--domain <url>` | `-u` | Override the selected provider's default domain. |
 | `--debug` | — | Enable verbose debug logging. |
 
@@ -286,6 +288,53 @@ scan/
 ```
 
 The `series` layout applies to every output mode: CBZ and PDF archives, and ebook-friendly chapters folders.
+
+## Resuming downloads
+
+`--continue` skips chapters already downloaded in the output directory:
+
+```bash
+goweeb --source mangadex --all --continue "one piece"
+```
+
+It composes with the other selection options: `--all --continue` fetches only the missing chapters, and `--range 1-100 --continue` fetches only the missing chapters within that range.
+
+goweeb keeps a small JSON manifest per work inside its output folder:
+
+```text
+scan/
+└── One Piece/
+    ├── One Piece - c001.cbz
+    ├── One Piece - c002.cbz
+    └── One Piece.goweeb.json
+```
+
+The manifest records what was produced, in which format, from where:
+
+```json
+{
+  "version": 1,
+  "series": "One Piece",
+  "provider": "mangadex",
+  "scanPath": "en",
+  "workUrl": "https://mangadex.org/title/...",
+  "kind": "chapter",
+  "chapters": [
+    {
+      "number": "6.5",
+      "label": "Chapter 6.5",
+      "url": "https://mangadex.org/chapter/...",
+      "format": "cbz",
+      "file": "One Piece - c006.5.cbz",
+      "downloadedAt": "2026-11-07T12:00:00Z"
+    }
+  ]
+}
+```
+
+In the flat layout, the manifest sits at the output root, keyed by the series name.
+
+The files on disk stay the source of truth: each run re-checks the recorded chapters against the actual artifacts, so chapters deleted or damaged by hand — or truncated by an interrupted download — are simply downloaded again. A chapter that exists in one format still downloads in another format when requested.
 
 ## Examples
 
