@@ -4,12 +4,11 @@
 // lookup problem degrades to empty metadata with a logged reason.
 //
 // Cover ladder, in order:
-//  1. the work's own provider (site data only),
-//  2. other goweeb providers' search rows, matched by exact title —
-//     first-party data, no deep crawl,
-//  3. an external database (AniList), attached only on one exact
+//  1. the work's own provider (site data only, identity anchored
+//     by the provider-canonical work URL),
+//  2. an external database (AniList), attached only on one exact
 //     and unambiguous title match, opt-out,
-//  4. nothing — consumers (web UI, e-reader feeds) render a
+//  3. nothing — consumers (web UI, e-reader feeds) render a
 //     generated placeholder themselves when no cover file exists.
 //
 // A wrong cover is worse than no cover: ambiguous matches are
@@ -29,11 +28,9 @@ import (
 // wraps the layers' reasons.
 var ErrNoMetadata = errors.New("no work metadata found")
 
-// Service consults the providers and the external database. The
-// cross-provider list is optional: nil disables second-layer
-// lookups. IncludeExternal gates the external database layer.
+// Service consults the work's own provider and the external
+// database. IncludeExternal gates the external database layer.
 type Service struct {
-	CrossProviders  []sourcetypes.Provider
 	IncludeExternal bool
 }
 
@@ -62,10 +59,6 @@ func (s Service) Fetch(
 	trace := reasonCollector{log: req.log()}
 
 	resolved := s.fromPrimaryProvider(req, &trace)
-
-	if resolved.CoverURL == "" {
-		s.fromCrossProviders(req, &resolved, &trace)
-	}
 
 	if s.IncludeExternal {
 		s.fromExternal(req, &resolved, &trace)
@@ -147,59 +140,6 @@ func (s Service) fromPrimaryProvider(
 	resolved.CoverSource = req.Provider.Name()
 
 	return resolved
-}
-
-// fromCrossProviders fills a missing cover from other goweeb
-// providers: a search row is accepted only when its title matches
-// the work exactly, and the first covering provider ends the loop.
-func (s Service) fromCrossProviders(
-	req Request,
-	resolved *sourcetypes.Metadata,
-	trace *reasonCollector,
-) {
-	query := normalizeTitle(req.WorkTitle)
-
-	for _, cross := range s.CrossProviders {
-		if cross.Name() == req.Provider.Name() {
-			continue
-		}
-
-		rows, err := cross.Search(req.WorkTitle, req.log())
-		if err != nil {
-			trace.addf(
-				"cross lookup on %s failed: %v",
-				cross.Name(),
-				err,
-			)
-
-			continue
-		}
-
-		for _, row := range rows {
-			if normalizeTitle(row.Title) != query {
-				continue
-			}
-
-			if row.CoverURL == "" {
-				trace.addf(
-					"%s matches the title but carries no cover",
-					cross.Name(),
-				)
-
-				break
-			}
-
-			resolved.CoverURL = row.CoverURL
-			resolved.CoverSource = "cross:" + cross.Name()
-
-			trace.addf(
-				"cover matched on %s by exact title",
-				cross.Name(),
-			)
-
-			return
-		}
-	}
 }
 
 // fromExternal consults the external database only under strict

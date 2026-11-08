@@ -7,7 +7,6 @@ import (
 	"github.com/EliasLd/goweeb/internal/ledger"
 	"github.com/EliasLd/goweeb/internal/logger"
 	"github.com/EliasLd/goweeb/internal/metadata"
-	"github.com/EliasLd/goweeb/internal/source"
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 )
 
@@ -171,43 +170,11 @@ func coverFilePresent(coverBase string, name string) bool {
 	return err == nil && !info.IsDir() && info.Size() > 0
 }
 
-// newMetadataService assembles the ladder: every other registered
-// provider as a cross-cover candidate (default domains), and the
-// external database layer according to the run's options.
-func newMetadataService(
-	primary string,
-	includeExternal bool,
-	log *logger.Logger,
-) metadata.Service {
-	cross := make(
-		[]sourcetypes.Provider,
-		0,
-		len(source.AvailableProviders()),
-	)
-
-	for _, providerInfo := range source.AvailableProviders() {
-		if providerInfo.ID == primary {
-			continue
-		}
-
-		candidate, err := source.New(providerInfo.ID, "")
-		if err != nil {
-			// A registry entry that cannot be built never blocks
-			// the ladder.
-			log.Debug(
-				"Cross-cover candidate %s unavailable: %v\n",
-				providerInfo.ID,
-				err,
-			)
-
-			continue
-		}
-
-		cross = append(cross, candidate)
-	}
-
+// newMetadataService assembles the ladder: the external database
+// layer according to the run's options. The provider's own first-party
+// data needs no assembly.
+func newMetadataService(includeExternal bool) metadata.Service {
 	return metadata.Service{
-		CrossProviders:  cross,
 		IncludeExternal: includeExternal,
 	}
 }

@@ -76,11 +76,7 @@ func resolveWorkMetadata(
 	led *ledger.Ledger,
 	log *logger.Logger,
 ) sourcetypes.Metadata {
-	service := newMetadataService(
-		opts.Source,
-		!opts.NoExternalCovers,
-		log,
-	)
+	service := newMetadataService(!opts.NoExternalCovers)
 
 	return fetchWorkMetadata(
 		service,

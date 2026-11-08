@@ -46,7 +46,7 @@ func TestLookupAniListUniqueEnglishMatch(t *testing.T) {
 	serveFixturePointingAt(t, `{"data":{"page":{"media":[
 		{"title": {"romaji": "Sokkupchingu Complex", "english": "Childhood Friend Complex", "native": "소꿉친구 컴플렉스"},
 		 "synonyms": ["Other reading"],
-		 "coverImage": {"large": "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx97816.jpg"},
+		 "coverImage": {"extraLarge": "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx97816.jpg"},
 		 "description": "Real description<br><br>(Source: Official)",
 		 "countryOfOrigin": "KR",
 		 "startDate": {"year": 2014},
@@ -86,9 +86,9 @@ func TestLookupAniListAmbiguousTitlesRefuse(t *testing.T) {
 	serveFixturePointingAt(t, `{"data":{"page":{"media":[
 		{"title": {"romaji": "Otonari Complex", "english": "Otonari Complex", "native": "おとなりコンプレックス"},
 		 "synonyms": ["Childhood Friend Complex"],
-		 "coverImage": {"large": "https://s4.anilist.co/wrong.jpg"}},
+		 "coverImage": {"extraLarge": "https://s4.anilist.co/wrong.jpg"}},
 		{"title": {"romaji": "Sokkupchingu Complex", "english": "Childhood Friend Complex"},
-		 "coverImage": {"large": "https://s4.anilist.co/right.jpg"}}
+		 "coverImage": {"extraLarge": "https://s4.anilist.co/right.jpg"}}
 	]}}}`, http.StatusOK)
 
 	_, err := lookupAniList(
@@ -108,7 +108,7 @@ func TestLookupAniListUniqueSynonymMatch(t *testing.T) {
 	serveFixturePointingAt(t, `{"data":{"page":{"media":[
 		{"title": {"romaji": "Hitoribocchi no Kusuriyubi", "english": "Solitary Finger"},
 		 "synonyms": ["Berserk of the Lonely"],
-		 "coverImage": {"large": "https://s4.anilist.co/cover.jpg"}}
+		 "coverImage": {"extraLarge": "https://s4.anilist.co/cover.jpg"}}
 	]}}}`, http.StatusOK)
 
 	match, err := lookupAniList(

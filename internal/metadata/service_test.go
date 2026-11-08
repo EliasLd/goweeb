@@ -12,14 +12,12 @@ import (
 )
 
 // stubProvider implements the provider contract enough for the
-// ladder tests: a name plus, optionally, rows returned by Search and
-// a metadata payload (present only via the optional interface).
+// ladder tests: a name plus an optional metadata payload (present
+// only via the optional interface).
 type stubProvider struct {
-	name      string
-	rows      []sourcetypes.SearchResult
-	searchErr error
-	metadata  sourcetypes.Metadata
-	metaErr   error
+	name     string
+	metadata sourcetypes.Metadata
+	metaErr  error
 }
 
 func (s *stubProvider) Name() string { return s.name }
@@ -28,11 +26,7 @@ func (s *stubProvider) Search(
 	_ string,
 	_ *logger.Logger,
 ) ([]sourcetypes.SearchResult, error) {
-	if s.searchErr != nil {
-		return nil, s.searchErr
-	}
-
-	return s.rows, nil
+	return nil, nil
 }
 
 func (s *stubProvider) ListScanPaths(
@@ -151,94 +145,6 @@ func TestFetchProviderWithoutCapability(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "does not expose work metadata") {
 		t.Errorf("error = %s, want the capability reason", err.Error())
-	}
-}
-
-func TestFetchCrossCoverByExactTitle(t *testing.T) {
-	primary := &stubProvider{name: "plainprovider"}
-
-	cross := &stubProvider{
-		name: "crossprovider",
-		rows: []sourcetypes.SearchResult{
-			{Title: "Berserk: Volume 1"},
-			{
-				Title:    "Berserk",
-				CoverURL: "https://example.com/right-cover.jpg",
-			},
-		},
-	}
-
-	service := Service{CrossProviders: []sourcetypes.Provider{cross}}
-
-	req := testRequestLog(t)
-	req.Provider = primary
-
-	resolved, err := service.Fetch(req)
-	if err != nil {
-		t.Fatalf("Fetch() error: %v", err)
-	}
-
-	if resolved.CoverURL != "https://example.com/right-cover.jpg" {
-		t.Errorf(
-			"CoverURL = %q, want the cross-provider cover",
-			resolved.CoverURL,
-		)
-	}
-
-	if resolved.CoverSource != "cross:crossprovider" {
-		t.Errorf(
-			"CoverSource = %q, want the cross stamp",
-			resolved.CoverSource,
-		)
-	}
-
-	if resolved.Author != "" {
-		t.Error("expected no text fields from the cross layer")
-	}
-}
-
-func TestFetchCrossRefusesFuzzyTitles(t *testing.T) {
-	primary := &stubProvider{name: "plainprovider"}
-
-	cross := &stubProvider{
-		name: "crossprovider",
-		rows: []sourcetypes.SearchResult{
-			{Title: "Berserk of Gluttony"},
-			{Title: "Otonari Complex"},
-		},
-	}
-
-	service := Service{CrossProviders: []sourcetypes.Provider{cross}}
-
-	req := testRequestLog(t)
-	req.Provider = primary
-
-	_, err := service.Fetch(req)
-	if err == nil {
-		t.Fatal("expected no metadata: no cross row matches exactly")
-	}
-}
-
-func TestFetchCrossSearchFailureIsNotFatal(t *testing.T) {
-	primary := &stubProvider{name: "plainprovider"}
-
-	cross := &stubProvider{
-		name:      "crossprovider",
-		searchErr: fmt.Errorf("site unavailable"),
-	}
-
-	service := Service{CrossProviders: []sourcetypes.Provider{cross}}
-
-	req := testRequestLog(t)
-	req.Provider = primary
-
-	_, err := service.Fetch(req)
-	if err == nil {
-		t.Fatal("expected the empty-metadata error with the layer reason")
-	}
-
-	if !strings.Contains(err.Error(), "site unavailable") {
-		t.Errorf("error = %s, want the layer reason included", err.Error())
 	}
 }
 
@@ -370,7 +276,7 @@ func serveExternalMatch(t *testing.T) {
 		{
 			"title": {"romaji": "Sokkupchingu Complex", "english": "Childhood Friend Complex", "native": "소꿉친구 컴플렉스"},
 			"synonyms": ["Other reading"],
-			"coverImage": {"large": "https://s4.anilist.co/cover-real.jpg"},
+			"coverImage": {"extraLarge": "https://s4.anilist.co/cover-real.jpg"},
 			"description": "Ha-neul and Mincheol have been childhood friends for all of their lives.<br><br>(Source: Staff)",
 			"countryOfOrigin": "KR",
 			"startDate": {"year": 2024},

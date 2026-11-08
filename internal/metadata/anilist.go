@@ -31,7 +31,7 @@ const anilistSearchQuery = `query ($search: String) {
     media(search: $search, type: MANGA) {
       title { romaji english native }
       synonyms
-      coverImage { large }
+      coverImage { extraLarge }
       description
       countryOfOrigin
       startDate { year }
@@ -51,7 +51,7 @@ type anilistMatch struct {
 	} `json:"title"`
 	Synonyms   []string `json:"synonyms"`
 	CoverImage struct {
-		Large string `json:"large"`
+		ExtraLarge string `json:"extraLarge"`
 	} `json:"coverImage"`
 	Description     string `json:"description"`
 	CountryOfOrigin string `json:"countryOfOrigin"`
@@ -74,7 +74,7 @@ type anilistStaffEdge struct {
 }
 
 func (m anilistMatch) coverImageURL() string {
-	return strings.TrimSpace(m.CoverImage.Large)
+	return strings.TrimSpace(m.CoverImage.ExtraLarge)
 }
 
 func (m anilistMatch) startDateYear() int {

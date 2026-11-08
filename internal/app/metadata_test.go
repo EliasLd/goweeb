@@ -246,7 +246,7 @@ func TestFetchWorkMetadataDownloadsCover(t *testing.T) {
 		payload: sourcetypes.Metadata{
 			Author:      "Kentarou",
 			CoverURL:    server.URL + "/covers/81e1c82d.jpg",
-			CoverSource: "cross:mangadex",
+			CoverSource: "fakeprovider",
 		},
 	}
 
