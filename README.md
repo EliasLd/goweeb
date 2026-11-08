@@ -23,7 +23,7 @@ goweeb is a cross-platform manga downloader available as both an interactive **T
 - Automatic handling of unavailable chapters inside requested ranges.
 - PDF output, CBZ archives (with ComicInfo.xml metadata) or ebook-friendly image folders.
 - `--continue` resumes where you left off, backed by a per-work manifest whose records are re-verified against the files on disk on every run.
-- Work metadata: author, cover, description, tags and year attached to ComicInfo.xml and the manifest when the provider publishes them, with a provider → cross-provider → AniList cover fallback.
+- Work metadata: author, cover, description, tags and year attached to ComicInfo.xml and the manifest when the provider publishes them, with a provider → AniList cover fallback.
 - Automatic HTTP retries for unstable connections and temporary server failures.
 - Custom provider domains and compatible mirrors.
 - Native binaries for Linux, macOS and Windows.
@@ -367,9 +367,8 @@ scan/
 When a provider offers little data, a work cover falls back through a ladder, in order:
 
 1. the work's own provider (site data only),
-2. the other providers goweeb serves, matched by exact title,
-3. the [AniList](https://anilist.co) database — `--no-external-covers` disables this layer,
-4. a generated placeholder, rendered by consumers (the future web interface) instead of being written to disk.
+2. the [AniList](https://anilist.co) database — `--no-external-covers` disables this layer,
+3. a generated placeholder, rendered by consumers (the future web interface) instead of being written to disk.
 
 The guardrail is deliberate: a cover (and any metadata) attaches only on an exact, unambiguous title match; titles matching several works get nothing — a wrong cover is worse than no cover.
 

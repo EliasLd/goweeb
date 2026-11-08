@@ -23,7 +23,7 @@ goweeb est un téléchargeur de mangas multiplateforme disponible à la fois sou
 - Gestion automatique des chapitres indisponibles à l'intérieur des plages demandées.
 - Sortie en PDF, archives CBZ (avec métadonnées ComicInfo.xml) ou dossiers d'images adaptés aux liseuses.
 - `--continue` reprend là où vous en étiez, grâce à un manifeste par œuvre dont les enregistrements sont revérifiés sur disque à chaque exécution.
-- Métadonnées par œuvre : auteur, couverture, description, tags et année attachées au ComicInfo.xml et au manifeste quand le fournisseur les publie, avec une recherche de couverture dégradée (fournisseur → autres fournisseurs → AniList).
+- Métadonnées par œuvre : auteur, couverture, description, tags et année attachées au ComicInfo.xml et au manifeste quand le fournisseur les publie, avec une recherche de couverture dégradée (fournisseur → AniList).
 - Nouvelles tentatives HTTP automatiques en cas de connexion instable ou d'erreurs temporaires côté serveur.
 - Domaines personnalisés et miroirs compatibles pour les fournisseurs.
 - Binaires natifs pour Linux, macOS et Windows.
@@ -367,9 +367,8 @@ scan/
 Quand un fournisseur publie peu de données, une couverture passe par une recherche dégradée, dans l'ordre :
 
 1. le fournisseur de l'œuvre elle-même (données du site uniquement),
-2. les autres fournisseurs servis par goweeb, appariés par titre exact,
-3. la base de données [AniList](https://anilist.co) — `--no-external-covers` désactive cette couche,
-4. une couverture générée, rendue par les consommateurs (la future interface web) plutôt qu'écrite sur disque.
+2. la base de données [AniList](https://anilist.co) — `--no-external-covers` désactive cette couche,
+3. une couverture générée, rendue par les consommateurs (la future interface web) plutôt qu'écrite sur disque.
 
 La garde est délibérée : une couverture (et toute métadonnée) ne s'attache qu'après un appariement de titre exact et non ambigu ; un titre correspondant à plusieurs œuvres n'obtient rien — une mauvaise couverture est pire que pas de couverture.
 
