@@ -14,6 +14,13 @@
 // content shape. Per-provider queries live in liveQueries and are
 // maintenance data; when a provider's first hit makes this check
 // false-alarm, tune the query.
+//
+// An edge that answers with a bot-protection challenge instead of
+// the API (Cloudflare's managed "Just a moment…" page) says nothing
+// about the provider: the challenge is unanswerable by design and
+// keyed to the requester's IP reputation. Those subtests skip with
+// a short reason (see edgeChallenge in edge_test.go) instead of
+// failing the nightly red for something no HTTP client can answer.
 package e2e
 
 import (
@@ -95,7 +102,7 @@ func providerHealthCheck(
 
 	results, err := provider.Search(query, log)
 	if err != nil {
-		t.Fatalf("search %q: %v", query, err)
+		liveFailure(t, fmt.Sprintf("search %q", query), err)
 	}
 
 	if len(results) == 0 {
@@ -106,7 +113,7 @@ func providerHealthCheck(
 
 	scanPaths, err := provider.ListScanPaths(workURL, log)
 	if err != nil {
-		t.Fatalf("list scan paths: %v", err)
+		liveFailure(t, "list scan paths", err)
 	}
 
 	if len(scanPaths) == 0 {
@@ -117,7 +124,7 @@ func providerHealthCheck(
 
 	_, entries, err := provider.ListEntries(workURL, scanPath, log)
 	if err != nil {
-		t.Fatalf("list entries: %v", err)
+		liveFailure(t, "list entries", err)
 	}
 
 	if len(entries) == 0 {
@@ -239,4 +246,17 @@ func assertRealPDF(t *testing.T, path string) {
 			magic,
 		)
 	}
+}
+
+// liveFailure reports a failed live call: when the edge blocked the
+// request itself the subtest skips — from that answer nothing can be
+// concluded about the provider — and any other failure fails.
+func liveFailure(t *testing.T, context string, err error) {
+	t.Helper()
+
+	if edgeChallenge(err) {
+		t.Skipf("%s: %v", context, shortEdgeMessage(err))
+	}
+
+	t.Fatalf("%s: %v", context, err)
 }
