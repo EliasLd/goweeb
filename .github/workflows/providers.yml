@@ -35,23 +35,23 @@ jobs:
           - mangadex
           - mangadotnet
           - mangavyvy
-        # Weebcentral and mangaball are tolerated jobs (yellow, not
-        # red): only failures WITHOUT the flag mean "a provider
-        # broke". Both are Cloudflare-protected and their edge
-        # refuses runner/datacenter IPs before the site's app runs —
-        # the runner can never prove these providers wrong:
-        # - weebcentral: hard IP-reputation reject (403 in ~0.1s). A
-        #   browser header profile experiment did not convince the
-        #   edge.
-        # - mangaball: a managed "Just a moment…" JS challenge on the
-        #   API routes, which no HTTP client can answer by design.
-        # Both are verified green from residential IPs (local live
-        # checks + manual testing). Revisit on evidence: if one stops
-        # challenging runner IPs, move it back to a plain entry.
+        # Weebcentral is a tolerated job (yellow, not red): its edge
+        # rejects runner/datacenter IPs before the site's app runs —
+        # a hard IP-reputation reject (403 in ~0.1s) with no detectable
+        # challenge page in the response, so the runner can never
+        # prove the provider wrong and no detector can skip it.
+        # Verified green from residential IPs (local live checks +
+        # manual testing).
+        #
+        # Mangaball needs no tolerance in this include: its managed
+        # "Just a moment…" challenge is recognized by the suite
+        # itself (edgeChallenge in internal/e2e), so its check skips
+        # cleanly green whenever the runner IP is blocked. Any other
+        # mangaball failure is therefore real information worth
+        # seeing red. Revisit on evidence: if an edge behavior
+        # changes, adjust the detector or move providers here.
         include:
           - provider: weebcentral
-            edge_block_expected: true
-          - provider: mangaball
             edge_block_expected: true
 
     steps:
