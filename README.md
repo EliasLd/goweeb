@@ -23,6 +23,7 @@ goweeb is a cross-platform manga downloader available as both an interactive **T
 - Automatic handling of unavailable chapters inside requested ranges.
 - PDF output, CBZ archives (with ComicInfo.xml metadata) or ebook-friendly image folders.
 - `--continue` resumes where you left off, backed by a per-work manifest whose records are re-verified against the files on disk on every run.
+- Work metadata: author, cover, description, tags and year attached to ComicInfo.xml and the manifest when the provider publishes them, with a provider → AniList cover fallback.
 - Automatic HTTP retries for unstable connections and temporary server failures.
 - Custom provider domains and compatible mirrors.
 - Native binaries for Linux, macOS and Windows.
@@ -221,6 +222,7 @@ When using an unquoted title, place it after all CLI options.
 | `--cbz` | — | Save each chapter as a CBZ archive (pages numbered `001.jpg`, `002.jpg`, …) instead of generating PDFs. Cannot be combined with `--ebook-friendly`. |
 | `--layout <scheme>` | — | Naming scheme of downloaded files. `series` (default) groups files per work with reader-friendly names; `flat` keeps the original naming. See [Output layout](#output-layout). |
 | `--continue` | `-c` | Skip chapters already downloaded in the output directory. See [Resuming downloads](#resuming-downloads). |
+| `--no-external-covers` | — | Disable the external database fallback (AniList) when no provider carries a work cover. See [Work metadata](#work-metadata). |
 | `--domain <url>` | `-u` | Override the selected provider's default domain. |
 | `--debug` | — | Enable verbose debug logging. |
 
@@ -309,7 +311,7 @@ scan/
     └── One Piece.goweeb.json
 ```
 
-The manifest records what was produced, in which format, from where:
+The manifest records what was produced, in which format, from where — plus the work metadata when a lookup found some:
 
 ```json
 {
@@ -319,6 +321,16 @@ The manifest records what was produced, in which format, from where:
   "scanPath": "en",
   "workUrl": "https://mangadex.org/title/...",
   "kind": "chapter",
+  "metadata": {
+    "author": "Eiichiro Oda",
+    "coverUrl": "https://uploads.mangadex.org/covers/.../cover.jpg",
+    "coverSource": "mangadex",
+    "description": "...",
+    "tags": ["Action", "Adventure", "Comedy"],
+    "originalLanguage": "ja",
+    "year": 1997
+  },
+  "coverFile": "One Piece.cover.jpg",
   "chapters": [
     {
       "number": "6.5",
@@ -335,6 +347,32 @@ The manifest records what was produced, in which format, from where:
 In the flat layout, the manifest sits at the output root, keyed by the series name.
 
 The files on disk stay the source of truth: each run re-checks the recorded chapters against the actual artifacts, so chapters deleted or damaged by hand — or truncated by an interrupted download — are simply downloaded again. A chapter that exists in one format still downloads in another format when requested.
+
+Manifests are written on every download run (not only with `--continue`): the chapter records and the work metadata keep the folders self-describing for other tools, such as the coming web interface.
+
+## Work metadata
+
+goweeb describes the works it downloads — author, cover, description, tags, year — when the provider publishes them. The data enriches the CBZ `ComicInfo.xml` (Writer, Penciller, Genre, Description, Year, LanguageISO) and is cached in the manifest, so every downloaded folder stays self-describing.
+
+Covers land next to the manifest:
+
+```text
+scan/
+└── One Piece/
+    ├── One Piece.cover.jpg
+    ├── One Piece - c001.cbz
+    └── One Piece.goweeb.json
+```
+
+When a provider offers little data, a work cover falls back through a ladder, in order:
+
+1. the work's own provider (site data only),
+2. the [AniList](https://anilist.co) database — `--no-external-covers` disables this layer,
+3. a generated placeholder, rendered by consumers (the future web interface) instead of being written to disk.
+
+The guardrail is deliberate: a cover (and any metadata) attaches only on an exact, unambiguous title match; titles matching several works get nothing — a wrong cover is worse than no cover.
+
+Lookups never fail a download: any failure degrades to empty metadata, logged, and a later run can fill it in. Results are cached — a work with recorded metadata performs no metadata calls on re-runs.
 
 ## Examples
 

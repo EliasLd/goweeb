@@ -16,6 +16,10 @@ const (
 type MangaResult struct {
 	Title string
 	URL   string
+
+	// Cover mirror address carried by the search row, empty when
+	// the row lists no usable mirror.
+	CoverURL string
 }
 
 type searchRequest struct {
@@ -28,9 +32,10 @@ type searchResponse struct {
 }
 
 type searchTitle struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Slug string `json:"slug"`
+	ID    string       `json:"id"`
+	Name  string       `json:"name"`
+	Slug  string       `json:"slug"`
+	Image coverPayload `json:"image"`
 }
 
 // SearchCatalog queries the MangaBall search engine and returns the
@@ -105,6 +110,10 @@ func SearchCatalog(
 		results = append(results, MangaResult{
 			Title: name,
 			URL:   url,
+
+			// The search rows list crawler CDNs for the cover;
+			// the mangadex mirror is directly hotlinkable.
+			CoverURL: coverFromImage(title.Image),
 		})
 	}
 

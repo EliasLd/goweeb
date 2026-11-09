@@ -13,16 +13,24 @@ const MangaYes = "Yes"
 
 // ComicInfo is the subset of the ComicRack ComicInfo 2.0 schema that
 // goweeb fills. Komga, Kavita and Mihon read this file when a CBZ
-// lands in their library, grouping it into the named series.
+// lands in their library, grouping it into the named series. When no
+// work metadata is available the descriptive fields (Writer, Genre,
+// Description…) stay absent and the document is the Phase 1 one.
 type ComicInfo struct {
-	XMLName   xml.Name `xml:"ComicInfo"`
-	Series    string   `xml:"Series"`
-	Number    string   `xml:"Number"`
-	Count     int      `xml:"Count,omitempty"`
-	Volume    int      `xml:"Volume,omitempty"`
-	Title     string   `xml:"Title,omitempty"`
-	PageCount int      `xml:"PageCount,omitempty"`
-	Manga     string   `xml:"Manga,omitempty"`
+	XMLName     xml.Name `xml:"ComicInfo"`
+	Series      string   `xml:"Series"`
+	Number      string   `xml:"Number"`
+	Count       int      `xml:"Count,omitempty"`
+	Volume      int      `xml:"Volume,omitempty"`
+	Title       string   `xml:"Title,omitempty"`
+	Writer      string   `xml:"Writer,omitempty"`
+	Penciller   string   `xml:"Penciller,omitempty"`
+	Genre       string   `xml:"Genre,omitempty"`
+	Description string   `xml:"Description,omitempty"`
+	PageCount   int      `xml:"PageCount,omitempty"`
+	LanguageISO string   `xml:"LanguageISO,omitempty"`
+	Year        int      `xml:"Year,omitempty"`
+	Manga       string   `xml:"Manga,omitempty"`
 }
 
 // addComicInfoToZip embeds the metadata as ComicInfo.xml at the

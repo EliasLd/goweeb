@@ -44,6 +44,10 @@ type Model struct {
 
 	ContinueCheckbox Checkbox
 
+	// ExternalCoversCheckbox gates the AniList layer of the work
+	// description ladder; default on, matching the CLI behavior.
+	ExternalCoversCheckbox Checkbox
+
 	SearchInput textinput.Model
 	SearchList  list.Model
 	SearchFocus searchFocus

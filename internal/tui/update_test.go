@@ -325,6 +325,50 @@ func TestOptionalSettingsToggleContinue(t *testing.T) {
 	}
 }
 
+// The external-cover fallback starts enabled (matching the CLI's
+// default allow) and toggles without touching anything else.
+func TestOptionalSettingsToggleExternalCovers(t *testing.T) {
+	m := InitialModel()
+	m.State = StateOptionalSettings
+
+	if !m.ExternalCoversCheckbox.Checked {
+		t.Fatal("external covers should start enabled")
+	}
+
+	m.OptionalCursor = 3
+
+	next, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeySpace,
+		},
+		m,
+	)
+
+	if next.ExternalCoversCheckbox.Checked {
+		t.Fatal("external covers checkbox was not toggled off")
+	}
+
+	// Unrelated settings stay where they are.
+	if next.CBZCheckbox.Checked ||
+		next.EbookCheckbox.Checked ||
+		next.ContinueCheckbox.Checked {
+		t.Error(
+			"external covers must not touch the other checkboxes",
+		)
+	}
+
+	again, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeySpace,
+		},
+		next,
+	)
+
+	if !again.ExternalCoversCheckbox.Checked {
+		t.Fatal("external covers checkbox was not toggled back on")
+	}
+}
+
 func TestOptionalSettingsModesAreMutuallyExclusive(t *testing.T) {
 	m := InitialModel()
 	m.State = StateOptionalSettings

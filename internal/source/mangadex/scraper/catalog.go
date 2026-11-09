@@ -16,6 +16,10 @@ import (
 type MangaResult struct {
 	Title string
 	URL   string
+
+	// Cover URL assembled when the search rows carry a cover_art
+	// relationship; empty otherwise.
+	CoverURL string
 }
 
 type mangaSearchResponse struct {
@@ -24,13 +28,39 @@ type mangaSearchResponse struct {
 }
 
 type mangaEntry struct {
-	ID         string          `json:"id"`
-	Type       string          `json:"type"`
-	Attributes mangaAttributes `json:"attributes"`
+	ID           string              `json:"id"`
+	Type         string              `json:"type"`
+	Attributes   mangaAttributes     `json:"attributes"`
+	Relationship []relationshipEntry `json:"relationships"`
 }
 
 type mangaAttributes struct {
 	Title map[string]string `json:"title"`
+}
+
+// workCoverURL assembles one work's cover address from the
+// cover_art relationship a search or detail payload carries.
+func workCoverURL(
+	mangaID string,
+	relations []relationshipEntry,
+) string {
+	for _, relation := range relations {
+		if relation.Type != "cover_art" {
+			continue
+		}
+
+		if relation.Attributes == nil {
+			continue
+		}
+
+		fileName := strings.TrimSpace(
+			relation.Attributes.FileName,
+		)
+
+		return coverURL(coverCDNBase+"/"+mangaID, fileName)
+	}
+
+	return ""
 }
 
 func SearchCatalog(
@@ -52,6 +82,10 @@ func SearchCatalog(
 	q.Set("title", query)
 	q.Set("limit", "50")
 	q.Set("order[relevance]", "desc")
+
+	// The cover relationship rides along with each result, so the
+	// search screen gets a cover per match without any extra call.
+	q.Add("includes[]", "cover_art")
 
 	u.RawQuery = q.Encode()
 
@@ -140,16 +174,39 @@ func SearchCatalog(
 				base,
 				manga.ID,
 			),
+
+			CoverURL: workCoverURL(manga.ID, manga.Relationship),
 		})
 	}
 
 	return results, nil
 }
 
-func selectMangaTitle(
-	titles map[string]string,
+// domainURL parses the API base URL, rejecting empty or broken
+// user-supplied domains.
+func domainURL(domain string) (*url.URL, error) {
+	baseURL, err := url.Parse(strings.TrimSuffix(domain, "/"))
+	if err != nil {
+		return nil, fmt.Errorf(
+			"invalid MangaDex domain: %w",
+			err,
+		)
+	}
+
+	if baseURL.Scheme == "" || baseURL.Host == "" {
+		return nil, fmt.Errorf("MangaDex domain is empty")
+	}
+
+	return baseURL, nil
+}
+
+// selectLocalized picks a display string out of a per-locale map:
+// common readable variants first, then a deterministic fallback
+// instead of relying on Go's map order.
+func selectLocalized(
+	localized map[string]string,
 ) string {
-	if len(titles) == 0 {
+	if len(localized) == 0 {
 		return ""
 	}
 
@@ -167,25 +224,33 @@ func selectMangaTitle(
 	}
 
 	for _, language := range preferredLanguages {
-		if title := strings.TrimSpace(titles[language]); title != "" {
-			return title
+		if value := strings.TrimSpace(localized[language]); value != "" {
+			return value
 		}
 	}
 
 	// Deterministic fallback instead of relying on Go's map order.
-	keys := make([]string, 0, len(titles))
+	keys := make([]string, 0, len(localized))
 
-	for language := range titles {
+	for language := range localized {
 		keys = append(keys, language)
 	}
 
 	sort.Strings(keys)
 
 	for _, language := range keys {
-		if title := strings.TrimSpace(titles[language]); title != "" {
-			return title
+		if value := strings.TrimSpace(localized[language]); value != "" {
+			return value
 		}
 	}
 
 	return ""
+}
+
+// selectMangaTitle picks the display title of a manga from its
+// per-language map.
+func selectMangaTitle(
+	titles map[string]string,
+) string {
+	return selectLocalized(titles)
 }

@@ -18,7 +18,13 @@ func TestBuildComicInfoForChapter(t *testing.T) {
 		Label:  "Chapter 6.5",
 	}
 
-	info := buildComicInfo(work, entry, 42)
+	info := buildComicInfo(
+		work,
+		entry,
+		42,
+		sourcetypes.Metadata{},
+		"",
+	)
 
 	if info.Series != "One Piece" {
 		t.Errorf(
@@ -78,7 +84,13 @@ func TestBuildComicInfoForVolume(t *testing.T) {
 		Label:  "Volume 12",
 	}
 
-	info := buildComicInfo(work, entry, 100)
+	info := buildComicInfo(
+		work,
+		entry,
+		100,
+		sourcetypes.Metadata{},
+		"",
+	)
 
 	// Volume-kind works carry their number both as the issue number
 	// and as the schema's Volume count.
@@ -111,10 +123,98 @@ func TestBuildComicInfoForFractionalVolume(t *testing.T) {
 
 	// The schema only accepts integer volumes; the value stays in
 	// Number alone.
-	if info := buildComicInfo(work, entry, 100); info.Volume != 0 {
+	if info := buildComicInfo(
+		work,
+		entry,
+		100,
+		sourcetypes.Metadata{},
+		"",
+	); info.Volume != 0 {
 		t.Errorf(
 			"Volume = %d, want unset for fractional numbers",
 			info.Volume,
+		)
+	}
+}
+
+// Work metadata enriches the schema fields when a lookup produced
+// something; LanguageISO comes from the scan path of this run.
+func TestBuildComicInfoEnrichedWithWorkMetadata(t *testing.T) {
+	work := sourcetypes.Work{
+		Title: "Berserk",
+		Kind:  sourcetypes.ItemChapter,
+	}
+
+	entry := sourcetypes.Entry{
+		Number: common.ChapterNumber("10"),
+		Label:  "Chapter 10",
+	}
+
+	info := buildComicInfo(
+		work,
+		entry,
+		371,
+		sourcetypes.Metadata{
+			Author:      "Miura Kentarou",
+			Artist:      "Studio Gaga",
+			Description: "Guts, known as the Black Swordsman...",
+			Tags:        []string{"Action", "Drama", "Horror"},
+			Year:        1989,
+		},
+		"pt-BR",
+	)
+
+	if info.Writer != "Miura Kentarou" {
+		t.Errorf("Writer = %q, want the author", info.Writer)
+	}
+
+	if info.Penciller != "Studio Gaga" {
+		t.Errorf("Penciller = %q, want the artist", info.Penciller)
+	}
+
+	if info.Genre != "Action, Drama, Horror" {
+		t.Errorf("Genre = %q, want the tags joined", info.Genre)
+	}
+
+	if info.Year != 1989 {
+		t.Errorf("Year = %d, want 1989", info.Year)
+	}
+
+	if info.LanguageISO != "pt-BR" {
+		t.Errorf("LanguageISO = %q, want the scan-path code", info.LanguageISO)
+	}
+
+	if info.Description != "Guts, known as the Black Swordsman..." {
+		t.Errorf("Description = %q, want the work description", info.Description)
+	}
+}
+
+// Without metadata the document stays the Phase 1 one: no empty
+// descriptive elements may appear.
+func TestBuildComicInfoWithoutMetadataStaysLean(t *testing.T) {
+	work := sourcetypes.Work{Title: "Berserk", Kind: sourcetypes.ItemChapter}
+
+	entry := sourcetypes.Entry{
+		Number: common.ChapterNumber("10"),
+		Label:  "Chapter 10",
+	}
+
+	info := buildComicInfo(
+		work,
+		entry,
+		10,
+		sourcetypes.Metadata{},
+		"en",
+	)
+
+	if info.Writer != "" || info.Penciller != "" || info.Genre != "" ||
+		info.Description != "" {
+		t.Errorf(
+			"descriptive fields = %q/%q/%q/%q, want all empty without metadata",
+			info.Writer,
+			info.Penciller,
+			info.Genre,
+			info.Description,
 		)
 	}
 }

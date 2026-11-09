@@ -23,6 +23,7 @@ goweeb est un téléchargeur de mangas multiplateforme disponible à la fois sou
 - Gestion automatique des chapitres indisponibles à l'intérieur des plages demandées.
 - Sortie en PDF, archives CBZ (avec métadonnées ComicInfo.xml) ou dossiers d'images adaptés aux liseuses.
 - `--continue` reprend là où vous en étiez, grâce à un manifeste par œuvre dont les enregistrements sont revérifiés sur disque à chaque exécution.
+- Métadonnées par œuvre : auteur, couverture, description, tags et année attachées au ComicInfo.xml et au manifeste quand le fournisseur les publie, avec une recherche de couverture dégradée (fournisseur → AniList).
 - Nouvelles tentatives HTTP automatiques en cas de connexion instable ou d'erreurs temporaires côté serveur.
 - Domaines personnalisés et miroirs compatibles pour les fournisseurs.
 - Binaires natifs pour Linux, macOS et Windows.
@@ -221,6 +222,7 @@ Lorsque vous utilisez un titre sans guillemets, placez-le après toutes les opti
 | `--cbz` | — | Enregistrer chaque chapitre sous forme d'archive CBZ (pages numérotées `001.jpg`, `002.jpg`, …) au lieu de générer des PDF. Ne peut pas être combinée avec `--ebook-friendly`. |
 | `--layout <scheme>` | — | Schéma de nommage des fichiers téléchargés. `series` (par défaut) regroupe les fichiers par œuvre avec des noms adaptés aux lecteurs ; `flat` conserve le nommage d'origine. Voir [Disposition de la sortie](#disposition-de-la-sortie). |
 | `--continue` | `-c` | Ignorer les chapitres déjà téléchargés dans le dossier de sortie. Voir [Reprendre les téléchargements](#reprendre-les-téléchargements). |
+| `--no-external-covers` | — | Désactiver la recherche de couverture en base externe (AniList) quand aucun fournisseur n'en propose. Voir [Métadonnées des œuvres](#métadonnées-des-œuvres). |
 | `--domain <url>` | `-u` | Remplacer le domaine par défaut du fournisseur sélectionné. |
 | `--debug` | — | Activer les logs de debug détaillés. |
 
@@ -309,7 +311,7 @@ scan/
     └── One Piece.goweeb.json
 ```
 
-Le manifeste enregistre ce qui a été produit, dans quel format et à partir de quelle source :
+Le manifeste enregistre ce qui a été produit, dans quel format et à partir de quelle source — plus les métadonnées de l'œuvre quand une recherche en a trouvé :
 
 ```json
 {
@@ -319,6 +321,16 @@ Le manifeste enregistre ce qui a été produit, dans quel format et à partir de
   "scanPath": "en",
   "workUrl": "https://mangadex.org/title/...",
   "kind": "chapter",
+  "metadata": {
+    "author": "Eiichiro Oda",
+    "coverUrl": "https://uploads.mangadex.org/covers/.../cover.jpg",
+    "coverSource": "mangadex",
+    "description": "...",
+    "tags": ["Action", "Adventure", "Comedy"],
+    "originalLanguage": "ja",
+    "year": 1997
+  },
+  "coverFile": "One Piece.cover.jpg",
   "chapters": [
     {
       "number": "6.5",
@@ -335,6 +347,32 @@ Le manifeste enregistre ce qui a été produit, dans quel format et à partir de
 Avec le schéma `flat`, le manifeste se trouve à la racine du dossier de sortie, nommé d'après la série.
 
 Les fichiers sur disque restent la source de vérité : chaque exécution revérifie les chapitres enregistrés par rapport aux fichiers réels, si bien que les chapitres supprimés ou endommagés à la main — ou tronqués par un téléchargement interrompu — sont simplement retéléchargés. Un chapitre existant dans un format sera tout de même téléchargé dans un autre format s'il est demandé.
+
+Les manifestes sont écrits à chaque téléchargement (et pas seulement avec `--continue`) : les enregistrements de chapitres et les métadonnées de l'œuvre gardent les dossiers auto-décris pour les autres outils, comme la future interface web.
+
+## Métadonnées des œuvres
+
+goweeb décrit les œuvres qu'il télécharge — auteur, couverture, description, tags, année — quand le fournisseur les publie. Ces données enrichissent le `ComicInfo.xml` des CBZ (Writer, Penciller, Genre, Description, Year, LanguageISO) et sont mises en cache dans le manifeste, de sorte que chaque dossier téléchargé reste auto-décrit.
+
+Les couvertures se déposent à côté du manifeste :
+
+```text
+scan/
+└── One Piece/
+    ├── One Piece.cover.jpg
+    ├── One Piece - c001.cbz
+    └── One Piece.goweeb.json
+```
+
+Quand un fournisseur publie peu de données, une couverture passe par une recherche dégradée, dans l'ordre :
+
+1. le fournisseur de l'œuvre elle-même (données du site uniquement),
+2. la base de données [AniList](https://anilist.co) — `--no-external-covers` désactive cette couche,
+3. une couverture générée, rendue par les consommateurs (la future interface web) plutôt qu'écrite sur disque.
+
+La garde est délibérée : une couverture (et toute métadonnée) ne s'attache qu'après un appariement de titre exact et non ambigu ; un titre correspondant à plusieurs œuvres n'obtient rien — une mauvaise couverture est pire que pas de couverture.
+
+Les recherches ne font jamais échouer un téléchargement : tout incident se dégrade en métadonnées vides, consigné, et une exécution ultérieure peut les compléter. Les résultats sont mis en cache — une œuvre déjà décrite ne refait aucune requête de métadonnées lors des exécutions suivantes.
 
 ## Exemples
 

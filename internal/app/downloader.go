@@ -5,11 +5,13 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/EliasLd/goweeb/internal/convert"
 	"github.com/EliasLd/goweeb/internal/fetch"
 	"github.com/EliasLd/goweeb/internal/ledger"
 	"github.com/EliasLd/goweeb/internal/logger"
+	"github.com/EliasLd/goweeb/internal/metadata"
 	"github.com/EliasLd/goweeb/internal/source"
 	"github.com/EliasLd/goweeb/internal/source/common"
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
@@ -30,10 +32,14 @@ func chapterDigits(maxChapter int) int {
 // Manga is always "Yes": goweeb downloads from manga providers and
 // pages already carry their final reading order. Count is the number
 // of entries available on the source, not just the downloaded ones.
+// Work metadata (Phase 3) enriches the schema fields when a lookup
+// produced something.
 func buildComicInfo(
 	work sourcetypes.Work,
 	entry sourcetypes.Entry,
 	totalEntries int,
+	workMeta sourcetypes.Metadata,
+	languageISO string,
 ) *convert.ComicInfo {
 	info := convert.ComicInfo{
 		Series: work.Title,
@@ -48,6 +54,15 @@ func buildComicInfo(
 	if work.Kind == sourcetypes.ItemVolume &&
 		entry.Number.IsInteger() {
 		info.Volume, _ = strconv.Atoi(string(entry.Number))
+	}
+
+	if workMeta.Known() {
+		info.Writer = workMeta.Author
+		info.Penciller = workMeta.Artist
+		info.Genre = strings.Join(workMeta.Tags, ", ")
+		info.Description = workMeta.Description
+		info.LanguageISO = languageISO
+		info.Year = workMeta.Year
 	}
 
 	return &info
@@ -148,6 +163,7 @@ func downloadEntries(
 	entries []sourcetypes.Entry,
 	ledgerFile *ledger.Ledger,
 	opts Options,
+	workMeta sourcetypes.Metadata,
 	log *logger.Logger,
 ) {
 	log.Info(
@@ -157,6 +173,10 @@ func downloadEntries(
 
 	requestHeaders := imageRequestHeaders(
 		provider,
+	)
+
+	languageCode := metadata.LanguageISO(
+		opts.ScanPath,
 	)
 
 	homeDir, err := os.UserHomeDir()
@@ -323,7 +343,13 @@ func downloadEntries(
 			if err := convert.ImagesToCBZ(
 				imageDir,
 				cbzPath,
-				buildComicInfo(work, entry, totalEntries),
+				buildComicInfo(
+					work,
+					entry,
+					totalEntries,
+					workMeta,
+					languageCode,
+				),
 			); err != nil {
 				log.Error(
 					"Failed to create CBZ: %v\n",
@@ -595,6 +621,16 @@ func Run(
 
 	ledgerFile := openLedger(opts, work, log)
 
+	// The description ladder runs before any download: it only
+	// reads and caches, and a failure never stops the run.
+	workMeta := resolveWorkMetadata(
+		opts,
+		provider,
+		work,
+		ledgerFile,
+		log,
+	)
+
 	if !hasRangeSelection(opts.Selection) {
 		selection, err := PromptChapterRange(
 			entries,
@@ -658,6 +694,7 @@ func Run(
 		entries,
 		ledgerFile,
 		opts,
+		workMeta,
 		log,
 	)
 }
@@ -713,6 +750,16 @@ func RunWithWorkflow(
 
 	ledgerFile := openLedger(opts, work, log)
 
+	// The description ladder runs before any download: it only
+	// reads and caches, and a failure never stops the run.
+	workMeta := resolveWorkMetadata(
+		opts,
+		provider,
+		work,
+		ledgerFile,
+		log,
+	)
+
 	logAvailableChapters(
 		entries,
 		log,
@@ -756,6 +803,7 @@ func RunWithWorkflow(
 		entries,
 		ledgerFile,
 		opts,
+		workMeta,
 		log,
 	)
 

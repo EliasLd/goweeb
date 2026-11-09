@@ -121,6 +121,17 @@ func ledgerPath(layout Layout, scanDir, series string) string {
 	return filepath.Join(scanDir, segment, name)
 }
 
+// coverBasePath returns the destination base name of a work's cover
+// image: the manifest's name without its suffix, followed by
+// ".cover" — e.g. "{out}/{Series}/One Piece.cover" — with the
+// extension chosen at download time. Covers thus sit next to the
+// manifest describing them, in both layouts.
+func coverBasePath(layout Layout, scanDir, series string) string {
+	base := ledgerPath(layout, scanDir, series)
+
+	return strings.TrimSuffix(base, ledgerSuffix) + ".cover"
+}
+
 // layoutEntryPath returns the output file path of one entry.
 //
 // The series layout zeroes pads the number so files sort in reading

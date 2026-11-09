@@ -54,21 +54,6 @@ type chapterAttributes struct {
 	PublishAt          string  `json:"publishAt"`
 }
 
-type mangaInfoResponse struct {
-	Result string        `json:"result"`
-	Data   mangaInfoData `json:"data"`
-}
-
-type mangaInfoData struct {
-	ID         string              `json:"id"`
-	Attributes mangaInfoAttributes `json:"attributes"`
-}
-
-type mangaInfoAttributes struct {
-	Title                          map[string]string `json:"title"`
-	ChapterNumbersResetOnNewVolume bool              `json:"chapterNumbersResetOnNewVolume"`
-}
-
 func GetScanInfo(
 	domain string,
 	workURL string,
@@ -85,13 +70,17 @@ func GetScanInfo(
 		return nil, fmt.Errorf("MangaDex language is empty")
 	}
 
-	mangaName, resetsOnNewVolume, err := getMangaInfo(
+	mangaDetail, err := GetMangaDetail(
+		domain,
 		workURL,
 		log,
 	)
 	if err != nil {
 		return nil, err
 	}
+
+	mangaName := mangaDetail.Name
+	resetsOnNewVolume := mangaDetail.ResetsOnNewVolume
 
 	// goweeb currently represents chapter numbers as a single int.
 	// If a manga restarts chapter numbering for every volume, range
@@ -103,12 +92,10 @@ func GetScanInfo(
 		)
 	}
 
-	baseURL, err := url.Parse(strings.TrimSuffix(domain, "/"))
+	baseURL, err := domainURL(domain)
+
 	if err != nil {
-		return nil, fmt.Errorf(
-			"invalid MangaDex domain: %w",
-			err,
-		)
+		return nil, err
 	}
 
 	feedRef, err := url.Parse(
@@ -387,88 +374,6 @@ func GetScanInfo(
 		MangaName: mangaName,
 		Chapters:  chapters,
 	}, nil
-}
-
-func getMangaInfo(
-	workURL string,
-	log *logger.Logger,
-) (string, bool, error) {
-	log.Debug(
-		"Fetching MangaDex manga info: %s\n",
-		workURL,
-	)
-
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	req, err := http.NewRequest(
-		http.MethodGet,
-		workURL,
-		nil,
-	)
-	if err != nil {
-		return "", false, fmt.Errorf(
-			"failed to create MangaDex manga info request: %w",
-			err,
-		)
-	}
-
-	req.Header.Set(
-		"Accept",
-		"application/json",
-	)
-
-	req.Header.Set(
-		"User-Agent",
-		"goweeb",
-	)
-
-	result, err := httpx.ReadAll(client, req, log)
-	if err != nil {
-		return "", false, fmt.Errorf(
-			"failed to fetch MangaDex manga info: %w",
-			err,
-		)
-	}
-
-	if result.StatusCode != http.StatusOK {
-		return "", false, fmt.Errorf(
-			"MangaDex manga info returned status: %d",
-			result.StatusCode,
-		)
-	}
-
-	var response mangaInfoResponse
-
-	if err := json.Unmarshal(
-		result.Body,
-		&response,
-	); err != nil {
-		return "", false, fmt.Errorf(
-			"failed to decode MangaDex manga info: %w",
-			err,
-		)
-	}
-
-	if response.Result != "ok" {
-		return "", false, fmt.Errorf(
-			"MangaDex returned unexpected result: %s",
-			response.Result,
-		)
-	}
-
-	title := selectMangaTitle(
-		response.Data.Attributes.Title,
-	)
-
-	if title == "" {
-		title = response.Data.ID
-	}
-
-	return title,
-		response.Data.Attributes.ChapterNumbersResetOnNewVolume,
-		nil
 }
 
 func extractMangaID(

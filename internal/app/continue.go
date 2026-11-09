@@ -7,6 +7,7 @@ import (
 
 	"github.com/EliasLd/goweeb/internal/ledger"
 	"github.com/EliasLd/goweeb/internal/logger"
+	"github.com/EliasLd/goweeb/internal/metadata"
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 )
 
@@ -32,19 +33,19 @@ func ledgerKind(kind sourcetypes.ItemKind) ledger.Kind {
 	return ledger.KindChapter
 }
 
-// openLedger prepares the work's ledger when continuing was
-// requested. A corrupted manifest surfaces as a warning and the
-// empty ledger downloads everything again, healing the file as
-// chapters complete.
+// openLedger prepares the work's ledger. A corrupted manifest
+// surfaces as a warning and the empty ledger downloads everything
+// again, healing the file as chapters complete.
+//
+// The ledger is opened on every download run since the metadata
+// phase: chapter records, work description and covers materialize
+// for plain runs too, while the skip filtering stays opt-in via the
+// continue flag.
 func openLedger(
 	opts Options,
 	work sourcetypes.Work,
 	log *logger.Logger,
 ) *ledger.Ledger {
-	if !opts.Continue {
-		return nil
-	}
-
 	led, err := ledger.New(
 		ledgerPath(opts.Layout, opts.ScanDir, work.Title),
 		ledger.Identity{
@@ -63,6 +64,41 @@ func openLedger(
 	}
 
 	return &led
+}
+
+// resolveWorkMetadata assembles the fallback ladder for a work and
+// returns the description the run carries. The ladder result is
+// cached in the manifest; failures degrade to empty metadata.
+func resolveWorkMetadata(
+	opts Options,
+	provider sourcetypes.Provider,
+	work sourcetypes.Work,
+	led *ledger.Ledger,
+	log *logger.Logger,
+) sourcetypes.Metadata {
+	service := newMetadataService(!opts.NoExternalCovers)
+
+	return fetchWorkMetadata(
+		service,
+		metadata.Request{
+			Provider:  provider,
+			WorkTitle: work.Title,
+			WorkURL:   opts.MangaURL,
+			Log:       log,
+		},
+		led,
+		coverBasePath(opts.Layout, opts.ScanDir, work.Title),
+		log,
+	)
+}
+
+// requestHeadersFor exposes the provider's image headers for the
+// cover CDNs when the provider gates them; harmless on ungated
+// hosts.
+func requestHeadersFor(
+	provider sourcetypes.Provider,
+) map[string]string {
+	return imageRequestHeaders(provider)
 }
 
 // skipDownloaded removes entries whose artifact of the output format
