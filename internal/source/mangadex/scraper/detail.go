@@ -149,6 +149,34 @@ func GetMangaDetail(
 	return detailFromResponse(response.Data), nil
 }
 
+// plainDescription cleans the formatting mangadex mirrors inside its
+// descriptions: separator lines (`___`) and bold markers ride along
+// when official sources and staff notes are copied in. The lines that
+// hold nothing are paragraph structure and stay.
+func plainDescription(description string) string {
+	cleaned := make([]string, 0, strings.Count(description, "\n")+1)
+
+	for _, line := range strings.Split(description, "\n") {
+		// An empty line is a paragraph break; only non-empty lines
+		// can be decoration.
+		if line != "" && isSeparatorLine(line) {
+			continue
+		}
+
+		cleaned = append(cleaned, strings.ReplaceAll(line, "**", ""))
+	}
+
+	// Only the edges of the whole text are trimmed; interior blank
+	// lines are the paragraphs the reader should keep seeing.
+	return strings.TrimSpace(strings.Join(cleaned, "\n"))
+}
+
+// isSeparatorLine reports whether a line is pure decoration, such as
+// a horizontal rule the source mirrors verbatim.
+func isSeparatorLine(line string) bool {
+	return strings.Trim(line, " _-*~") == ""
+}
+
 // detailFromResponse maps the decoded payload. Relationship arrays
 // arrive in API order; author and artist names are deduplicated in
 // that order, and the artist list drops every name already listed as
@@ -164,7 +192,7 @@ func detailFromResponse(
 		Author:           joinNames(authors),
 		Artist:           joinNames(removeSet(artists, authors)),
 		CoverURL:         coverURL(coverCDNBase+"/"+data.ID, coverFile),
-		Description:      selectLocalized(data.Attributes.Description),
+		Description:      plainDescription(selectLocalized(data.Attributes.Description)),
 		Tags:             tagNames(data.Attributes.Tags),
 		OriginalLanguage: data.Attributes.OriginalLanguage,
 		Year:             data.Attributes.Year,

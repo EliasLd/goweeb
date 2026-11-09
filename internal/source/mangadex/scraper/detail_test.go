@@ -17,9 +17,11 @@ func tLogger(t *testing.T) *logger.Logger {
 	return logger.New(&bytes.Buffer{}, logger.LevelDebug)
 }
 
-// Fixture shapes come from real API payloads (probed 2026-11-07),
-// trimmed to the fields the code reads. Any structural drift in
-// these rows is a live-data risk worth pinning.
+// Fixture shapes come from real API payloads (probed 2026-11-07,
+// description residue probed 2026-11-09), trimmed to the fields the
+// code reads. The description carries the separator line the site
+// mirrors from its sources. Any structural drift in these rows is a
+// live-data risk worth pinning.
 const detailFixture = `{
 	"result": "ok",
 	"data": {
@@ -29,7 +31,7 @@ const detailFixture = `{
 			"title": {"ja-ro": "Berserk", "en": "Berserk"},
 			"description": {
 				"bg": "...",
-				"en": "Guts, known as the Black Swordsman..."
+				"en": "Guts, known as the Black Swordsman...\n___\nWon the 6th Osamu Tezuka Cultural Prize Excellence Award in 2002."
 			},
 			"tags": [
 				{"attributes": {"name": {"en": "Award Winning"}}},
@@ -101,8 +103,9 @@ func TestGetMangaDetail(t *testing.T) {
 		)
 	}
 
-	if metadata.Description != "Guts, known as the Black Swordsman..." {
-		t.Errorf("Description = %q, want the en locale", metadata.Description)
+	// The separator rule the source mirrors is not stored text.
+	if metadata.Description != "Guts, known as the Black Swordsman...\nWon the 6th Osamu Tezuka Cultural Prize Excellence Award in 2002." {
+		t.Errorf("Description = %q, want the en locale cleaned of the separator rule", metadata.Description)
 	}
 
 	if len(metadata.Tags) != 2 {
@@ -235,5 +238,50 @@ func TestSearchCoverURL(t *testing.T) {
 			"CoverURL = %q, want empty without a cover_art relationship",
 			results[1].CoverURL,
 		)
+	}
+}
+
+func TestPlainDescriptionCleansTheResidue(t *testing.T) {
+	cases := []struct {
+		name        string
+		description string
+		want        string
+	}{
+		{
+			name:        "separator rule inside the text",
+			description: "Guts, known as the Black Swordsman...\n___\nWon the 6th Osamu Tezuka Cultural Prize.",
+			want:        "Guts, known as the Black Swordsman...\nWon the 6th Osamu Tezuka Cultural Prize.",
+		},
+		{
+			name:        "blank lines stay",
+			description: "Paragraph one.\n\nParagraph two.",
+			want:        "Paragraph one.\n\nParagraph two.",
+		},
+		{
+			name:        "bold markers ride along",
+			description: "**Bold** start, then plain text.",
+			want:        "Bold start, then plain text.",
+		},
+		{
+			name:        "decoration only",
+			description: "___\n---\n***",
+			want:        "",
+		},
+		{
+			name:        "surrounding decoration trimmed",
+			description: "\n___\nA clean text.\n\n\n",
+			want:        "A clean text.",
+		},
+	}
+
+	for _, testCase := range cases {
+		if got := plainDescription(testCase.description); got != testCase.want {
+			t.Errorf(
+				"plainDescription(%s) = %q, want %q",
+				testCase.name,
+				got,
+				testCase.want,
+			)
+		}
 	}
 }
