@@ -101,6 +101,33 @@ type nameRow struct {
 	Name string `json:"name"`
 }
 
+// plainDescription cleans the formatting the site stores inside its
+// description paragraphs: bold markers and separator lines are
+// presentation for the site's own pages, and read as punctuation
+// noise everywhere else. Text is never otherwise re-worded.
+func plainDescription(paragraphs []string) string {
+	lines := make([]string, 0, len(paragraphs))
+
+	for _, paragraph := range paragraphs {
+		line := strings.ReplaceAll(paragraph, "**", "")
+		line = strings.TrimSpace(line)
+
+		if isSeparatorLine(line) {
+			continue
+		}
+
+		lines = append(lines, line)
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+// isSeparatorLine reports whether a cleaned line is pure decoration:
+// horizontal rules (`___`, `---`) and similar filler the site stores.
+func isSeparatorLine(line string) bool {
+	return strings.Trim(line, " _-*~") == ""
+}
+
 // GetTitleDetail fetches one title's detail document and derives the
 // work metadata from it: author names (the API repeats rows),
 // description paragraphs, tags, publication year, original language
@@ -152,7 +179,7 @@ func GetTitleDetail(
 	metadata := sourcetypes.Metadata{
 		Author:           strings.Join(lenientNameNames(response.Data.Author), ", "),
 		CoverURL:         coverFromImage(response.Data.Image),
-		Description:      strings.Join(response.Data.Description, "\n"),
+		Description:      plainDescription(response.Data.Description),
 		Tags:             lenientNameNames(response.Data.Tags),
 		OriginalLanguage: strings.TrimSpace(response.Data.OriginalLang),
 		Year:             publishedYear(response.Data.DatePublished),
