@@ -121,9 +121,11 @@ func isBoundaryAfter(title string, index int) bool {
 	return !isWordRune(r)
 }
 
-// sortSearchItems sorts result items by relevance to the query. The
-// sort is stable to keep each provider's own ordering within
-// identical relevance buckets.
+// sortSearchItems orders result items for display: best relevance
+// bucket first, then the widest provider support — a work backed by
+// several providers is more likely what the user meant — then the
+// stable merge order. The sort is stable so ties keep the order the
+// providers delivered.
 func sortSearchItems(
 	items []list.Item,
 	query string,
@@ -132,7 +134,39 @@ func sortSearchItems(
 		left, _ := items[i].(SelectionItem)
 		right, _ := items[j].(SelectionItem)
 
-		return rankSearchResult(query, left.Label) <
-			rankSearchResult(query, right.Label)
+		leftBucket := bestSearchBucket(query, left)
+		rightBucket := bestSearchBucket(query, right)
+
+		if leftBucket != rightBucket {
+			return leftBucket < rightBucket
+		}
+
+		return searchItemProviderCount(left) >
+			searchItemProviderCount(right)
 	})
+}
+
+// bestSearchBucket ranks a display row by its most relevant
+// underlying result: rows of one group can differ in ranking because
+// their displayed titles differ while their normalized keys match.
+func bestSearchBucket(query string, row SelectionItem) int {
+	best := rankSearchResult(query, row.Label)
+
+	for _, member := range row.Members {
+		if bucket := rankSearchResult(query, member.Label); bucket < best {
+			best = bucket
+		}
+	}
+
+	return best
+}
+
+// searchItemProviderCount returns the provider support a row
+// advertises: the distinct providers of a group, one per plain row.
+func searchItemProviderCount(row SelectionItem) int {
+	if len(row.Members) > 1 {
+		return distinctProviders(row.Members)
+	}
+
+	return 1
 }

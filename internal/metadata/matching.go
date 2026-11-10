@@ -5,12 +5,13 @@ import (
 	"unicode"
 )
 
-// normalizeTitle reduces a display title to a comparable key:
+// NormalizeTitle reduces a display title to a comparable key:
 // letters and digits kept (case-folded), punctuation ignored, and
 // whitespace runs collapsed. Matching stays exact-equality on the
 // result — never fuzzy, because a wrong cover is worse than no
-// cover.
-func normalizeTitle(title string) string {
+// cover. Shared by the metadata ladder and the TUI search grouping:
+// one equality rule for "same title" across the project.
+func NormalizeTitle(title string) string {
 	var builder strings.Builder
 
 	builder.Grow(len(title))

@@ -193,7 +193,7 @@ func exactTitleMatches(
 	media []anilistMatch,
 	title string,
 ) []*anilistMatch {
-	query := normalizeTitle(title)
+	query := NormalizeTitle(title)
 
 	var matches []*anilistMatch
 
@@ -210,13 +210,13 @@ func exactTitleMatches(
 // synonyms equal the normalized query exactly.
 func matchesTitle(m *anilistMatch, query string) bool {
 	for _, field := range titleFields {
-		if normalizeTitle(field(*m)) == query {
+		if NormalizeTitle(field(*m)) == query {
 			return true
 		}
 	}
 
 	for _, synonym := range m.Synonyms {
-		if normalizeTitle(synonym) == query {
+		if NormalizeTitle(synonym) == query {
 			return true
 		}
 	}

@@ -39,9 +39,9 @@ func TestNormalizeTitle(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if got := normalizeTitle(test.title); got != test.want {
+			if got := NormalizeTitle(test.title); got != test.want {
 				t.Errorf(
-					"normalizeTitle(%q) = %q, want %q",
+					"NormalizeTitle(%q) = %q, want %q",
 					test.title,
 					got,
 					test.want,
