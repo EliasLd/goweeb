@@ -10,7 +10,122 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"go.dalton.dog/bubbleup"
 )
+
+func TestShouldUpdateAlert(t *testing.T) {
+	cases := []struct {
+		name string
+		msg  tea.Msg
+		want bool
+	}{
+		{
+			name: "mouse motion",
+			msg: tea.MouseMsg{
+				Action: tea.MouseActionMotion,
+			},
+			want: false,
+		},
+		{
+			name: "mouse click",
+			msg: tea.MouseMsg{
+				Action: tea.MouseActionRelease,
+				Button: tea.MouseButtonLeft,
+			},
+			want: false,
+		},
+		{
+			name: "download log line",
+			msg:  logMsg("Downloading page 5 of 12..."),
+			want: false,
+		},
+		{
+			name: "spinner tick",
+			msg:  spinner.TickMsg{},
+			want: false,
+		},
+		{
+			name: "key press",
+			msg:  tea.KeyMsg{Type: tea.KeyEsc},
+			want: true,
+		},
+		{
+			name: "window resize",
+			msg:  tea.WindowSizeMsg{Width: 80, Height: 24},
+			want: true,
+		},
+	}
+
+	for _, test := range cases {
+		t.Run(test.name, func(t *testing.T) {
+			if got := shouldUpdateAlert(test.msg); got != test.want {
+				t.Errorf(
+					"shouldUpdateAlert(%s) = %v, want %v",
+					test.name,
+					got,
+					test.want,
+				)
+			}
+		})
+	}
+}
+
+// spawnActiveToast arms a real toast through the Update path, so
+// the tests exercise the same gate the event loop uses.
+func spawnActiveToast(
+	t *testing.T,
+	m Model,
+) (Model, tea.Cmd) {
+	t.Helper()
+
+	cmd := m.AlertModel.NewAlertCmd(
+		bubbleup.InfoKey,
+		"Download started",
+	)
+
+	spawned, spawnTick := Update(cmd(), m)
+
+	if !spawned.AlertModel.HasActiveAlert() {
+		t.Fatal("toast should be active after its spawn message")
+	}
+
+	if spawnTick == nil {
+		t.Fatal("spawning a toast should arm its tick chain")
+	}
+
+	return spawned, spawnTick
+}
+
+func TestToastTickChainPassesTheGate(t *testing.T) {
+	spawned, spawnTick := spawnActiveToast(t, InitialModel())
+
+	tickMsg := spawnTick()
+
+	next, nextTick := Update(tickMsg, spawned)
+
+	if !next.AlertModel.HasActiveAlert() {
+		t.Fatal("the toast should still be alive after its own tick")
+	}
+
+	if nextTick == nil {
+		t.Fatal("an alive toast should keep its tick chain running")
+	}
+}
+
+func TestMouseMotionDoesNotAmplifyToast(t *testing.T) {
+	spawned, _ := spawnActiveToast(t, InitialModel())
+
+	_, cmd := Update(
+		tea.MouseMsg{
+			Action: tea.MouseActionMotion,
+		},
+		spawned,
+	)
+
+	if cmd != nil {
+		t.Fatal("a mouse move must not arm another toast tick")
+	}
+}
 
 func TestEntriesResultOpensRangeSelection(t *testing.T) {
 	m := InitialModel()
