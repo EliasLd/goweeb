@@ -31,6 +31,7 @@ const (
 	mouseZoneSearchProvider         = "search-provider"
 
 	selectionItemZonePrefix = "selection-item-"
+	searchPickerZonePrefix  = "search-picker-"
 
 	mouseZoneMainLogs = "main-logs"
 	mouseZoneLogClose = "log-close"
@@ -61,6 +62,16 @@ func selectionItemZone(
 ) string {
 	return fmt.Sprintf(
 		"selection-item-%d",
+		index,
+	)
+}
+
+func searchPickerZone(
+	index int,
+) string {
+	return fmt.Sprintf(
+		"%s%d",
+		searchPickerZonePrefix,
 		index,
 	)
 }
@@ -375,6 +386,36 @@ func handleSearchMouse(
 	msg tea.MouseMsg,
 	m Model,
 ) (Model, tea.Cmd, bool) {
+	// The picker covers the search screen: its rows get the first
+	// chance at a click and nothing behind the overlay reacts.
+	if m.SearchPickerVisible {
+		for i := range m.SearchPickerItems {
+			if !mouseZoneHit(
+				searchPickerZone(i),
+				msg,
+			) {
+				continue
+			}
+
+			if m.SearchPickerCursor == i {
+				next, cmd := handleSearchPickerKey(
+					tea.KeyMsg{
+						Type: tea.KeyEnter,
+					},
+					m,
+				)
+
+				return next, cmd, true
+			}
+
+			m.SearchPickerCursor = i
+
+			return m, nil, true
+		}
+
+		return m, nil, true
+	}
+
 	if mouseZoneHit(
 		mouseZoneSearchProvider,
 		msg,
@@ -652,6 +693,24 @@ func hoveredMouseZone(
 		}
 
 	case StateInteractiveSearch:
+		if m.SearchPickerVisible {
+			zones := make(
+				[]string,
+				0,
+				len(m.SearchPickerItems),
+			)
+
+			for i := range m.SearchPickerItems {
+				zones =
+					append(zones, searchPickerZone(i))
+			}
+
+			return firstHoveredMouseZone(
+				msg,
+				zones...,
+			)
+		}
+
 		if zoneID :=
 			firstHoveredMouseZone(
 				msg,

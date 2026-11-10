@@ -123,6 +123,8 @@ func closeInteractiveSearch(m Model) Model {
 
 	m.SearchInput.Blur()
 
+	m = closeSearchPicker(m)
+
 	m.State = StateForm
 	m.Cursor = 2
 

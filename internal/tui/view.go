@@ -44,6 +44,17 @@ func View(m Model) string {
 			)
 	}
 
+	if m.SearchPickerVisible &&
+		m.State == StateInteractiveSearch {
+		base =
+			renderCenteredOverlay(
+				base,
+				viewSearchPicker(m),
+				m.Width,
+				m.Height,
+			)
+	}
+
 	rendered :=
 		m.AlertModel.Render(base)
 

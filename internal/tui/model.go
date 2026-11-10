@@ -91,6 +91,13 @@ type Model struct {
 	// Provider labels that failed during the current request.
 	SearchErrors []string
 
+	// Provider picker overlay of a grouped search result: the
+	// members of a group, listed for a choice.
+	SearchPickerVisible bool
+	SearchPickerLabel   string
+	SearchPickerItems   []SelectionItem
+	SearchPickerCursor  int
+
 	// Selection screens.
 	ProviderSelectionModel ProviderSelectionModel
 	SelectionModel         SelectionModel

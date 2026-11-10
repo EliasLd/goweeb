@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -30,6 +29,12 @@ func handleInteractiveSearchUpdate(
 		)
 
 	case tea.KeyMsg:
+		// The provider picker is a modal: while it is open it
+		// consumes every key until Enter picks or Esc closes.
+		if m.SearchPickerVisible {
+			return handleSearchPickerKey(msg, m)
+		}
+
 		switch msg.String() {
 		case "esc", "ctrl+c":
 			return closeInteractiveSearch(m), nil
@@ -211,33 +216,13 @@ func handleInteractiveSearchResults(
 			return m, nil
 		}
 
-		m.SelectedMangaURL = item.Value
-		m.SelectedScanPath = ""
+		// A regrouped row stands for several provider results:
+		// the provider picker opens instead of selecting a URL.
+		if len(item.Members) > 1 {
+			return openSearchPicker(m, item), nil
+		}
 
-		// Adopting the provider of the selected result keeps the
-		// scan versions / chapters / download flow pointed at the
-		// provider the result came from. The persistent search
-		// filter (SelectedProvider) only changes on the provider
-		// screen.
-		m.SelectedMangaProvider = item.Provider
-
-		m.State = StateForm
-		m.Cursor = 2
-		m = updateFocus(m)
-
-		m.Logs = append(
-			m.Logs,
-			fmt.Sprintf(
-				"Manga selected: %s. Fetching scan versions...",
-				item.Label,
-			),
-		)
-
-		return m, fetchScanPaths(
-			m.SelectedMangaProvider,
-			m.SelectedMangaURL,
-			m.DomainInput.Value(),
-		)
+		return selectSearchResult(m, item)
 	}
 
 	var listCmd tea.Cmd
