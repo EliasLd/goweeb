@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -410,6 +411,14 @@ func handleInteractiveSearchResult(
 				merged,
 				items...,
 			)
+
+			// In all-providers mode, titles equal across
+			// providers collapse into one row on demand; a
+			// single-provider search renders flat results,
+			// exactly as before.
+			if strings.TrimSpace(m.SelectedProvider) == "" {
+				merged = groupSearchItems(merged)
+			}
 
 			sortSearchItems(merged, msg.query)
 

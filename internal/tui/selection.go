@@ -21,6 +21,11 @@ type SelectionItem struct {
 	// Full provider label as shown in the selection lists, set on
 	// search results only.
 	ProviderLabel string
+
+	// Rows regrouped behind a search result whose titles are equal
+	// under the exact-title normalizer, set on group rows only (two
+	// or more distinct providers). Plain rows leave it nil.
+	Members []SelectionItem
 }
 
 // Implements list.Item interface
@@ -62,13 +67,25 @@ func (
 	)
 
 	// Search results carry the provider they come from; the
-	// tag only makes sense while several providers contribute.
-	if d.ShowProviderTag && i.ProviderLabel != "" {
-		str = fmt.Sprintf(
-			"%s [%s]",
-			str,
-			i.ProviderLabel,
-		)
+	// tag only makes sense while several providers contribute. A
+	// regrouped row stands for several providers at once and shows
+	// their count instead of one provider's label.
+	if d.ShowProviderTag {
+		switch {
+		case len(i.Members) > 1 && distinctProviders(i.Members) > 1:
+			str = fmt.Sprintf(
+				"%s [%d providers]",
+				str,
+				distinctProviders(i.Members),
+			)
+
+		case i.ProviderLabel != "":
+			str = fmt.Sprintf(
+				"%s [%s]",
+				str,
+				i.ProviderLabel,
+			)
+		}
 	}
 
 	availableWidth := max(
