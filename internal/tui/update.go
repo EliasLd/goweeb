@@ -10,11 +10,17 @@ func Update(
 	msg tea.Msg,
 	m Model,
 ) (Model, tea.Cmd) {
-	alertModel, alertCmd :=
-		m.AlertModel.Update(msg)
+	var alertCmd tea.Cmd
 
-	m.AlertModel =
-		alertModel.(bubbleup.AlertModel)
+	if shouldUpdateAlert(msg) {
+		alertModel, cmd :=
+			m.AlertModel.Update(msg)
+
+		m.AlertModel =
+			alertModel.(bubbleup.AlertModel)
+
+		alertCmd = cmd
+	}
 
 	next, appCmd := updateApp(
 		msg,
@@ -179,4 +185,21 @@ func updateApp(
 	}
 
 	return updateSearchReady(m), nil
+}
+
+// shouldUpdateAlert keeps high-frequency messages away from the
+// toast model: while a toast is active, bubbleup re-arms a 100ms
+// tick for every message it sees, so mouse motion, download log
+// lines and spinner ticks would each spawn a self-sustaining tick
+// chain and flood the event loop. Toasts never react to these
+// streams; their lifecycle rides their own alerts and ticks.
+func shouldUpdateAlert(msg tea.Msg) bool {
+	switch msg.(type) {
+	case tea.MouseMsg,
+		logMsg,
+		spinner.TickMsg:
+		return false
+	}
+
+	return true
 }
