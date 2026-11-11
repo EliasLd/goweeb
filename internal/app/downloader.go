@@ -670,7 +670,7 @@ func Run(
 		return
 	}
 
-	if ledgerFile != nil {
+	if ledgerFile != nil && opts.Continue {
 		entries = skipDownloaded(
 			ledgerFile,
 			outputFormat(opts),
@@ -779,7 +779,7 @@ func RunWithWorkflow(
 		return
 	}
 
-	if ledgerFile != nil {
+	if ledgerFile != nil && opts.Continue {
 		entries = skipDownloaded(
 			ledgerFile,
 			outputFormat(opts),
