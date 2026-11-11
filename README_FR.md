@@ -217,6 +217,7 @@ Lorsque vous utilisez un titre sans guillemets, placez-le après toutes les opti
 | `--source <provider>` | — | Fournisseur utilisé pour rechercher et télécharger le manga. Obligatoire en mode CLI. |
 | `--all` | `-a` | Télécharger tous les chapitres disponibles. |
 | `--range <selection>` | `-r` | Télécharger des chapitres précis, des plages ou plusieurs plages. |
+| `--volume <selection>` | — | Télécharger les tomes listés par le fournisseur au lieu des chapitres, même syntaxe que `--range`. Uniquement sur les fournisseurs qui connaissent les tomes. Voir [Téléchargement des tomes](#téléchargement-des-tomes). |
 | `--scan-dir <folder>` | `-d` | Dossier de sortie. Par défaut : `scan` avec le CLI natif. |
 | `--ebook-friendly` | — | Enregistrer les images des chapitres dans des dossiers `Chapter XXX/` au lieu de générer des PDF. |
 | `--cbz` | — | Enregistrer chaque chapitre sous forme d'archive CBZ (pages numérotées `001.jpg`, `002.jpg`, …) au lieu de générer des PDF. Ne peut pas être combinée avec `--ebook-friendly`. |
@@ -266,6 +267,41 @@ téléchargera les chapitres disponibles tout en ignorant automatiquement les ch
 
 Si ni `--all` ni `--range` ne sont fournis, goweeb vous demandera interactivement quels chapitres vous souhaitez télécharger.
 
+## Téléchargement des tomes
+
+Certains fournisseurs connaissent la découpe d'une œuvre en tomes — MangaDex et MangaBall en font partie. Ces tomes se téléchargent avec `--volume`, qui applique la même syntaxe de sélection que `--range` aux numéros de tomes :
+
+```text
+1              # Uniquement le tome 1
+1-5            # Les tomes 1 à 5
+10-            # Du tome 10 à la fin
+-3             # Les 3 derniers tomes disponibles
+1,3,5          # Des tomes individuels
+```
+
+```bash
+goweeb --source mangadex --volume 1-5 --cbz "berserk"
+```
+
+Avec `--cbz`, chaque tome est téléchargé sous forme d'une archive unique, `{Series} Vol. 01.cbz` : à l'intérieur, chaque chapitre garde un dossier préfixé (l'architecture disque est reflétée dans l'archive), avec un `ComicInfo.xml` décrivant le tome.
+
+Avec une sortie PDF ou `--ebook-friendly`, les chapitres restent des fichiers ou dossiers individuels, regroupés dans un dossier de tome :
+
+```text
+scan/
+└── Berserk/
+    └── Vol. 01/
+        ├── Berserk - c001.pdf
+        └── ...
+```
+
+À noter :
+
+- Les données de tomes viennent des fournisseurs eux-mêmes : une œuvre dont les chapitres ne portent pas de tome n'offre pas ce mode, et les chapitres restent la façon de la télécharger.
+- Les chapitres non taggués (spéciaux numérotés, prologues) ne sont jamais rattachés à un tome ; téléchargez-les en mode chapitres.
+- Sans `--volume`, le flux interactif propose les tomes quand le fournisseur en liste ; l'interface TUI affiche la case « Download as volumes » dans les mêmes conditions.
+- `--volume` ne peut pas être combinée avec `--all` ou `--range`.
+
 ## Disposition de la sortie
 
 Par défaut, goweeb regroupe tous les téléchargements d'une œuvre dans un dossier nommé d'après la série, avec des noms de fichiers préfixés et adaptés aux lecteurs qui trient dans l'ordre de lecture. Ce schéma est reconnu par les bibliothèques comme Komga et Kavita :
@@ -299,7 +335,7 @@ Le schéma `series` s'applique à tous les modes de sortie : archives CBZ et PDF
 goweeb --source mangadex --all --continue "one piece"
 ```
 
-Elle se combine avec les autres options de sélection : `--all --continue` récupère uniquement les chapitres manquants, et `--range 1-100 --continue` récupère uniquement les chapitres manquants dans cette plage.
+Elle se combine avec les autres options de sélection : `--all --continue` récupère uniquement les chapitres manquants, et `--range 1-100 --continue` récupère uniquement les chapitres manquants dans cette plage. En mode tomes, `--volume --continue` saute un tome regroupé uniquement lorsque tous ses chapitres sont déjà sur disque, et reconstruit entièrement un tome partiellement enregistré.
 
 goweeb conserve un petit manifeste JSON par œuvre dans son dossier de sortie :
 
