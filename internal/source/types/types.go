@@ -74,6 +74,24 @@ type ImageRequestConfigurer interface {
 	ImageRequestHeaders() map[string]string
 }
 
+// Volume groups the chapters one volume holds, exactly as the
+// provider's own data assigns them. Volume mode is built from real
+// site data only — never from numbering arithmetic. Entries are
+// provider-canonical (same shape as a chapter listing) and come in
+// reading order.
+type Volume struct {
+	Number  string // volume number as the site presents it
+	Entries []Entry
+}
+
+// Optional capability for providers whose source actually splits a
+// work into volumes. Providers without volume data do not implement
+// it, and the download flow simply never offers volume mode for
+// them. Untagged chapters stay chapter-mode only.
+type VolumeLister interface {
+	ListVolumes(workURL string, scanPath string, log *logger.Logger) ([]Volume, error)
+}
+
 type Provider interface {
 	Name() string
 	Search(query string, log *logger.Logger) ([]SearchResult, error)
