@@ -176,6 +176,39 @@ func (p *Provider) ListEntries(
 	}, entries, nil
 }
 
+// ListVolumes serves volume mode with the grouping the chapter
+// listing already exposes: the title name plus one shared walk of
+// the same listing the chapter flow reads.
+func (p *Provider) ListVolumes(
+	workURL string,
+	scanPath string,
+	log *logger.Logger,
+) (
+	sourcetypes.Work,
+	[]sourcetypes.Volume,
+	error,
+) {
+	titleID, err := mangaballscraper.TitleIDFromURL(workURL)
+	if err != nil {
+		return sourcetypes.Work{}, nil, err
+	}
+
+	work, volumes, err := mangaballscraper.ListVolumes(
+		p.domain,
+		titleID,
+		scanPath,
+		log,
+	)
+	if err != nil {
+		return sourcetypes.Work{}, nil, fmt.Errorf(
+			"failed to list MangaBall volumes: %w",
+			err,
+		)
+	}
+
+	return work, volumes, nil
+}
+
 // MangaBall embeds each chapter's page list in its server-rendered
 // reader page. The storage CDNs only accept downloads carrying the
 // site's origin as referer, so it is added here.
