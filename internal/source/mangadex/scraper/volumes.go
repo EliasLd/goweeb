@@ -25,12 +25,13 @@ type aggregateChapter struct {
 	IsUnavailable bool    `json:"isUnavailable"`
 }
 
-// aggregateVolume decodes one entry of the volumes container. The
-// container also carries the volume total as a bare number under the
-// "count" key, which is not a volume, so anything that is not an
-// object decodes to nothing and the key-based routing skips it.
+// aggregateVolume decodes one entry of the volumes container. Its
+// chapters container is keyed by chapter number and also carries the
+// volume total as a bare number under the "count" key of the outer
+// container, so anything that is not an object decodes to nothing
+// and the key-based routing skips it.
 type aggregateVolume struct {
-	Chapters []aggregateChapter `json:"chapters"`
+	Chapters map[string]aggregateChapter `json:"chapters"`
 }
 
 func (v *aggregateVolume) UnmarshalJSON(data []byte) error {
@@ -217,8 +218,21 @@ func volumeEntries(
 		return nil, "volume without chapters"
 	}
 
-	entries := make([]sourcetypes.Entry, 0, len(data.Chapters))
-	numbers := make(map[common.ChapterNumber]struct{}, len(data.Chapters))
+	// The chapters container is a JSON object, so its ordering is
+	// not contractual; a deterministic walk pins which chapter a
+	// refusal reports first. The entries themselves re-sort below.
+	chapters := make([]aggregateChapter, 0, len(data.Chapters))
+	for _, chapter := range data.Chapters {
+		chapters = append(chapters, chapter)
+	}
+
+	sort.SliceStable(chapters, func(i, j int) bool {
+		return volumeChapterSortKey(chapters[i].Chapter) <
+			volumeChapterSortKey(chapters[j].Chapter)
+	})
+
+	entries := make([]sourcetypes.Entry, 0, len(chapters))
+	numbers := make(map[common.ChapterNumber]struct{}, len(chapters))
 
 	for _, chapter := range data.Chapters {
 		if chapter.ID == "" {
@@ -279,3 +293,28 @@ func volumeEntries(
 
 	return entries, ""
 }
+
+// volumeChapterSortKey renders a chapter number so the volume walk
+// stays deterministic; unreadable ones sort last.
+func volumeChapterSortKey(chapter *string) string {
+	if chapter == nil {
+		return volumeSortKeyUnreadable
+	}
+
+	number, err := common.ParseChapterNumber(*chapter)
+	if err != nil {
+		return volumeSortKeyUnreadable
+	}
+
+	// Pad the whole-part length so lexical order tracks numeric
+	// order: 1.5 sorts before 2, 12 before 100.
+	parts := strings.SplitN(string(number), ".", 2)
+
+	return fmt.Sprintf(
+		"%02d%s",
+		len(parts[0]),
+		number.String(),
+	)
+}
+
+const volumeSortKeyUnreadable = "zz"

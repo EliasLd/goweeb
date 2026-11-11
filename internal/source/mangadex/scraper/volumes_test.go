@@ -11,28 +11,29 @@ import (
 )
 
 // Fixture shapes come from real aggregate payloads (probed
-// 2026-11-08: berserk en carries 43 tagged volumes plus a "none"
-// bucket; chapters carry isUnavailable and same-number others with a
-// count), trimmed to the fields the code reads. The volumes
-// container mixes volume objects with the bare "count" total.
+// 2026-11-08 and 2026-11-11: berserk en carries 43 tagged volumes
+// plus a "none" bucket; the chapters container of each volume is
+// keyed by chapter number and each chapter carries isUnavailable and
+// same-number others with a count), trimmed to the fields the code
+// reads. The volumes container mixes volume objects with the bare
+// "count" total.
 const aggregateFixture = `{
 	"result": "ok",
 	"volumes": {
 		"count": 2,
-		"none": {"volume": null, "count": 2, "chapters": [
-			{"chapter": "9", "id": "c9", "count": 1},
-			{"chapter": "10", "id": "c10", "count": 1}
-		]},
-		"1": {"volume": "1", "count": 3, "chapters": [
-			{"chapter": "1", "id": "c1", "count": 1, "others": [{"chapter": "1", "id": "c1b"}]},
-			{"chapter": "1", "id": "c1c", "count": 1},
-			{"chapter": "1.5", "id": "c15", "count": 1},
-			{"chapter": "2", "id": "c2", "count": 1}
-		]},
-		"2": {"volume": "2", "count": 1, "chapters": [
-			{"chapter": "3", "id": "c3", "count": 1},
-			{"chapter": "4", "id": "c4", "count": 1, "isUnavailable": true}
-		]}
+		"none": {"volume": "none", "count": 2, "chapters": {
+			"10": {"chapter": "10", "id": "c10", "count": 1},
+			"9": {"chapter": "9", "id": "c9", "count": 1}
+		}},
+		"1": {"volume": "1", "count": 3, "chapters": {
+			"1": {"chapter": "1", "id": "c1", "count": 2, "others": ["c1b"]},
+			"1.5": {"chapter": "1.5", "id": "c15", "count": 1},
+			"2": {"chapter": "2", "id": "c2", "count": 1}
+		}},
+		"2": {"volume": "2", "count": 2, "chapters": {
+			"3": {"chapter": "3", "id": "c3", "count": 1},
+			"4": {"chapter": "4", "id": "c4", "count": 1, "isUnavailable": true}
+		}}
 	}
 }`
 
@@ -142,10 +143,10 @@ func TestListVolumesUnnumberedChapter(t *testing.T) {
 		"result": "ok",
 		"volumes": {
 			"count": 1,
-			"1": {"volume": "1", "count": 2, "chapters": [
-				{"chapter": "1", "id": "c1", "count": 1},
-				{"chapter": null, "id": "c2", "count": 1}
-			]}
+			"1": {"volume": "1", "count": 2, "chapters": {
+				"1": {"chapter": "1", "id": "c1", "count": 1},
+				"2": {"chapter": null, "id": "c2", "count": 1}
+			}}
 		}
 	}`
 
@@ -164,9 +165,9 @@ func TestListVolumesNoneOnly(t *testing.T) {
 		"result": "ok",
 		"volumes": {
 			"count": 0,
-			"none": {"volume": null, "count": 1, "chapters": [
-				{"chapter": "1", "id": "c1", "count": 1}
-			]}
+			"none": {"volume": "none", "count": 1, "chapters": {
+				"1": {"chapter": "1", "id": "c1", "count": 1}
+			}}
 		}
 	}`
 
