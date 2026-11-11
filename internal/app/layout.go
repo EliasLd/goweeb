@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/EliasLd/goweeb/internal/source/common"
@@ -190,5 +191,130 @@ func layoutEntryImageDir(
 	return filepath.Join(
 		scanDir,
 		seriesBaseName(series, number, digits),
+	)
+}
+
+// volumeLabel renders a bundle's volume number the way the volume
+// mode names every artifact it writes, zero-padded for ordering:
+// "Vol. 01".
+func volumeLabel(number string, digits int) string {
+	number = strings.TrimSpace(number)
+
+	if parsed, err := strconv.Atoi(number); err == nil {
+		return fmt.Sprintf("Vol. %0*d", digits, parsed)
+	}
+
+	return "Vol. " + number
+}
+
+// layoutVolumePath returns the output file path of one volume bundle:
+//
+//	series: {output}/{Series}/{Series} Vol. 01.cbz
+//	flat:   {output}/{Series}_Vol. 01.cbz
+func layoutVolumePath(
+	layout Layout,
+	scanDir string,
+	series string,
+	number string,
+	digits int,
+	ext string,
+) string {
+	volume := volumeLabel(number, digits)
+
+	if layout == LayoutFlat {
+		return filepath.Join(
+			scanDir,
+			fmt.Sprintf(
+				"%s_%s%s",
+				series,
+				volume,
+				ext,
+			),
+		)
+	}
+
+	segment := sanitizeSegment(series)
+
+	return filepath.Join(
+		scanDir,
+		segment,
+		fmt.Sprintf(
+			"%s %s%s",
+			segment,
+			volume,
+			ext,
+		),
+	)
+}
+
+// layoutVolumeDir returns the per-volume directory grouping the
+// per-chapter artifacts (PDF and ebook-friendly volume mode):
+//
+//	series: {output}/{Series}/Vol. 01
+//	flat:   {output}/{Series} Vol. 01
+func layoutVolumeDir(
+	layout Layout,
+	scanDir string,
+	series string,
+	number string,
+	digits int,
+) string {
+	volume := volumeLabel(number, digits)
+
+	if layout == LayoutFlat {
+		return filepath.Join(
+			scanDir,
+			fmt.Sprintf(
+				"%s %s",
+				series,
+				volume,
+			),
+		)
+	}
+
+	return filepath.Join(
+		scanDir,
+		sanitizeSegment(series),
+		volume,
+	)
+}
+
+// volumeChapterBaseName names one chapter artifact inside a volume
+// directory. Both layouts use the reader-friendly padded form, since
+// the surrounding "Vol. NN" directory already carries the layout
+// distinction.
+func volumeChapterBaseName(
+	series string,
+	number common.ChapterNumber,
+	digits int,
+) string {
+	return fmt.Sprintf(
+		"%s - c%s",
+		sanitizeSegment(series),
+		number.Padded(digits),
+	)
+}
+
+// volumeEntryImageDir names one chapter image folder inside a volume
+// directory. The series layout keeps the "{series} - c{number}" name
+// of its archives; the flat layout keeps its historical
+// "{prefix} {number}" folders.
+func volumeEntryImageDir(
+	volumeDir string,
+	layout Layout,
+	series string,
+	number common.ChapterNumber,
+	digits int,
+) string {
+	if layout == LayoutFlat {
+		return filepath.Join(
+			volumeDir,
+			fmt.Sprintf("Chapter %s", number.Padded(digits)),
+		)
+	}
+
+	return filepath.Join(
+		volumeDir,
+		volumeChapterBaseName(series, number, digits),
 	)
 }

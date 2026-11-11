@@ -42,7 +42,12 @@ func supportedProvidersList() string {
 type Options struct {
 	Slug      string
 	Selection RangeSelection
-	Continue  bool
+
+	// VolumeSelection carries an explicit volume selection (volume
+	// mode); chapter and volume selections never combine.
+	VolumeSelection RangeSelection
+
+	Continue bool
 
 	// NoExternalCovers turns the external database layer of the
 	// work-description ladder off.
