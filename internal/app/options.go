@@ -105,6 +105,13 @@ func configureUsage() {
 		fmt.Fprintln(out, "        1,5,10          multiple individual chapters")
 		fmt.Fprintln(out)
 
+		fmt.Fprintln(out, "Volume selection:")
+		fmt.Fprintln(out, "  --volume <selection>")
+		fmt.Fprintln(out, "      Select volumes to download instead of chapters,")
+		fmt.Fprintln(out, "      on the providers that list them")
+		fmt.Fprintln(out, "      Same syntax as --range, applied to volume numbers")
+		fmt.Fprintln(out)
+
 		fmt.Fprintln(out, "  --continue")
 		fmt.Fprintln(out, "  -c")
 		fmt.Fprintln(out, "      Skip chapters already downloaded in the output directory")
@@ -157,6 +164,7 @@ func ParseFlags() Options {
 		all           bool
 		sourceName    string
 		rangeStr      string
+		volumeStr     string
 		scanDir       string
 		ebookFriendly bool
 		cbz           bool
@@ -193,6 +201,13 @@ func ParseFlags() Options {
 		"r",
 		"",
 		"Shorthand for --range",
+	)
+
+	flag.StringVar(
+		&volumeStr,
+		"volume",
+		"",
+		"Volume selection, on the providers that list volumes",
 	)
 
 	flag.BoolVar(
@@ -356,6 +371,15 @@ func ParseFlags() Options {
 		os.Exit(2)
 	}
 
+	if volumeStr != "" && (all || rangeStr != "") {
+		fmt.Fprintln(
+			os.Stderr,
+			"--volume cannot be used together with --all or --range",
+		)
+
+		os.Exit(2)
+	}
+
 	if ebookFriendly && cbz {
 		fmt.Fprintln(
 			os.Stderr,
@@ -396,6 +420,25 @@ func ParseFlags() Options {
 		selection = parsedSelection
 	}
 
+	var volumeSelection RangeSelection
+
+	if volumeStr != "" {
+		parsedVolumes, err := ParseRangeExpression(
+			volumeStr,
+		)
+		if err != nil {
+			fmt.Fprintf(
+				os.Stderr,
+				"Invalid volume selection: %v\n",
+				err,
+			)
+
+			os.Exit(2)
+		}
+
+		volumeSelection = parsedVolumes
+	}
+
 	customDomain = strings.TrimSpace(
 		customDomain,
 	)
@@ -430,6 +473,7 @@ func ParseFlags() Options {
 	return Options{
 		Slug:             slug,
 		Selection:        selection,
+		VolumeSelection:  volumeSelection,
 		Continue:         cont,
 		NoExternalCovers: noExternalCovers,
 		Source:           sourceName,
