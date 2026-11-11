@@ -87,9 +87,10 @@ type Volume struct {
 // Optional capability for providers whose source actually splits a
 // work into volumes. Providers without volume data do not implement
 // it, and the download flow simply never offers volume mode for
-// them. Untagged chapters stay chapter-mode only.
+// them. Untagged chapters stay chapter-mode only. The work title
+// travels with the listing, the same way ListEntries resolves it.
 type VolumeLister interface {
-	ListVolumes(workURL string, scanPath string, log *logger.Logger) ([]Volume, error)
+	ListVolumes(workURL string, scanPath string, log *logger.Logger) (Work, []Volume, error)
 }
 
 type Provider interface {
