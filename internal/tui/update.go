@@ -163,6 +163,12 @@ func updateApp(
 			m,
 		)
 
+	case volumesResultMsg:
+		return handleVolumesResult(
+			msg,
+			m,
+		)
+
 	case tea.KeyMsg:
 		if m.State == StateRangeSelection {
 			return handleRangeUpdate(

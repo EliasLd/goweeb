@@ -45,6 +45,10 @@ func handleProviderSelectionUpdate(
 			m.DiscoveredEntryList = nil
 			m.AvailableRanges = ""
 			m.SelectedRange = app.RangeSelection{}
+
+			m.DiscoveredVolumes = nil
+			m.VolumesCheckbox.Checked = false
+			m.SelectedVolumeRange = app.RangeSelection{}
 		}
 
 		// The provider screen is only reachable from the search
@@ -151,17 +155,35 @@ func handleSelectionUpdate(
 
 		m.State = StateForm
 
+		// A new work starts without volume state; the volumesResult
+		// message fills the listing in once it answers.
+		m.DiscoveredVolumes = nil
+		m.VolumesCheckbox.Checked = false
+		m.SelectedVolumeRange = app.RangeSelection{}
+
 		m.Logs = append(
 			m.Logs,
 			"Scan version selected. Fetching chapters...",
 		)
 
-		return m, fetchEntries(
-			m.SelectedMangaProvider,
-			m.SelectedMangaURL,
-			m.SelectedScanPath,
-			strings.TrimSpace(
-				m.DomainInput.Value(),
+		domain := strings.TrimSpace(
+			m.DomainInput.Value(),
+		)
+
+		// The volume listing rides the same pick: providers without
+		// the capability answer empty, and the checkbox stays hidden.
+		return m, tea.Batch(
+			fetchEntries(
+				m.SelectedMangaProvider,
+				m.SelectedMangaURL,
+				m.SelectedScanPath,
+				domain,
+			),
+			fetchVolumes(
+				m.SelectedMangaProvider,
+				m.SelectedMangaURL,
+				m.SelectedScanPath,
+				domain,
 			),
 		)
 	}

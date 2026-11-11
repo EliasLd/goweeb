@@ -67,6 +67,13 @@ type Model struct {
 	RangeInput  textinput.Model
 	AllCheckbox Checkbox
 
+	// Volume listing of the current work, fetched alongside the
+	// entries when the provider can list volumes. The checkbox is
+	// rendered only when the listing is non-empty.
+	DiscoveredVolumes   []sourcetypes.Volume
+	VolumesCheckbox     Checkbox
+	SelectedVolumeRange app.RangeSelection
+
 	DiscoveredEntries   int
 	DiscoveredEntryList []sourcetypes.Entry
 	AvailableRanges     string

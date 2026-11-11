@@ -76,6 +76,11 @@ func InitialModel() Model {
 			Checked: false,
 		},
 
+		VolumesCheckbox: Checkbox{
+			Label:   "Download as volumes.",
+			Checked: false,
+		},
+
 		RangeInput:  rangeInput,
 		DomainInput: domain,
 

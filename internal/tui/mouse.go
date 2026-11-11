@@ -17,6 +17,7 @@ const (
 
 	mouseZoneRangeInput    = "range-input"
 	mouseZoneRangeAll      = "range-all"
+	mouseZoneRangeVolumes  = "range-volumes"
 	mouseZoneRangeDownload = "range-download"
 
 	mouseZoneProviderDomain  = "provider-domain"
@@ -283,11 +284,23 @@ func handleRangeMouse(
 		return m, nil, true
 
 	case mouseZoneHit(
+		mouseZoneRangeVolumes,
+		msg,
+	):
+		m.Cursor = 2
+		m.VolumesCheckbox.Toggle()
+		m = updateRangeFocus(m)
+
+		return m, nil, true
+
+	case mouseZoneHit(
 		mouseZoneRangeDownload,
 		msg,
 	):
-		if m.Cursor != 2 {
-			m.Cursor = 2
+		downloadCursor := rangeMaxCursor(m)
+
+		if m.Cursor != downloadCursor {
+			m.Cursor = downloadCursor
 			m = updateRangeFocus(m)
 
 			return m, nil, true
@@ -738,6 +751,7 @@ func hoveredMouseZone(
 			msg,
 			mouseZoneRangeInput,
 			mouseZoneRangeAll,
+			mouseZoneRangeVolumes,
 			mouseZoneRangeDownload,
 		)
 
