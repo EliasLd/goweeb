@@ -43,3 +43,10 @@ type entriesResultMsg struct {
 	entries []sourcetypes.Entry
 	err     error
 }
+
+// The volume listing a provider carries for the current work; one
+// message per scan-path pick, next to the entries listing.
+type volumesResultMsg struct {
+	volumes []sourcetypes.Volume
+	err     error
+}

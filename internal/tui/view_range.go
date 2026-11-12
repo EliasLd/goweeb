@@ -4,23 +4,40 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/EliasLd/goweeb/internal/app"
 	"github.com/charmbracelet/lipgloss"
 )
 
 func viewRangeSelection(m Model) string {
 	var b strings.Builder
 
+	volumesListed := len(m.DiscoveredVolumes) > 0
+	volumeMode := volumesListed && m.VolumesCheckbox.Checked
+
 	title := fmt.Sprintf(
 		"Found %d chapter(s)",
 		m.DiscoveredEntries,
 	)
 
+	available := m.AvailableRanges
+	availableLabel := "Available chapters"
+
+	if volumeMode {
+		title = fmt.Sprintf(
+			"Found %d volume(s)",
+			len(m.DiscoveredVolumes),
+		)
+
+		available = app.FormatVolumeRanges(m.DiscoveredVolumes)
+		availableLabel = "Available volumes"
+	}
+
 	b.WriteString(titleStyle.Render(title))
 	b.WriteString("\n\n")
 
-	if strings.TrimSpace(m.AvailableRanges) != "" {
+	if strings.TrimSpace(available) != "" {
 		b.WriteString(
-			labelStyle.Render("Available chapters"),
+			labelStyle.Render(availableLabel),
 		)
 		b.WriteString("\n")
 
@@ -38,7 +55,7 @@ func viewRangeSelection(m Model) string {
 				Faint(true).
 				Render(
 					wrapAvailableRanges(
-						m.AvailableRanges,
+						available,
 						rangeWidth,
 					),
 				),
@@ -69,7 +86,7 @@ func viewRangeSelection(m Model) string {
 				Faint(true).
 				Italic(true).
 				Render(
-					"Disabled while downloading all chapters.",
+					"Disabled while downloading everything.",
 				),
 		)
 	} else {
@@ -104,38 +121,74 @@ func viewRangeSelection(m Model) string {
 
 	b.WriteString("\n")
 
-	b.WriteString(
-		lipgloss.NewStyle().
-			Faint(true).
-			Italic(true).
-			Render(
-				"Unavailable chapters inside a range are skipped automatically.",
-			),
-	)
+	if volumeMode {
+		b.WriteString(
+			lipgloss.NewStyle().
+				Faint(true).
+				Italic(true).
+				Render(
+					"Each volume bundles the chapters the source lists under it.",
+				),
+		)
+	} else {
+		b.WriteString(
+			lipgloss.NewStyle().
+				Faint(true).
+				Italic(true).
+				Render(
+					"Unavailable chapters inside a range are skipped automatically.",
+				),
+		)
+	}
 
 	b.WriteString("\n\n")
 
-	allCheckbox :=
-		m.AllCheckbox.View(
+	allCheckbox := m.AllCheckbox
+
+	if volumeMode {
+		allCheckbox.Label = "Download all volumes."
+	}
+
+	allView :=
+		allCheckbox.View(
 			m.Cursor == 1,
 		)
 
-	allCheckbox =
+	allView =
 		markMouseZone(
 			mouseZoneRangeAll,
-			allCheckbox,
+			allView,
 		)
 
 	b.WriteString(
-		allCheckbox,
+		allView,
 	)
+
+	if volumesListed {
+		b.WriteString("\n\n")
+
+		volumesCheckbox :=
+			m.VolumesCheckbox.View(
+				m.Cursor == 2,
+			)
+
+		volumesCheckbox =
+			markMouseZone(
+				mouseZoneRangeVolumes,
+				volumesCheckbox,
+			)
+
+		b.WriteString(
+			volumesCheckbox,
+		)
+	}
 
 	b.WriteString("\n\n")
 
 	downloadButton :=
 		renderButton(
 			"Download",
-			m.Cursor == 2,
+			m.Cursor == rangeMaxCursor(m),
 			buttonPrimary,
 		)
 

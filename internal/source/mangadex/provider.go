@@ -171,6 +171,34 @@ func (p *Provider) ListEntries(
 	}, entries, nil
 }
 
+// ListVolumes serves volume mode: one detail call for the canonical
+// title plus one aggregate call per language. Providers without
+// volume data never offer the mode; this provider's aggregate does.
+func (p *Provider) ListVolumes(
+	workURL string,
+	scanPath string,
+	log *logger.Logger,
+) (
+	sourcetypes.Work,
+	[]sourcetypes.Volume,
+	error,
+) {
+	work, volumes, err := mangadexscraper.ListVolumes(
+		p.domain,
+		workURL,
+		scanPath,
+		log,
+	)
+	if err != nil {
+		return sourcetypes.Work{}, nil, fmt.Errorf(
+			"failed to list MangaDex volumes: %w",
+			err,
+		)
+	}
+
+	return work, volumes, nil
+}
+
 func (p *Provider) GetPageImageURLs(
 	entryURL string,
 	log *logger.Logger,

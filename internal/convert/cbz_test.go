@@ -204,6 +204,148 @@ func TestImagesToCBZEmptyDir(t *testing.T) {
 	}
 }
 
+// TestImageTreeToCBZ packs a staged volume tree and keeps the
+// chapter-folder layout inside the archive.
+func TestImageTreeToCBZ(t *testing.T) {
+	volDir := t.TempDir()
+
+	if err := os.MkdirAll(filepath.Join(volDir, "001"), 0o755); err != nil {
+		t.Fatalf("failed to stage chapter 001: %v", err)
+	}
+
+	if err := os.MkdirAll(filepath.Join(volDir, "002"), 0o755); err != nil {
+		t.Fatalf("failed to stage chapter 002: %v", err)
+	}
+
+	page1 := encodeTestJPEG(
+		t,
+		filepath.Join(volDir, "001", "001.jpg"),
+		color.RGBA{R: 0xFF, A: 0xFF},
+	)
+	page2 := encodeTestJPEG(
+		t,
+		filepath.Join(volDir, "001", "002.jpg"),
+		color.RGBA{G: 0xFF, A: 0xFF},
+	)
+	page3 := encodeTestJPEG(
+		t,
+		filepath.Join(volDir, "002", "001.jpg"),
+		color.RGBA{B: 0xFF, A: 0xFF},
+	)
+
+	cbzPath := filepath.Join(t.TempDir(), "out.cbz")
+
+	info := ComicInfo{
+		Series: "Berserk",
+		Number: "",
+		Volume: 1,
+		Count:  43,
+		Title:  "Vol. 01",
+		Manga:  MangaYes,
+	}
+
+	if err := ImageTreeToCBZ(volDir, cbzPath, &info); err != nil {
+		t.Fatalf("ImageTreeToCBZ() error: %v", err)
+	}
+
+	reader := readTestZip(t, cbzPath)
+
+	wantNames := []string{
+		"ComicInfo.xml",
+		"001/001.jpg",
+		"001/002.jpg",
+		"002/001.jpg",
+	}
+
+	if len(reader.File) != len(wantNames) {
+		t.Fatalf(
+			"archive contains %d entries, want %d",
+			len(reader.File),
+			len(wantNames),
+		)
+	}
+
+	for i, want := range wantNames {
+		if reader.File[i].Name != want {
+			t.Errorf(
+				"entry %d = %q, want %q",
+				i,
+				reader.File[i].Name,
+				want,
+			)
+		}
+	}
+
+	// Pages are stored verbatim under their staged names, so
+	// readers keep the real formats and the padded tree walks in
+	// reading order.
+	if got := readTestZipEntry(t, reader.File[1]); !bytes.Equal(got, page1) {
+		t.Errorf("001/001.jpg does not carry the staged page verbatim")
+	}
+
+	if got := readTestZipEntry(t, reader.File[2]); !bytes.Equal(got, page2) {
+		t.Errorf("001/002.jpg does not carry the staged page verbatim")
+	}
+
+	if got := readTestZipEntry(t, reader.File[3]); !bytes.Equal(got, page3) {
+		t.Errorf("002/001.jpg does not carry the staged page verbatim")
+	}
+
+	var decoded ComicInfo
+
+	if err := xml.Unmarshal(
+		readTestZipEntry(t, reader.File[0]),
+		&decoded,
+	); err != nil {
+		t.Fatalf("failed to parse ComicInfo.xml: %v", err)
+	}
+
+	if decoded.Volume != 1 ||
+		decoded.Number != "" ||
+		decoded.Title != "Vol. 01" {
+		t.Errorf("unexpected metadata: %+v", decoded)
+	}
+
+	if decoded.PageCount != 3 {
+		t.Errorf("PageCount = %d, want 3", decoded.PageCount)
+	}
+}
+
+// TestImageTreeToCBZRefusesPartial verifies bundling refuses a
+// staging tree that cannot represent a complete volume.
+func TestImageTreeToCBZRefusesPartial(t *testing.T) {
+	t.Run("no chapter folders", func(t *testing.T) {
+		dir := t.TempDir()
+
+		if err := ImageTreeToCBZ(dir, filepath.Join(dir, "out.cbz"), nil); err == nil {
+			t.Errorf("empty staging tree must fail")
+		}
+	})
+
+	t.Run("empty chapter folder", func(t *testing.T) {
+		volDir := t.TempDir()
+
+		if err := os.MkdirAll(filepath.Join(volDir, "001"), 0o755); err != nil {
+			t.Fatalf("failed to stage chapter: %v", err)
+		}
+
+		if err := os.MkdirAll(filepath.Join(volDir, "002"), 0o755); err != nil {
+			t.Fatalf("failed to stage chapter: %v", err)
+		}
+
+		encodeTestJPEG(
+			t,
+			filepath.Join(volDir, "001", "001.jpg"),
+			color.RGBA{A: 0xFF},
+		)
+
+		if err := ImageTreeToCBZ(volDir, filepath.Join(volDir, "out.cbz"), nil); err == nil {
+			t.Errorf("a chapter without pages must fail the bundle")
+		}
+	})
+}
+
+// TestImagesToCBZWritesComicInfo exercises the metadata entry of one chapter.
 func TestImagesToCBZWritesComicInfo(t *testing.T) {
 	dir := t.TempDir()
 

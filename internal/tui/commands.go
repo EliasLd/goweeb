@@ -9,6 +9,7 @@ import (
 	"github.com/EliasLd/goweeb/internal/app"
 	"github.com/EliasLd/goweeb/internal/logger"
 	"github.com/EliasLd/goweeb/internal/source"
+	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -197,18 +198,66 @@ func fetchEntries(
 	}
 }
 
+// Fetches the volumes a selected scan version lists, when the
+// provider carries them at all. A provider without the capability
+// answers an empty listing, which keeps the checkbox hidden.
+func fetchVolumes(
+	providerName string,
+	mangaURL string,
+	scanPath string,
+	customDomain string,
+) tea.Cmd {
+	return func() tea.Msg {
+		log := logger.New(
+			io.Discard,
+			logger.LevelInfo,
+		)
+
+		provider, err := source.New(
+			providerName,
+			strings.TrimSpace(customDomain),
+		)
+		if err != nil {
+			return volumesResultMsg{
+				err: err,
+			}
+		}
+
+		lister, listsVolumes := provider.(sourcetypes.VolumeLister)
+		if !listsVolumes {
+			return volumesResultMsg{}
+		}
+
+		_, volumes, err := lister.ListVolumes(
+			mangaURL,
+			scanPath,
+			log,
+		)
+		if err != nil {
+			return volumesResultMsg{
+				err: err,
+			}
+		}
+
+		return volumesResultMsg{
+			volumes: volumes,
+		}
+	}
+}
+
 // Starts a download and forwards its logs through a pipe.
 func startDownload(m Model) tea.Cmd {
 	return func() tea.Msg {
 		opts := app.Options{
-			Slug:         m.SearchInput.Value(),
-			Source:       m.SelectedMangaProvider,
-			Selection:    m.SelectedRange,
-			ScanDir:      app.ResolveOutputDir(m.DestinationDir),
-			CustomDomain: strings.TrimSpace(m.DomainInput.Value()),
-			MangaURL:     m.SelectedMangaURL,
-			ScanPath:     m.SelectedScanPath,
-			Continue:     m.ContinueCheckbox.Checked,
+			Slug:            m.SearchInput.Value(),
+			Source:          m.SelectedMangaProvider,
+			Selection:       m.SelectedRange,
+			VolumeSelection: m.SelectedVolumeRange,
+			ScanDir:         app.ResolveOutputDir(m.DestinationDir),
+			CustomDomain:    strings.TrimSpace(m.DomainInput.Value()),
+			MangaURL:        m.SelectedMangaURL,
+			ScanPath:        m.SelectedScanPath,
+			Continue:        m.ContinueCheckbox.Checked,
 
 			NoExternalCovers: !m.ExternalCoversCheckbox.Checked,
 

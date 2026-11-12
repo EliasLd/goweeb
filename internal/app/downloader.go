@@ -595,6 +595,155 @@ func Run(
 	opts.MangaURL = mangaURL
 	opts.ScanPath = scanPath
 
+	// Resolve the run mode first: volume mode reads its own listing
+	// only and never walks the chapter feed, so works numbered per
+	// volume stay usable here. Explicit flags decide, and interactive
+	// runs probe the volume listing once when the provider has the
+	// capability. The chapter flow stays exactly as it is otherwise.
+	if hasRangeSelection(opts.Selection) &&
+		hasRangeSelection(opts.VolumeSelection) {
+		log.Warn(
+			"Chapter and volume selections cannot be used together.\n",
+		)
+
+		return
+	}
+
+	volumeLister, listsVolumes := provider.(sourcetypes.VolumeLister)
+
+	var (
+		volumes         []sourcetypes.Volume
+		volumeWork      sourcetypes.Work
+		volumeMode      bool
+		promptedVolumes bool
+	)
+
+	if hasRangeSelection(opts.VolumeSelection) {
+		if !listsVolumes {
+			log.Warn(
+				"The %s provider does not support volume downloads.\n",
+				provider.Name(),
+			)
+
+			return
+		}
+
+		volumeWork, volumes, err = volumeLister.ListVolumes(
+			mangaURL,
+			scanPath,
+			log,
+		)
+		if err != nil {
+			log.Error(
+				"Failed to list volumes: %v\n",
+				err,
+			)
+
+			return
+		}
+
+		if len(volumes) == 0 {
+			log.Warn(
+				"This work has no volume data on this provider.\n",
+			)
+
+			return
+		}
+
+		volumeMode = true
+	} else if !hasRangeSelection(opts.Selection) && listsVolumes {
+		// Interactive runs may switch to volumes; a failing probe or
+		// an untagged work keeps the chapter flow, exactly as today.
+		w, v, probeErr := volumeLister.ListVolumes(
+			mangaURL,
+			scanPath,
+			log,
+		)
+
+		if probeErr == nil && len(v) > 0 {
+			volumeWork, volumes, volumeMode = w, v, true
+		}
+	}
+
+	if volumeMode && !hasRangeSelection(opts.VolumeSelection) {
+		// Volumes are available but not selected yet: ask which
+		// listing to use; chapters keeps the historical flow.
+		if !PromptChaptersOrVolumes(log) {
+			volumeMode = false
+		} else {
+			promptedVolumes = true
+
+			selection, promptErr := PromptVolumeRange(
+				volumes,
+				log,
+			)
+			if promptErr != nil {
+				log.Error(
+					"Failed to read volume range: %v\n",
+					promptErr,
+				)
+
+				return
+			}
+
+			opts.VolumeSelection = selection
+		}
+	}
+
+	if volumeMode {
+		totalVolumes := len(volumes)
+
+		if !promptedVolumes {
+			log.Info(
+				"Found %d volume(s).\n",
+				totalVolumes,
+			)
+
+			log.Info(
+				"Available volumes: %s\n",
+				FormatVolumeRanges(volumes),
+			)
+		}
+
+		selected := FilterVolumesBySelection(
+			volumes,
+			opts.VolumeSelection,
+		)
+
+		if len(selected) == 0 {
+			log.Warn(
+				"No available volumes match the requested selection.\n",
+			)
+
+			return
+		}
+
+		ledgerFile := openLedger(opts, volumeWork, log)
+
+		// The description ladder runs before any download: it only
+		// reads and caches, and a failure never stops the run.
+		workMeta := resolveWorkMetadata(
+			opts,
+			provider,
+			volumeWork,
+			ledgerFile,
+			log,
+		)
+
+		downloadVolumes(
+			provider,
+			volumeWork,
+			totalVolumes,
+			selected,
+			ledgerFile,
+			opts,
+			workMeta,
+			log,
+		)
+
+		return
+	}
+
 	work, entries, err := provider.ListEntries(
 		mangaURL,
 		scanPath,
@@ -670,7 +819,7 @@ func Run(
 		return
 	}
 
-	if ledgerFile != nil {
+	if ledgerFile != nil && opts.Continue {
 		entries = skipDownloaded(
 			ledgerFile,
 			outputFormat(opts),
@@ -703,14 +852,6 @@ func RunWithWorkflow(
 	opts Options,
 	log *logger.Logger,
 ) {
-	if !hasRangeSelection(opts.Selection) {
-		log.Warn(
-			"Please enter a valid chapter selection.",
-		)
-
-		return
-	}
-
 	provider, err := source.New(
 		opts.Source,
 		opts.CustomDomain,
@@ -719,6 +860,111 @@ func RunWithWorkflow(
 		log.Error(
 			"Failed to initialize source provider: %v\n",
 			err,
+		)
+
+		return
+	}
+
+	if hasRangeSelection(opts.Selection) &&
+		hasRangeSelection(opts.VolumeSelection) {
+		log.Warn(
+			"Chapter and volume selections cannot be used together.\n",
+		)
+
+		return
+	}
+
+	// Volume mode reads its own listing only, mirroring the CLI flow
+	// without its interactive prompts.
+	if hasRangeSelection(opts.VolumeSelection) {
+		volumeLister, listsVolumes := provider.(sourcetypes.VolumeLister)
+		if !listsVolumes {
+			log.Warn(
+				"The %s provider does not support volume downloads.\n",
+				provider.Name(),
+			)
+
+			return
+		}
+
+		work, volumes, err := volumeLister.ListVolumes(
+			opts.MangaURL,
+			opts.ScanPath,
+			log,
+		)
+		if err != nil {
+			log.Error(
+				"Failed to list volumes: %v\n",
+				err,
+			)
+
+			return
+		}
+
+		if len(volumes) == 0 {
+			log.Warn(
+				"This work has no volume data; nothing to download in volume mode.\n",
+			)
+
+			return
+		}
+
+		totalVolumes := len(volumes)
+
+		selected := FilterVolumesBySelection(
+			volumes,
+			opts.VolumeSelection,
+		)
+
+		if len(selected) == 0 {
+			log.Warn(
+				"No available volumes match the requested selection.\n",
+			)
+
+			return
+		}
+
+		ledgerFile := openLedger(opts, work, log)
+
+		workMeta := resolveWorkMetadata(
+			opts,
+			provider,
+			work,
+			ledgerFile,
+			log,
+		)
+
+		log.Info(
+			"Found %d volume(s).\n",
+			totalVolumes,
+		)
+
+		log.Info(
+			"Available volumes: %s\n",
+			FormatVolumeRanges(volumes),
+		)
+
+		downloadVolumes(
+			provider,
+			work,
+			totalVolumes,
+			selected,
+			ledgerFile,
+			opts,
+			workMeta,
+			log,
+		)
+
+		log.Info(
+			"Finished downloading\n",
+		)
+
+		return
+	}
+
+	if !hasRangeSelection(opts.Selection) {
+		log.Warn(
+			"Please enter a valid chapter selection.",
 		)
 
 		return
@@ -779,7 +1025,7 @@ func RunWithWorkflow(
 		return
 	}
 
-	if ledgerFile != nil {
+	if ledgerFile != nil && opts.Continue {
 		entries = skipDownloaded(
 			ledgerFile,
 			outputFormat(opts),

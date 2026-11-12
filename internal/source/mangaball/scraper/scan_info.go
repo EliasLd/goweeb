@@ -27,9 +27,25 @@ const (
 type chapterRow struct {
 	ID     string      `json:"id"`
 	Number json.Number `json:"number"`
+	// Volume tags the printed volume a chapter belongs to on the
+	// mirrors that expose one (comick, mangadex); untagged rows stay
+	// 0. Volume mode groups on it; the chapter flow ignores it.
+	Volume json.Number `json:"volume"`
 	Name   string      `json:"name"`
 	Lang   string      `json:"lang"`
 	Site   string      `json:"site"`
+}
+
+// rowVolume returns the volume tag of a listing row, false when the
+// row carries none. A 0 or unreadable tag means the site says
+// nothing about the volume; volume mode never guesses.
+func rowVolume(row chapterRow) (int, bool) {
+	volume, err := row.Volume.Int64()
+	if err != nil || volume < 1 {
+		return 0, false
+	}
+
+	return int(volume), true
 }
 
 type listingPagination struct {

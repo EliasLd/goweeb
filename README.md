@@ -217,6 +217,7 @@ When using an unquoted title, place it after all CLI options.
 | `--source <provider>` | — | Provider used to search for and download the manga. Required in CLI mode. |
 | `--all` | `-a` | Download all available chapters. |
 | `--range <selection>` | `-r` | Download specific chapters, ranges, or multiple ranges. |
+| `--volume <selection>` | — | Download the volumes the provider lists instead of chapters, same syntax as `--range`. Only on providers carrying volume data. See [Volume downloads](#volume-downloads). |
 | `--scan-dir <folder>` | `-d` | Output directory. Default: `scan` in the native CLI. |
 | `--ebook-friendly` | — | Store chapter images in `Chapter XXX/` folders instead of generating PDFs. |
 | `--cbz` | — | Save each chapter as a CBZ archive (pages numbered `001.jpg`, `002.jpg`, …) instead of generating PDFs. Cannot be combined with `--ebook-friendly`. |
@@ -266,6 +267,41 @@ downloads the available chapters while automatically skipping `51-69`.
 
 If neither `--all` nor `--range` is provided, goweeb asks you interactively which chapters to download.
 
+## Volume downloads
+
+Some providers know which volumes a work is actually split into — MangaDex and MangaBall are among them. Those volumes can be downloaded with `--volume`, which applies the same selection syntax as `--range` to volume numbers:
+
+```text
+1              # Volume 1 only
+1-5            # Volumes 1 through 5
+10-            # Volume 10 onwards
+-3             # The last 3 available volumes
+1,3,5          # Individual volumes
+```
+
+```bash
+goweeb --source mangadex --volume 1-5 --cbz "berserk"
+```
+
+With `--cbz`, each volume is downloaded as a single archive, `{Series} Vol. 01.cbz`: inside, every chapter keeps a zero-padded folder (mirroring the on-disk layout), with one series-wide `ComicInfo.xml` describing the volume.
+
+With PDF or `--ebook-friendly` output, chapters stay individual files or folders, grouped under a volume directory:
+
+```text
+scan/
+└── Berserk/
+    └── Vol. 01/
+        ├── Berserk - c001.pdf
+        └── ...
+```
+
+Notes:
+
+- Volume data comes from the providers themselves: a work whose chapters carry no volume tags offers no volume mode, and chapters remain the way to download it.
+- Untagged chapters (numbered specials, prologues) are never claimed by a volume; download those with the chapter mode.
+- Without `--volume`, the interactive flow proposes volumes when the provider lists them; the TUI shows a "Download as volumes" checkbox on the same condition.
+- `--volume` cannot be combined with `--all` or `--range`.
+
 ## Output layout
 
 By default, goweeb groups every download of a work under a folder named after the series, with padded, reader-friendly filenames that sort in reading order. The scheme is parsed by libraries such as Komga and Kavita:
@@ -299,7 +335,7 @@ The `series` layout applies to every output mode: CBZ and PDF archives, and eboo
 goweeb --source mangadex --all --continue "one piece"
 ```
 
-It composes with the other selection options: `--all --continue` fetches only the missing chapters, and `--range 1-100 --continue` fetches only the missing chapters within that range.
+It composes with the other selection options: `--all --continue` fetches only the missing chapters, and `--range 1-100 --continue` fetches only the missing chapters within that range. In volume mode, `--volume --continue` skips a volume bundle only when every chapter it carries is already on disk, and rebuilds a partially recorded bundle whole.
 
 goweeb keeps a small JSON manifest per work inside its output folder:
 
