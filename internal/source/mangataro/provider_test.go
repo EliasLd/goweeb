@@ -122,12 +122,138 @@ func TestSearchErrorPropagation(t *testing.T) {
 	}
 }
 
-func TestListScanPathsNotImplementedYet(t *testing.T) {
-	provider := New("")
+func newTestProvider(
+	t *testing.T,
+	handlers map[string]http.HandlerFunc,
+) *Provider {
+	t.Helper()
 
-	_, err := provider.ListScanPaths("https://mangataro.org/manga/berserk", nil)
+	mux := http.NewServeMux()
+
+	for path, handler := range handlers {
+		mux.HandleFunc(path, handler)
+	}
+
+	server := httptest.NewServer(mux)
+	t.Cleanup(server.Close)
+
+	return New(server.URL)
+}
+
+// titlePageHTML renders the SSR markers the provider resolves the
+// numeric manga id from.
+const titlePageHTML = "<html><body class=\"bg-neutral-900\"" +
+	" data-manga-id=\"32148\">" +
+	"<h1>Berserk</h1>" +
+	"</body></html>"
+
+func TestListScanPaths(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/manga/berserk": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			w.Header().Set("Content-Type", "text/html")
+
+			_, _ = fmt.Fprint(
+				w,
+				"<html><body class=\"bg-neutral-900\""+
+					" data-manga-id=\"32148\">"+
+					"<h1>Berserk</h1>"+
+					"</body></html>",
+			)
+		},
+		"/auth/manga-chapters": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			w.Header().Set("Content-Type", "application/json")
+
+			_, _ = fmt.Fprint(w,
+				`{"success":true,"chapters":[`+
+					`{"id":"1","chapter":"1","title":"Chapter 1","chapter_type":"media","language":"en","url":"https://mangataro.org/read/berserk/ch1-1"},`+
+					`{"id":"2","chapter":"2","title":"Chapter 2","chapter_type":"media","language":"en","url":"https://mangataro.org/read/berserk/ch2-2"},`+
+					`{"id":"3","chapter":"1","title":"Capítulo 1","chapter_type":"media","language":"pt-br","url":"https://mangataro.org/read/berserk/ch1-3"}`+
+					`],"total":3,"offset":0,"limit":500,"has_more":false}`)
+		},
+	})
+
+	items, err := provider.ListScanPaths(
+		provider.domain+"/manga/berserk",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("ListScanPaths() error: %v", err)
+	}
+
+	if len(items) != 2 {
+		t.Fatalf("expected 2 scan paths, got %d", len(items))
+	}
+
+	// Counts come from the listing (2 distinct numbers in en),
+	// and the labels sort alphabetically.
+	if items[0].Label != "English (2 chapters)" || items[0].Value != "en" {
+		t.Errorf(
+			"unexpected first scan path: %q / %q",
+			items[0].Label,
+			items[0].Value,
+		)
+	}
+
+	if items[1].Label != "Portuguese (Brazil) (1 chapter)" || items[1].Value != "pt-br" {
+		t.Errorf(
+			"unexpected second scan path: %q / %q",
+			items[1].Label,
+			items[1].Value,
+		)
+	}
+}
+
+func TestListScanPathsFallbackWithoutChapters(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/manga/berserk": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			w.Header().Set("Content-Type", "text/html")
+
+			_, _ = fmt.Fprint(w, titlePageHTML)
+		},
+		"/auth/manga-chapters": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprint(w,
+				`{"success":true,"chapters":[],"total":0,"offset":0,"limit":500,"has_more":false}`)
+		},
+	})
+
+	items, err := provider.ListScanPaths(
+		provider.domain+"/manga/berserk",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("ListScanPaths() error: %v", err)
+	}
+
+	if len(items) != 1 || items[0].Value != "" {
+		t.Fatalf(
+			"expected one auto-selectable fallback path, got %+v",
+			items,
+		)
+	}
+}
+
+func TestListScanPathsInvalidWorkURL(t *testing.T) {
+	provider := newTestProvider(t, nil)
+
+	_, err := provider.ListScanPaths(
+		provider.domain+"/not-a-manga/berserk",
+		nil,
+	)
 	if err == nil {
-		t.Fatal("expected the stub to reject the call")
+		t.Fatal("expected an error for an unexpected work URL")
 	}
 }
 

@@ -2,6 +2,8 @@ package mangataroscraper
 
 import (
 	"bytes"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -17,6 +19,9 @@ import (
 const (
 	maxResponseBytes  = 8 << 20
 	maxErrorBodyBytes = 4096
+
+	// The title id the chapters route stamps into its token.
+	tokenSecretPrefix = "mng_ch_"
 
 	// The catalog route answers 24 rows per page and accepts no
 	// larger page: the site's own frontend walks those small pages
@@ -173,6 +178,68 @@ func callAPI(
 	}
 
 	return result.Body, nil
+}
+
+// chapterRequestToken mints the token the chapters route expects
+// alongside every request. The site's frontend derives it the same
+// way — an MD5 of the unix timestamp and a per-UTC-hour secret
+// ("mng_ch_" + "YYYYMMDDHH"), truncated to its first 16 hex digits —
+// so it is computed locally, not negotiated.
+func chapterRequestToken() (token string, timestamp int64) {
+	timestamp = time.Now().Unix()
+	hour := time.Now().UTC().Format("2006010215")
+
+	source := fmt.Sprintf("%d%s%s", timestamp, tokenSecretPrefix, hour)
+
+	hash := md5.Sum([]byte(source))
+
+	return hex.EncodeToString(hash[:])[:16], timestamp
+}
+
+// MangaSlugFromURL extracts the slug from a MangaTaro title page URL.
+//
+// Expected shape: {domain}/manga/{slug}.
+func MangaSlugFromURL(workURL string) (string, error) {
+	workURL = strings.TrimSpace(workURL)
+
+	parsed, err := url.Parse(workURL)
+	if err != nil {
+		return "", fmt.Errorf(
+			"invalid MangaTaro title URL %q: %w",
+			workURL,
+			err,
+		)
+	}
+
+	path := strings.TrimSuffix(parsed.Path, "/")
+	segments := strings.Split(path, "/")
+
+	// Expected: ["", "manga", "{slug}"]
+	if len(segments) != 3 || segments[1] != "manga" {
+		return "", fmt.Errorf(
+			"unexpected MangaTaro title URL: %q",
+			workURL,
+		)
+	}
+
+	slug, err := url.PathUnescape(segments[2])
+	if err != nil {
+		return "", fmt.Errorf(
+			"unexpected MangaTaro title URL: %q",
+			workURL,
+		)
+	}
+
+	slug = strings.TrimSpace(slug)
+
+	if slug == "" {
+		return "", fmt.Errorf(
+			"unexpected MangaTaro title URL: %q",
+			workURL,
+		)
+	}
+
+	return slug, nil
 }
 
 // unescapeText decodes the HTML entities the payloads embed in their
