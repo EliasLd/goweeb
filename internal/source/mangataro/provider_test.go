@@ -418,3 +418,48 @@ func TestGetPageImageURLsInvalidEntryURL(t *testing.T) {
 		t.Fatal("expected an error for an unexpected entry URL")
 	}
 }
+
+func TestWorkMetadata(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/manga/berserk": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			w.Header().Set("Content-Type", "text/html")
+
+			_, _ = fmt.Fprint(w,
+				`<html><body data-manga-id="32148"><h1>Berserk</h1>`+
+					`<script type="application/ld+json">{"@type":"ComicSeries","author":{"@type":"Person","name":"Miura, Kentarou, Studio Gaga"}}</script>`+
+					`<meta property='og:image' content='https://mangataro.org/content/media/berserk.jpg'>`+
+					`</body></html>`)
+		},
+	})
+
+	metadata, err := provider.WorkMetadata(
+		provider.domain+"/manga/berserk",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("WorkMetadata() error: %v", err)
+	}
+
+	if metadata.Author != "Miura, Kentarou, Studio Gaga" {
+		t.Errorf("author = %q", metadata.Author)
+	}
+
+	if metadata.CoverURL != "https://mangataro.org/content/media/berserk.jpg" {
+		t.Errorf("cover = %q", metadata.CoverURL)
+	}
+}
+
+func TestWorkMetadataPropagation(t *testing.T) {
+	provider := newTestProvider(t, nil)
+
+	_, err := provider.WorkMetadata(
+		provider.domain+"/not-a-manga/berserk",
+		nil,
+	)
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+}

@@ -150,6 +150,23 @@ func (p *Provider) ListEntries(
 	}, entries, nil
 }
 
+// WorkMetadata reads the server-rendered title page the listing flow
+// already relies on, deriving the metadata parts it publishes.
+func (p *Provider) WorkMetadata(
+	workURL string,
+	log *logger.Logger,
+) (sourcetypes.Metadata, error) {
+	detail, err := mangataroscraper.GetTitleDetail(p.domain, workURL, log)
+	if err != nil {
+		return sourcetypes.Metadata{}, fmt.Errorf(
+			"failed to get MangaTaro work metadata: %w",
+			err,
+		)
+	}
+
+	return detail.Metadata, nil
+}
+
 // MangaTaro embeds each chapter's page list in its reader-content
 // route; the storage host serves the images without any header rules.
 func (p *Provider) GetPageImageURLs(

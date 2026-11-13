@@ -133,3 +133,94 @@ func TestGetTitleDetailInvalidWorkURL(t *testing.T) {
 		t.Fatal("expected an error for an unexpected work URL")
 	}
 }
+
+func TestGetTitleDetailMetadata(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(
+		func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+
+			// The markers the page embeds, mirroring the real
+			// Berserk page: three ld+json documents (only the
+			// ComicSeries one carries the author), a full
+			// description in paragraphs, one cover in the
+			// OpenGraph metadata, and tag links rendered once
+			// per layout.
+			_, _ = fmt.Fprint(w,
+				`<html><body data-manga-id="32148"><h1>Berserk</h1>`+
+					`<script type="application/ld+json">{"@context":"https://schema.org","@type":"ComicSeries","name":"Berserk Manga | Read Online Free at MangaTaro","author":{"@type":"Person","name":"Miura, Kentarou, Studio Gaga"},"genre":"Manga","status":"Ongoing"}</script>`+
+					`<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[]}</script>`+
+					`<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","url":"https://mangataro.org"}</script>`+
+					`<meta property='og:image' content='https://mangataro.org/content/media/berserk.jpg'>`+
+					`<div id="description-content-tab">`+
+					`<p>First paragraph of the story.</p>`+
+					`<p>Second paragraph, with an entity: &#039;quote&#039;.</p>`+
+					`</div>`+
+					`<a href="https://mangataro.org/tag/action"> Action </a>`+
+					`<a href="https://mangataro.org/tag/drama">Drama</a>`+
+					`<a href="https://mangataro.org/tag/action">Action</a>`+
+					`</body></html>`)
+		},
+	))
+	defer server.Close()
+
+	detail, err := GetTitleDetail(
+		server.URL,
+		"https://mangataro.org/manga/berserk",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("GetTitleDetail() error: %v", err)
+	}
+
+	if detail.Metadata.Author != "Miura, Kentarou, Studio Gaga" {
+		t.Errorf("author = %q, want the ComicSeries author line", detail.Metadata.Author)
+	}
+
+	if detail.Metadata.CoverURL != "https://mangataro.org/content/media/berserk.jpg" {
+		t.Errorf("cover = %q, want the og:image content", detail.Metadata.CoverURL)
+	}
+
+	expectedDescription := "First paragraph of the story.\n" +
+		"Second paragraph, with an entity: 'quote'."
+
+	if detail.Metadata.Description != expectedDescription {
+		t.Errorf("description = %q, want the joined paragraphs", detail.Metadata.Description)
+	}
+
+	// Duplicated layout renders deduplicate; the first order wins.
+	if len(detail.Metadata.Tags) != 2 ||
+		detail.Metadata.Tags[0] != "Action" ||
+		detail.Metadata.Tags[1] != "Drama" {
+		t.Errorf("tags = %v, want the deduplicated page tags", detail.Metadata.Tags)
+	}
+
+	if !detail.Metadata.Known() {
+		t.Error("expected the metadata to be known")
+	}
+}
+
+func TestGetTitleDetailMetadataDegradesEmpty(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(
+		func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+
+			// No ld+json, no description container, no tags.
+			_, _ = fmt.Fprint(w,
+				`<html><body data-manga-id="32148"><h1>Anonymous Manga</h1></body></html>`)
+		},
+	))
+	defer server.Close()
+
+	detail, err := GetTitleDetail(
+		server.URL,
+		"https://mangataro.org/manga/anonymous",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("GetTitleDetail() error: %v", err)
+	}
+
+	if detail.Metadata.Known() {
+		t.Errorf("expected unknown metadata, got %+v", detail.Metadata)
+	}
+}
