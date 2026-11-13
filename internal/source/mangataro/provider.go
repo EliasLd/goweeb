@@ -107,14 +107,48 @@ func (p *Provider) ListScanPaths(
 	return items, nil
 }
 
+// MangaTaro's scan path is the publication language; the listing is
+// one chapter list per language, oldest first.
 func (p *Provider) ListEntries(
 	workURL string,
 	scanPath string,
 	log *logger.Logger,
 ) (sourcetypes.Work, []sourcetypes.Entry, error) {
-	return sourcetypes.Work{}, nil, errors.New(
-		"mangataro chapter listing is not implemented yet",
+	detail, err := mangataroscraper.GetTitleDetail(p.domain, workURL, log)
+	if err != nil {
+		return sourcetypes.Work{}, nil, fmt.Errorf(
+			"failed to get MangaTaro work details: %w",
+			err,
+		)
+	}
+
+	chapters, err := mangataroscraper.ListChapters(
+		p.domain,
+		detail.ID,
+		scanPath,
+		log,
 	)
+	if err != nil {
+		return sourcetypes.Work{}, nil, fmt.Errorf(
+			"failed to list MangaTaro chapters: %w",
+			err,
+		)
+	}
+
+	entries := make([]sourcetypes.Entry, 0, len(chapters))
+
+	for _, chapter := range chapters {
+		entries = append(entries, sourcetypes.Entry{
+			Number: chapter.Number,
+			Label:  chapter.Label,
+			URL:    chapter.URL,
+		})
+	}
+
+	return sourcetypes.Work{
+		Title: detail.Name,
+		Kind:  sourcetypes.ItemChapter,
+	}, entries, nil
 }
 
 func (p *Provider) GetPageImageURLs(

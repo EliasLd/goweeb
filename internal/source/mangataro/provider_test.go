@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 )
 
 func TestNew(t *testing.T) {
@@ -257,16 +259,119 @@ func TestListScanPathsInvalidWorkURL(t *testing.T) {
 	}
 }
 
-func TestListEntriesNotImplementedYet(t *testing.T) {
-	provider := New("")
+func TestListEntries(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/manga/berserk": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, titlePageHTML)
+		},
+		"/auth/manga-chapters": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			w.Header().Set("Content-Type", "application/json")
+
+			_, _ = fmt.Fprint(w,
+				`{"success":true,"chapters":[`+
+					`{"id":"2","chapter":"2","title":"Chapter 2","chapter_type":"media","language":"en","url":"https://mangataro.org/read/berserk/ch2-2"},`+
+					`{"id":"1","chapter":"1","title":"The Golden Age (1)","chapter_type":"media","language":"en","url":"https://mangataro.org/read/berserk/ch1-1"},`+
+					`{"id":"3","chapter":"1","title":"Capítulo 1","chapter_type":"media","language":"pt-br","url":"https://mangataro.org/read/berserk/ch1-3"}`+
+					`],"total":3,"offset":0,"limit":500,"has_more":false}`)
+		},
+	})
+
+	work, entries, err := provider.ListEntries(
+		provider.domain+"/manga/berserk",
+		"en",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("ListEntries() error: %v", err)
+	}
+
+	if work.Title != "Berserk" {
+		t.Errorf("unexpected work title: %q", work.Title)
+	}
+
+	if work.Kind != sourcetypes.ItemChapter {
+		t.Errorf("unexpected work kind: %d", work.Kind)
+	}
+
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries, got %d", len(entries))
+	}
+
+	if entries[0].Number.String() != "1" || entries[0].Label != "The Golden Age (1)" {
+		t.Errorf(
+			"unexpected first entry: %q / %q",
+			entries[0].Number.String(),
+			entries[0].Label,
+		)
+	}
+
+	// The entry URL is the row's own, passed through unchanged: it
+	// is what the site lists and what the pages step resolves back
+	// to a chapter id.
+	expectedURL := "https://mangataro.org/read/berserk/ch1-1"
+
+	if entries[0].URL != expectedURL {
+		t.Errorf("expected URL %q, got %q", expectedURL, entries[0].URL)
+	}
+
+	if entries[1].Number.String() != "2" {
+		t.Errorf(
+			"unexpected second entry: %q",
+			entries[1].Number.String(),
+		)
+	}
+}
+
+func TestListEntriesEmptyListing(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/manga/berserk": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, titlePageHTML)
+		},
+		"/auth/manga-chapters": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprint(w,
+				`{"success":true,"chapters":[],"total":0,"offset":0,"limit":500,"has_more":false}`)
+		},
+	})
+
+	_, entries, err := provider.ListEntries(
+		provider.domain+"/manga/berserk",
+		"",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("ListEntries() error: %v", err)
+	}
+
+	if len(entries) != 0 {
+		t.Errorf("expected no entries, got %d", len(entries))
+	}
+}
+
+func TestListEntriesInvalidWorkURL(t *testing.T) {
+	provider := newTestProvider(t, nil)
 
 	_, _, err := provider.ListEntries(
-		"https://mangataro.org/manga/berserk",
+		provider.domain+"/not-a-manga/berserk",
 		"en",
 		nil,
 	)
 	if err == nil {
-		t.Fatal("expected the stub to reject the call")
+		t.Fatal("expected an error for an unexpected work URL")
 	}
 }
 
