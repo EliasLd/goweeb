@@ -30,6 +30,7 @@ jobs:
         provider:
           - animesama
           - atsumoe
+          - mangaball
           - mangafreak
           - weebcentral
           - mangadex
