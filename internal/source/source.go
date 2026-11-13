@@ -11,6 +11,7 @@ import (
 	"github.com/EliasLd/goweeb/internal/source/mangadex"
 	"github.com/EliasLd/goweeb/internal/source/mangadotnet"
 	"github.com/EliasLd/goweeb/internal/source/mangafreak"
+	"github.com/EliasLd/goweeb/internal/source/mangataro"
 	"github.com/EliasLd/goweeb/internal/source/mangavyvy"
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 	"github.com/EliasLd/goweeb/internal/source/weebcentral"
@@ -67,6 +68,12 @@ var providers = map[string]providerRegistration{
 		Label: "MangaDot (English)",
 		New: func(customDomain string) sourcetypes.Provider {
 			return mangadotnet.New(customDomain)
+		},
+	},
+	"mangataro": {
+		Label: "MangaTaro (English)",
+		New: func(customDomain string) sourcetypes.Provider {
+			return mangataro.New(customDomain)
 		},
 	},
 	"mangavyvy": {

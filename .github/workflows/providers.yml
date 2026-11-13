@@ -30,10 +30,12 @@ jobs:
         provider:
           - animesama
           - atsumoe
+          - mangaball
           - mangafreak
           - weebcentral
           - mangadex
           - mangadotnet
+          - mangataro
           - mangavyvy
         # Weebcentral is a tolerated job (yellow, not red): its edge
         # rejects runner/datacenter IPs before the site's app runs —

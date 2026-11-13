@@ -62,6 +62,7 @@ var liveQueries = map[string]string{
 	"atsumoe":     "blue lock",
 	"mangaball":   "childhood friend complex",
 	"mangafreak":  "one piece",
+	"mangataro":   "berserk",
 	"weebcentral": "berserk",
 	"mangadex":    "berserk",
 	"mangadotnet": "solo leveling",
@@ -182,8 +183,13 @@ func providerHealthCheck(
 	assertRealPDF(t, pdfs[0])
 
 	// Volume mode rides the same live flow, gated by the provider's
-	// own capability.
-	volumeHealthCheck(t, providerID, workURL, scanPaths)
+	// own capability. The probe runs in its own subtest: its skip
+	// for providers without volume data must stay local, or the
+	// whole check of a chapter-only provider would report as
+	// skipped after the PDF pipeline above already answered.
+	t.Run("volumes", func(t *testing.T) {
+		volumeHealthCheck(t, providerID, workURL, scanPaths)
+	})
 }
 
 // collectOutputs walks the output tree recursively. The series
