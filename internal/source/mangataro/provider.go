@@ -1,7 +1,6 @@
 package mangataro
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -151,11 +150,23 @@ func (p *Provider) ListEntries(
 	}, entries, nil
 }
 
+// MangaTaro embeds each chapter's page list in its reader-content
+// route; the storage host serves the images without any header rules.
 func (p *Provider) GetPageImageURLs(
 	entryURL string,
 	log *logger.Logger,
 ) ([]string, error) {
-	return nil, errors.New(
-		"mangataro page image retrieval is not implemented yet",
+	urls, err := mangataroscraper.GetPageImageURLs(
+		p.domain,
+		entryURL,
+		log,
 	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to get MangaTaro page images: %w",
+			err,
+		)
+	}
+
+	return urls, nil
 }

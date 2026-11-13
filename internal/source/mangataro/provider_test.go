@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
@@ -375,14 +376,45 @@ func TestListEntriesInvalidWorkURL(t *testing.T) {
 	}
 }
 
-func TestGetPageImageURLsNotImplementedYet(t *testing.T) {
-	provider := New("")
+func TestGetPageImageURLs(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/auth/chapter-content": func(
+			w http.ResponseWriter,
+			_ *http.Request,
+		) {
+			w.Header().Set("Content-Type", "application/json")
+
+			_, _ = fmt.Fprint(w, `{"success":true,"chapter_type":"media","images":[`+
+				`"https://mangataro.yachts/storage/chapters/x/001.webp",`+
+				`"https://mangataro.yachts/storage/chapters/x/002.webp"]}`)
+		},
+	})
+
+	imageURLs, err := provider.GetPageImageURLs(
+		provider.domain+"/read/berserk/ch398-471959",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("GetPageImageURLs() error: %v", err)
+	}
+
+	if len(imageURLs) != 2 {
+		t.Fatalf("expected 2 image URLs, got %d", len(imageURLs))
+	}
+
+	if !strings.HasSuffix(imageURLs[1], "002.webp") {
+		t.Errorf("unexpected last page: %q", imageURLs[1])
+	}
+}
+
+func TestGetPageImageURLsInvalidEntryURL(t *testing.T) {
+	provider := newTestProvider(t, nil)
 
 	_, err := provider.GetPageImageURLs(
-		"https://mangataro.org/read/berserk/ch398-471959",
+		provider.domain+"/not-a-chapter/471959",
 		nil,
 	)
 	if err == nil {
-		t.Fatal("expected the stub to reject the call")
+		t.Fatal("expected an error for an unexpected entry URL")
 	}
 }
