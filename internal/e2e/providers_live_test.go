@@ -62,6 +62,7 @@ var liveQueries = map[string]string{
 	"atsumoe":     "blue lock",
 	"mangaball":   "childhood friend complex",
 	"mangafreak":  "one piece",
+	"mangataro":   "berserk",
 	"weebcentral": "berserk",
 	"mangadex":    "berserk",
 	"mangadotnet": "solo leveling",
