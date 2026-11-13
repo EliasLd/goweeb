@@ -118,6 +118,7 @@ L'image est compatible OCI et peut également être utilisée avec Docker. Selon
 | MangaDot | Anglais | https://mangadot.net |
 | MangaBall | Multilingue | https://mangaball.com |
 | Mangavyvy | Anglais | https://mangavyvy.com |
+| MangaTaro | Anglais | https://mangataro.org |
 | MangaFreak | Anglais | https://ww3.mangafreak.me |
 | Atsumoe | Anglais | https://atsu.moe |
 | Anime-Sama | Français | https://anime-sama.pw |
