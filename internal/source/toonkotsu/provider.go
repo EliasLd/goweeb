@@ -2,6 +2,7 @@ package toonkotsu
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/EliasLd/goweeb/internal/logger"
@@ -60,13 +61,27 @@ func (p *Provider) Search(
 	return out, nil
 }
 
+// Toonkotsu splits a work into its main series and its color
+// editions; each listing is one selectable path, the chapter count in
+// the label. The value is the edition code, empty for the main
+// listing.
 func (p *Provider) ListScanPaths(
 	workURL string,
 	log *logger.Logger,
 ) ([]common.SelectableItem, error) {
-	return nil, errors.New(
-		"toonkotsu scan selection is not implemented yet",
+	items, err := toonkotsuscraper.GetScanPaths(
+		p.domain,
+		workURL,
+		log,
 	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to get toonkotsu scan paths: %w",
+			err,
+		)
+	}
+
+	return items, nil
 }
 
 func (p *Provider) ListEntries(
