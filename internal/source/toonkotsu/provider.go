@@ -129,8 +129,7 @@ func (p *Provider) ListEntries(
 // WorkMetadata reads the series payload the listing flow already
 // relies on, deriving the metadata parts it publishes: authors,
 // artists, tags, description, cover, year and original language.
-func (p *Provider) WorkMetadata(
-	workURL string,
+func (p *Provider) WorkMetadata(workURL string,
 	log *logger.Logger,
 ) (sourcetypes.Metadata, error) {
 	code, err := toonkotsuscraper.WorkCodeFromURL(workURL)
@@ -194,3 +193,57 @@ func (p *Provider) ImageRequestHeaders() map[string]string {
 		"User-Agent": toonkotsuscraper.BrowserUserAgent,
 	}
 }
+
+// Toonkotsu tags its chapters with the volume they belong to; volume
+// mode groups them, untagged chapters staying chapter-mode only. The
+// scan path names an edition's listing when set.
+func (p *Provider) ListVolumes(
+	workURL string,
+	scanPath string,
+	log *logger.Logger,
+) (sourcetypes.Work, []sourcetypes.Volume, error) {
+	code, err := toonkotsuscraper.WorkCodeFromURL(workURL)
+	if err != nil {
+		return sourcetypes.Work{}, nil, err
+	}
+
+	title, groups, err := toonkotsuscraper.ListVolumes(
+		p.domain,
+		code,
+		scanPath,
+		log,
+	)
+	if err != nil {
+		return sourcetypes.Work{}, nil, fmt.Errorf(
+			"failed to list toonkotsu volumes: %w",
+			err,
+		)
+	}
+
+	volumes := make([]sourcetypes.Volume, 0, len(groups))
+
+	for _, group := range groups {
+		entries := make([]sourcetypes.Entry, 0, len(group.Chapters))
+
+		for _, chapter := range group.Chapters {
+			entries = append(entries, sourcetypes.Entry{
+				Number: chapter.Number,
+				Label:  chapter.Label,
+				URL:    chapter.URL,
+			})
+		}
+
+		volumes = append(volumes, sourcetypes.Volume{
+			Number:  group.Number,
+			Entries: entries,
+		})
+	}
+
+	return sourcetypes.Work{
+		Title: title,
+		Kind:  sourcetypes.ItemVolume,
+	}, volumes, nil
+}
+
+// Compile-time: the volume capability is wired.
+var _ sourcetypes.VolumeLister = New("")

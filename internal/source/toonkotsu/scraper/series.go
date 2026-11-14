@@ -60,10 +60,12 @@ type altRow struct {
 
 // chapterRow is one row of the inline chapter list. n is nullable and
 // may be fractional; json.Number keeps its exact text, null decodes
-// as nil.
+// as nil. vol is the site's tag for the volume the chapter belongs
+// to, also nullable.
 type chapterRow struct {
 	ID    rawID        `json:"id"`
 	N     *json.Number `json:"n"`
+	Vol   string       `json:"vol"`
 	Label string       `json:"label"`
 	Alts  []altRow     `json:"alts"`
 }

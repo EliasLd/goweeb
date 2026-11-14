@@ -46,12 +46,54 @@ func ListChapters(
 		return "", nil, err
 	}
 
-	type upload struct {
+	uploads := buildChapterUploads(series, log)
+
+	out := make([]Chapter, 0, len(uploads))
+
+	for _, upload := range uploads {
+		out = append(out, Chapter{
+			Number: upload.number,
+			Label:  upload.label,
+			URL:    chapterEntryURL(domain, upload.ids),
+		})
+	}
+
+	if log != nil {
+		log.Debug(
+			"Found %d toonkotsu chapters (listing %q)\n",
+			len(out),
+			seriesCode,
+		)
+	}
+
+	return seriesTitle(series), out, nil
+}
+
+// chapterUpload is one merged chapter of a series listing: every
+// upload of the same chapter number folded into one id set, in the
+// site's own order. vols carries the canonical volume tags its rows
+// are tagged with, empty when the site tags none.
+type chapterUpload struct {
+	number common.ChapterNumber
+	label  string
+	vols   []string
+	ids    []string
+}
+
+// buildChapterUploads folds a series payload's chapter rows into
+// merged uploads: unnumbered rows and unusable ids or numbers are
+// skipped defensively with a debug line, and rows come out in reading
+// order (the payload is newest-first).
+func buildChapterUploads(
+	series seriesResponse,
+	log *logger.Logger,
+) []chapterUpload {
+	type numberedRow struct {
 		row    chapterRow
 		number common.ChapterNumber
 	}
 
-	numbered := make([]upload, 0, len(series.Chapters))
+	numbered := make([]numberedRow, 0, len(series.Chapters))
 
 	for _, row := range series.Chapters {
 		if row.N == nil {
@@ -78,7 +120,7 @@ func ListChapters(
 			continue
 		}
 
-		numbered = append(numbered, upload{row: row, number: number})
+		numbered = append(numbered, numberedRow{row: row, number: number})
 	}
 
 	// The listing's order is presentation-side (newest first);
@@ -88,13 +130,7 @@ func ListChapters(
 		return numbered[i].number.Compare(numbered[j].number) < 0
 	})
 
-	type merged struct {
-		number common.ChapterNumber
-		label  string
-		ids    []string
-	}
-
-	chapters := make([]merged, 0, len(numbered))
+	uploads := make([]chapterUpload, 0, len(numbered))
 
 	for _, entry := range numbered {
 		ids := rowIDs(entry.row)
@@ -111,50 +147,92 @@ func ListChapters(
 			continue
 		}
 
-		// Same-number rows fold into the entry before them.
-		if n := len(chapters); n > 0 &&
-			chapters[n-1].number.Compare(entry.number) == 0 {
-			chapters[n-1].ids = appendIDs(chapters[n-1].ids, ids)
+		tag := volumeTag(entry.row, entry.number, log)
+
+		// Same-number rows fold into the upload before them.
+		if n := len(uploads); n > 0 &&
+			uploads[n-1].number.Compare(entry.number) == 0 {
+			uploads[n-1].ids = appendIDs(uploads[n-1].ids, ids)
+			uploads[n-1].vols = appendVolTag(
+				uploads[n-1].vols,
+				tag,
+			)
 
 			continue
 		}
 
-		label := strings.TrimSpace(entry.row.Label)
-		if label == "" {
-			label = "Chapter " + entry.number.String()
-		}
-
-		chapters = append(chapters, merged{
+		uploads = append(uploads, chapterUpload{
 			number: entry.number,
-			label:  label,
+			label:  chapterLabel(entry.row, entry.number),
+			vols:   appendVolTag(nil, tag),
 			ids:    ids,
 		})
 	}
 
-	out := make([]Chapter, 0, len(chapters))
+	return uploads
+}
 
-	for _, chapter := range chapters {
-		out = append(out, Chapter{
-			Number: chapter.number,
-			Label:  chapter.label,
-			URL:    chapterEntryURL(domain, chapter.ids),
-		})
-	}
-
+// seriesTitle falls back to the site's name when a series record
+// carries no title.
+func seriesTitle(series seriesResponse) string {
 	title := strings.TrimSpace(series.Series.Title)
 	if title == "" {
-		title = "Toonkotsu"
+		return "Toonkotsu"
 	}
 
-	if log != nil {
-		log.Debug(
-			"Found %d toonkotsu chapters (listing %q)\n",
-			len(out),
-			seriesCode,
-		)
+	return title
+}
+
+// chapterLabel prefers the site's own label and falls back to a
+// "Chapter N" rendering.
+func chapterLabel(
+	row chapterRow,
+	number common.ChapterNumber,
+) string {
+	if label := strings.TrimSpace(row.Label); label != "" {
+		return label
 	}
 
-	return title, out, nil
+	return "Chapter " + number.String()
+}
+
+// volumeTag canonicalizes one row's volume tag; an empty or
+// unparseable tag means the chapter is untagged.
+func volumeTag(
+	row chapterRow,
+	number common.ChapterNumber,
+	log *logger.Logger,
+) string {
+	tag := strings.TrimSpace(row.Vol)
+	if tag == "" {
+		return ""
+	}
+
+	volume, err := common.ParseChapterNumber(tag)
+	if err != nil {
+		if log != nil {
+			log.Debug(
+				"Ignoring toonkotsu volume tag %q on chapter %s: %q\n",
+				tag,
+				number.String(),
+				row.Label,
+			)
+		}
+
+		return ""
+	}
+
+	return volume.String()
+}
+
+// appendVolTag collects the volume tags its rows carry, without
+// duplicates.
+func appendVolTag(tags []string, addition string) []string {
+	if addition == "" || slices.Contains(tags, addition) {
+		return tags
+	}
+
+	return append(tags, addition)
 }
 
 // rowIDs collects the id of the row plus its alternate uploads; the

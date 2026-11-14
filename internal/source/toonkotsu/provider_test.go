@@ -258,6 +258,73 @@ func TestWorkMetadataPropagation(t *testing.T) {
 	}
 }
 
+func TestListVolumes(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/cdn/v1/series/bm0ssx": seriesRoute(`{"series":{"title":"Jujutsu Kaisen"},"chapters":[` +
+			`{"id":2,"n":2,"label":"Chapter 2","vol":"7","alts":[]},` +
+			`{"id":1,"n":1,"label":"Chapter 1","vol":"07","alts":[]},` +
+			`{"id":3,"n":3,"label":"Omake","vol":null,"alts":[]}]}`),
+	})
+
+	work, volumes, err := provider.ListVolumes(
+		provider.domain+"/title/bm0ssx-jujutsu-kaisen",
+		"",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("ListVolumes() error: %v", err)
+	}
+
+	if work.Title != "Jujutsu Kaisen" || work.Kind != sourcetypes.ItemVolume {
+		t.Errorf(
+			"unexpected work: %q / %d",
+			work.Title,
+			work.Kind,
+		)
+	}
+
+	if len(volumes) != 1 {
+		t.Fatalf("expected 1 volume, got %d", len(volumes))
+	}
+
+	if volumes[0].Number != "7" {
+		t.Errorf("volume number = %q, want 7", volumes[0].Number)
+	}
+
+	if len(volumes[0].Entries) != 2 ||
+		volumes[0].Entries[0].Number.String() != "1" {
+		t.Errorf(
+			"unexpected volume entries: %+v",
+			volumes[0].Entries,
+		)
+	}
+}
+
+func TestListVolumesNoVolumeData(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/cdn/v1/series/solo": seriesRoute(`{"series":{"title":"Solo"},"chapters":[` +
+			`{"id":1,"n":1,"label":"Chapter 1","alts":[]}]}`),
+	})
+
+	_, volumes, err := provider.ListVolumes(
+		provider.domain+"/title/solo-solo",
+		"",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("ListVolumes() error: %v", err)
+	}
+
+	// Untagged works keep chapter mode: an empty volume listing
+	// makes the app's volume probe fall back harmlessly.
+	if len(volumes) != 0 {
+		t.Errorf("expected no volumes, got %d", len(volumes))
+	}
+}
+
+// Compile-time: the volume capability is wired.
+var _ sourcetypes.VolumeLister = New("")
+
 func newTestProvider(
 	t *testing.T,
 	handlers map[string]http.HandlerFunc,
