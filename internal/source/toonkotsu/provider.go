@@ -1,7 +1,6 @@
 package toonkotsu
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -127,11 +126,35 @@ func (p *Provider) ListEntries(
 	}, entries, nil
 }
 
+// Toonkotsu embeds its page list in a reader API robots.txt
+// explicitly allows; every candidate upload is read and the fullest
+// copy wins. The blobs themselves are AES-CTR ciphertexts whose key
+// material rides in the page URL's fragment.
 func (p *Provider) GetPageImageURLs(
 	entryURL string,
 	log *logger.Logger,
 ) ([]string, error) {
-	return nil, errors.New(
-		"toonkotsu page image retrieval is not implemented yet",
+	urls, err := toonkotsuscraper.GetPageImageURLs(
+		p.domain,
+		entryURL,
+		log,
 	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to get toonkotsu page images: %w",
+			err,
+		)
+	}
+
+	return urls, nil
+}
+
+// DecodeImageData decrypts the site's page blobs in place; only the
+// encrypted blob pages carry key material, everything else passes
+// through unchanged.
+func (p *Provider) DecodeImageData(
+	pageURL string,
+	data []byte,
+) ([]byte, bool) {
+	return toonkotsuscraper.DecodeImageData(pageURL, data)
 }

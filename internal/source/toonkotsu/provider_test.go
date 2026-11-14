@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
@@ -124,14 +123,71 @@ func TestSearchErrorPropagation(t *testing.T) {
 	}
 }
 
-func TestNotImplementedMethodsStayHonest(t *testing.T) {
-	provider := New("")
+func TestGetPageImageURLs(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/api/manga/chapter/thin": seriesRoute(
+			`{"chapter":{"pages":[{"src":"/cdn/e/t.bin","k":"tk","n":"tn"}]}}`,
+		),
+		"/api/manga/chapter/full": seriesRoute(
+			`{"chapter":{"pages":[` +
+				`{"src":"/cdn/e/f1.bin","k":"fk1","n":"fn1"},` +
+				`{"src":"https://other.test/cdn/e/f2.bin","k":"fk2","n":"fn2"}]}}`,
+		),
+	})
 
-	if _, err := provider.GetPageImageURLs("", nil); err == nil ||
-		!strings.Contains(err.Error(), "not implemented") {
-		t.Errorf("GetPageImageURLs() error: %v", err)
+	imageURLs, err := provider.GetPageImageURLs(
+		provider.domain+"/manga/chapter/thin,full",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("GetPageImageURLs() error: %v", err)
+	}
+
+	if len(imageURLs) != 2 {
+		t.Fatalf("expected the fullest copy's 2 pages, got %d", len(imageURLs))
+	}
+
+	if imageURLs[0] != provider.domain+"/cdn/e/f1.bin#k=fk1&n=fn1" {
+		t.Errorf("unexpected page url: %q", imageURLs[0])
+	}
+
+	// Absolute blob URLs pass through unchanged.
+	if imageURLs[1] != "https://other.test/cdn/e/f2.bin#k=fk2&n=fn2" {
+		t.Errorf("unexpected page url: %q", imageURLs[1])
 	}
 }
+
+func TestGetPageImageURLsInvalidEntryURL(t *testing.T) {
+	provider := newTestProvider(t, nil)
+
+	_, err := provider.GetPageImageURLs(
+		provider.domain+"/not-a-chapter/471959",
+		nil,
+	)
+	if err == nil {
+		t.Fatal("expected an error for an unexpected entry URL")
+	}
+}
+
+func TestDecodeImageDataPassesThroughPlainPages(t *testing.T) {
+	provider := New("")
+
+	decoded, ok := provider.DecodeImageData(
+		provider.domain+"/cdn/c/cover.webp",
+		[]byte("anything"),
+	)
+
+	if ok || decoded != nil {
+		t.Errorf(
+			"expected the page to pass through, got %v / %v",
+			decoded,
+			ok,
+		)
+	}
+}
+
+// Compile-time: the optional decode capability is wired.
+var _ sourcetypes.ImageDecoder = New("")
 
 func newTestProvider(
 	t *testing.T,
