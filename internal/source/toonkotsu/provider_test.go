@@ -207,6 +207,57 @@ func TestImageRequestHeaders(t *testing.T) {
 // Compile-time: the image request headers capability is wired.
 var _ sourcetypes.ImageRequestConfigurer = New("")
 
+func TestWorkMetadata(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/cdn/v1/series/bm0ssx": seriesRoute(`{
+			"series": {
+				"authors": ["AKUTAMI Gege"],
+				"tags": ["Action", "Supernatural"],
+				"description": "A curse-filled school story.",
+				"cover": "/cdn/c/bibd7/muxe4yt6/460.webp",
+				"year": 2018,
+				"originalLanguage": "ja"
+			}
+		}`),
+	})
+
+	metadata, err := provider.WorkMetadata(
+		provider.domain+"/title/bm0ssx-jujutsu-kaisen",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("WorkMetadata() error: %v", err)
+	}
+
+	if metadata.Author != "AKUTAMI Gege" {
+		t.Errorf("author = %q", metadata.Author)
+	}
+
+	if len(metadata.Tags) != 2 {
+		t.Errorf("tags = %+v", metadata.Tags)
+	}
+
+	if metadata.Year != 2018 {
+		t.Errorf("year = %d", metadata.Year)
+	}
+
+	if metadata.CoverURL != provider.domain+"/cdn/c/bibd7/muxe4yt6/460.webp" {
+		t.Errorf("cover = %q", metadata.CoverURL)
+	}
+}
+
+func TestWorkMetadataPropagation(t *testing.T) {
+	provider := newTestProvider(t, nil)
+
+	_, err := provider.WorkMetadata(
+		provider.domain+"/not-a-title/bm0ssx",
+		nil,
+	)
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+}
+
 func newTestProvider(
 	t *testing.T,
 	handlers map[string]http.HandlerFunc,

@@ -126,6 +126,33 @@ func (p *Provider) ListEntries(
 	}, entries, nil
 }
 
+// WorkMetadata reads the series payload the listing flow already
+// relies on, deriving the metadata parts it publishes: authors,
+// artists, tags, description, cover, year and original language.
+func (p *Provider) WorkMetadata(
+	workURL string,
+	log *logger.Logger,
+) (sourcetypes.Metadata, error) {
+	code, err := toonkotsuscraper.WorkCodeFromURL(workURL)
+	if err != nil {
+		return sourcetypes.Metadata{}, err
+	}
+
+	metadata, err := toonkotsuscraper.GetWorkMetadata(
+		p.domain,
+		code,
+		log,
+	)
+	if err != nil {
+		return sourcetypes.Metadata{}, fmt.Errorf(
+			"failed to get toonkotsu work metadata: %w",
+			err,
+		)
+	}
+
+	return metadata, nil
+}
+
 // Toonkotsu embeds its page list in a reader API robots.txt
 // explicitly allows; every candidate upload is read and the fullest
 // copy wins. The blobs themselves are AES-CTR ciphertexts whose key
