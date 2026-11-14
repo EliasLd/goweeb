@@ -189,6 +189,24 @@ func TestDecodeImageDataPassesThroughPlainPages(t *testing.T) {
 // Compile-time: the optional decode capability is wired.
 var _ sourcetypes.ImageDecoder = New("")
 
+func TestImageRequestHeaders(t *testing.T) {
+	provider := New("")
+
+	headers := provider.ImageRequestHeaders()
+
+	// The downloader's default bare "Mozilla/5.0" is rejected.
+	if headers["User-Agent"] == "Mozilla/5.0" {
+		t.Error("expected the bare default UA to be overridden")
+	}
+
+	if headers["User-Agent"] == "" {
+		t.Error("expected a full browser user agent")
+	}
+}
+
+// Compile-time: the image request headers capability is wired.
+var _ sourcetypes.ImageRequestConfigurer = New("")
+
 func newTestProvider(
 	t *testing.T,
 	handlers map[string]http.HandlerFunc,

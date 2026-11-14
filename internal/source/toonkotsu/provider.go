@@ -158,3 +158,12 @@ func (p *Provider) DecodeImageData(
 ) ([]byte, bool) {
 	return toonkotsuscraper.DecodeImageData(pageURL, data)
 }
+
+// ImageRequestHeaders carries what the site's hotlink rule demands:
+// a bare "Mozilla/5.0" gets 403 on the encrypted page blobs, while a
+// full browser user agent passes everywhere. No referer is needed.
+func (p *Provider) ImageRequestHeaders() map[string]string {
+	return map[string]string{
+		"User-Agent": toonkotsuscraper.BrowserUserAgent,
+	}
+}
