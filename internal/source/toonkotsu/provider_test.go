@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 )
 
 func TestNew(t *testing.T) {
@@ -125,11 +127,6 @@ func TestSearchErrorPropagation(t *testing.T) {
 func TestNotImplementedMethodsStayHonest(t *testing.T) {
 	provider := New("")
 
-	if _, _, err := provider.ListEntries("", "", nil); err == nil ||
-		!strings.Contains(err.Error(), "not implemented") {
-		t.Errorf("ListEntries() error: %v", err)
-	}
-
 	if _, err := provider.GetPageImageURLs("", nil); err == nil ||
 		!strings.Contains(err.Error(), "not implemented") {
 		t.Errorf("GetPageImageURLs() error: %v", err)
@@ -230,6 +227,113 @@ func TestListScanPathsInvalidWorkURL(t *testing.T) {
 
 	_, err := provider.ListScanPaths(
 		provider.domain+"/not-a-title/bm0ssx",
+		nil,
+	)
+	if err == nil {
+		t.Fatal("expected an error for an unexpected work URL")
+	}
+}
+
+func TestListEntries(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/cdn/v1/series/bm0ssx": seriesRoute(`{"series":{"title":"Jujutsu Kaisen"},"chapters":[` +
+			`{"id":4581694,"n":2,"label":"Chapter 2","alts":[{"id":4581695}]},` +
+			`{"id":4581691,"n":1,"label":"Chapter 1","alts":[{"id":4581692}]},` +
+			`{"id":4581693,"n":1,"label":"","alts":[]}]}`),
+	})
+
+	work, entries, err := provider.ListEntries(
+		provider.domain+"/title/bm0ssx-jujutsu-kaisen",
+		"",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("ListEntries() error: %v", err)
+	}
+
+	if work.Title != "Jujutsu Kaisen" {
+		t.Errorf("unexpected work title: %q", work.Title)
+	}
+
+	if work.Kind != sourcetypes.ItemChapter {
+		t.Errorf("unexpected work kind: %d", work.Kind)
+	}
+
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries, got %d", len(entries))
+	}
+
+	if entries[0].Number.String() != "1" || entries[0].Label != "Chapter 1" {
+		t.Errorf(
+			"unexpected first entry: %q / %q",
+			entries[0].Number.String(),
+			entries[0].Label,
+		)
+	}
+
+	// The entry URL stays opaque: it is what the site's URL shape
+	// carries and what the pages step resolves back into ids.
+	expectedURL := provider.domain + "/manga/chapter/4581691,4581692,4581693"
+
+	if entries[0].URL != expectedURL {
+		t.Errorf("expected URL %q, got %q", expectedURL, entries[0].URL)
+	}
+
+	if entries[1].Number.String() != "2" {
+		t.Errorf("unexpected second entry: %q", entries[1].Number.String())
+	}
+}
+
+func TestListEntriesEditionListing(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/cdn/v1/series/bm0ssx": seriesRoute(`{"series":{"title":"Main"},"chapters":[]}`),
+		"/cdn/v1/series/colored1": seriesRoute(`{"series":{"title":"Jujutsu Kaisen Official Colored"},"chapters":[` +
+			`{"id":"c1","n":1,"label":"Chapter 1 (Official Colored)"}]}`),
+	})
+
+	work, entries, err := provider.ListEntries(
+		provider.domain+"/title/bm0ssx-jujutsu-kaisen",
+		"colored1",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("ListEntries() error: %v", err)
+	}
+
+	if work.Title != "Jujutsu Kaisen Official Colored" {
+		t.Errorf("expected the edition title, got %q", work.Title)
+	}
+
+	if len(entries) != 1 {
+		t.Errorf("expected the edition chapter, got %d", len(entries))
+	}
+}
+
+func TestListEntriesEmptyListing(t *testing.T) {
+	provider := newTestProvider(t, map[string]http.HandlerFunc{
+		"/cdn/v1/series/solo": seriesRoute(`{"series":{"title":"Solo"},"chapters":[]}`),
+	})
+
+	_, entries, err := provider.ListEntries(
+		provider.domain+"/title/solo-solo",
+		"",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("ListEntries() error: %v", err)
+	}
+
+	if len(entries) != 0 {
+		t.Errorf("expected no entries, got %d", len(entries))
+	}
+}
+
+func TestListEntriesInvalidWorkURL(t *testing.T) {
+	provider := newTestProvider(t, nil)
+
+	_, _, err := provider.ListEntries(
+		provider.domain+"/not-a-title/bm0ssx",
+		"",
 		nil,
 	)
 	if err == nil {

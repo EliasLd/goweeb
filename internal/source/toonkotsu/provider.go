@@ -84,14 +84,47 @@ func (p *Provider) ListScanPaths(
 	return items, nil
 }
 
+// Toonkotsu addresses the reader by chapter id; every upload of a
+// number (the rows carrying it and their alternates) travels as
+// comma-joined candidate ids. The scan path names an edition's
+// listing when set.
 func (p *Provider) ListEntries(
 	workURL string,
 	scanPath string,
 	log *logger.Logger,
 ) (sourcetypes.Work, []sourcetypes.Entry, error) {
-	return sourcetypes.Work{}, nil, errors.New(
-		"toonkotsu chapter listing is not implemented yet",
+	code, err := toonkotsuscraper.WorkCodeFromURL(workURL)
+	if err != nil {
+		return sourcetypes.Work{}, nil, err
+	}
+
+	title, chapters, err := toonkotsuscraper.ListChapters(
+		p.domain,
+		code,
+		scanPath,
+		log,
 	)
+	if err != nil {
+		return sourcetypes.Work{}, nil, fmt.Errorf(
+			"failed to list toonkotsu chapters: %w",
+			err,
+		)
+	}
+
+	entries := make([]sourcetypes.Entry, 0, len(chapters))
+
+	for _, chapter := range chapters {
+		entries = append(entries, sourcetypes.Entry{
+			Number: chapter.Number,
+			Label:  chapter.Label,
+			URL:    chapter.URL,
+		})
+	}
+
+	return sourcetypes.Work{
+		Title: title,
+		Kind:  sourcetypes.ItemChapter,
+	}, entries, nil
 }
 
 func (p *Provider) GetPageImageURLs(
