@@ -13,6 +13,7 @@ import (
 	"github.com/EliasLd/goweeb/internal/source/mangafreak"
 	"github.com/EliasLd/goweeb/internal/source/mangataro"
 	"github.com/EliasLd/goweeb/internal/source/mangavyvy"
+	"github.com/EliasLd/goweeb/internal/source/toonkotsu"
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 	"github.com/EliasLd/goweeb/internal/source/weebcentral"
 )
@@ -80,6 +81,12 @@ var providers = map[string]providerRegistration{
 		Label: "Mangavyvy (English)",
 		New: func(customDomain string) sourcetypes.Provider {
 			return mangavyvy.New(customDomain)
+		},
+	},
+	"toonkotsu": {
+		Label: "Toonkotsu (English)",
+		New: func(customDomain string) sourcetypes.Provider {
+			return toonkotsu.New(customDomain)
 		},
 	},
 }
