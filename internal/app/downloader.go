@@ -156,6 +156,21 @@ func imageRequestHeaders(
 	return configurer.ImageRequestHeaders()
 }
 
+// pageTransform adapts an optional provider decoder into the
+// downloader's per-page transform. Sources without scrambled page
+// bytes return nil.
+func pageTransform(
+	provider sourcetypes.Provider,
+) fetch.PageTransform {
+	decoder, ok := provider.(sourcetypes.ImageDecoder)
+
+	if !ok {
+		return nil
+	}
+
+	return decoder.DecodeImageData
+}
+
 func downloadEntries(
 	provider sourcetypes.Provider,
 	work sourcetypes.Work,
@@ -174,6 +189,8 @@ func downloadEntries(
 	requestHeaders := imageRequestHeaders(
 		provider,
 	)
+
+	transform := pageTransform(provider)
 
 	languageCode := metadata.LanguageISO(
 		opts.ScanPath,
@@ -263,6 +280,7 @@ func downloadEntries(
 				imageURLs,
 				entryDir,
 				requestHeaders,
+				transform,
 				log,
 			); err != nil {
 				log.Error(
@@ -307,6 +325,7 @@ func downloadEntries(
 				imageURLs,
 				imageDir,
 				requestHeaders,
+				transform,
 				log,
 			); err != nil {
 				log.Error(
@@ -390,6 +409,7 @@ func downloadEntries(
 			imageURLs,
 			imageDir,
 			requestHeaders,
+			transform,
 			log,
 		); err != nil {
 			log.Error(

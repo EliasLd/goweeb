@@ -67,6 +67,7 @@ var liveQueries = map[string]string{
 	"mangadex":    "berserk",
 	"mangadotnet": "solo leveling",
 	"mangavyvy":   "one piece",
+	"toonkotsu":   "jujutsu kaisen",
 }
 
 // Runs every registry provider under a subtest named after its ID,

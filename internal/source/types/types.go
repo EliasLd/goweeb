@@ -74,6 +74,15 @@ type ImageRequestConfigurer interface {
 	ImageRequestHeaders() map[string]string
 }
 
+// Optional capability for providers that deliver page bytes in an
+// encrypted or otherwise scrambled form: the downloader hands each
+// downloaded page back, and the provider returns the bytes that
+// belong on disk. The false return keeps the bytes unchanged.
+// Mirrors the ImageRequestConfigurer idiom.
+type ImageDecoder interface {
+	DecodeImageData(pageURL string, data []byte) ([]byte, bool)
+}
+
 // Volume groups the chapters one volume holds, exactly as the
 // provider's own data assigns them. Volume mode is built from real
 // site data only — never from numbering arithmetic. Entries are

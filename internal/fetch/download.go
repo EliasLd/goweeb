@@ -119,15 +119,22 @@ func DownloadImages(
 		imageURLs,
 		destDir,
 		nil,
+		nil,
 		log,
 	)
 }
 
-// Downloads a list of image URLs with optional custom request headers.
+// PageTransform rewrites one downloaded page's bytes before it lands
+// on disk. The false return keeps the original bytes.
+type PageTransform func(pageURL string, data []byte) ([]byte, bool)
+
+// Downloads a list of image URLs with optional custom request headers
+// and an optional per-page byte transform.
 func DownloadImagesWithHeaders(
 	imageURLs []string,
 	destDir string,
 	headers map[string]string,
+	transform PageTransform,
 	log *logger.Logger,
 ) error {
 	if len(imageURLs) == 0 {
@@ -196,10 +203,52 @@ func DownloadImagesWithHeaders(
 			)
 		}
 
+		if transform != nil {
+			if err := transformStagedImage(
+				transform,
+				imgURL,
+				imgPath,
+			); err != nil {
+				return fmt.Errorf(
+					"failed to transform page %d: %w",
+					i+1,
+					err,
+				)
+			}
+		}
+
 		log.Debug(
 			"Downloaded page %d\n",
 			i+1,
 		)
+	}
+
+	return nil
+}
+
+// transformStagedImage passes a freshly downloaded page through the
+// transform and replaces the staged file when the bytes change.
+// Sources with scrambled page bytes stage ciphertext images, so the
+// rewrite runs after the download's own retry loop, on the complete
+// file.
+func transformStagedImage(
+	transform PageTransform,
+	pageURL string,
+	path string,
+) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read staged page: %w", err)
+	}
+
+	decoded, ok := transform(pageURL, data)
+	if !ok {
+		return nil
+	}
+
+	// DownloadToFile's temporary file carried the same permission.
+	if err := os.WriteFile(path, decoded, 0600); err != nil {
+		return fmt.Errorf("failed to replace staged page: %w", err)
 	}
 
 	return nil

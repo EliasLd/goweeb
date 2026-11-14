@@ -328,6 +328,7 @@ func downloadVolumes(
 	)
 
 	requestHeaders := imageRequestHeaders(provider)
+	transform := pageTransform(provider)
 	format := outputFormat(opts)
 	languageCode := metadata.LanguageISO(
 		opts.ScanPath,
@@ -414,6 +415,7 @@ func downloadVolumes(
 				volDigits,
 				chDigits,
 				requestHeaders,
+				transform,
 				languageCode,
 				workMeta,
 				ledgerFile,
@@ -432,6 +434,7 @@ func downloadVolumes(
 			volDigits,
 			chDigits,
 			requestHeaders,
+			transform,
 			languageCode,
 			workMeta,
 			ledgerFile,
@@ -472,6 +475,7 @@ func bundleVolumeCBZ(
 	volDigits int,
 	chDigits int,
 	requestHeaders map[string]string,
+	transform fetch.PageTransform,
 	languageISO string,
 	workMeta sourcetypes.Metadata,
 	ledgerFile *ledger.Ledger,
@@ -530,6 +534,7 @@ func bundleVolumeCBZ(
 			imageURLs,
 			chapterDir,
 			requestHeaders,
+			transform,
 			log,
 		); err != nil {
 			log.Error(
@@ -629,6 +634,7 @@ func downloadVolumeArtifacts(
 	volDigits int,
 	chDigits int,
 	requestHeaders map[string]string,
+	transform fetch.PageTransform,
 	languageISO string,
 	workMeta sourcetypes.Metadata,
 	ledgerFile *ledger.Ledger,
@@ -698,6 +704,7 @@ func downloadVolumeArtifacts(
 				imageURLs,
 				entryDir,
 				requestHeaders,
+				transform,
 				log,
 			); err != nil {
 				log.Error(
@@ -740,6 +747,7 @@ func downloadVolumeArtifacts(
 			imageURLs,
 			imageDir,
 			requestHeaders,
+			transform,
 			log,
 		); err != nil {
 			log.Error(
