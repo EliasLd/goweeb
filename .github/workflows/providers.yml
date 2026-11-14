@@ -37,6 +37,7 @@ jobs:
           - mangadotnet
           - mangataro
           - mangavyvy
+          - toonkotsu
         # Weebcentral is a tolerated job (yellow, not red): its edge
         # rejects runner/datacenter IPs before the site's app runs —
         # a hard IP-reputation reject (403 in ~0.1s) with no detectable
