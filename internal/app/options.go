@@ -62,6 +62,10 @@ type Options struct {
 	Source        string
 	Layout        Layout
 
+	// NoUpdateCheck skips the startup version check: interactive
+	// runs prompt anyway, this is for scripts and offline use.
+	NoUpdateCheck bool
+
 	MangaURL string
 	ScanPath string
 }
@@ -152,6 +156,10 @@ func configureUsage() {
 		fmt.Fprintln(out, "      Show the running version and exit")
 		fmt.Fprintln(out)
 
+		fmt.Fprintln(out, "  --no-update-check")
+		fmt.Fprintln(out, "      Skip the version update check")
+		fmt.Fprintln(out)
+
 		fmt.Fprintln(out, "  --debug")
 		fmt.Fprintln(out, "      Enable verbose debug logging")
 		fmt.Fprintln(out)
@@ -176,6 +184,7 @@ func ParseFlags() Options {
 		customDomain  string
 		debug         bool
 		showVersion   bool
+		noUpdateCheck bool
 		layoutStr     string
 		cont          bool
 
@@ -308,6 +317,13 @@ func ParseFlags() Options {
 		"version",
 		false,
 		"Show the running version and exit",
+	)
+
+	flag.BoolVar(
+		&noUpdateCheck,
+		"no-update-check",
+		false,
+		"Skip the version update check on startup",
 	)
 
 	flag.Parse()
@@ -501,5 +517,6 @@ func ParseFlags() Options {
 		EbookFriendly:    ebookFriendly,
 		CBZ:              cbz,
 		Layout:           layout,
+		NoUpdateCheck:    noUpdateCheck,
 	}
 }
