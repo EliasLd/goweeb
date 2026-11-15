@@ -6,7 +6,6 @@
 package app
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -147,7 +146,7 @@ func FormatVolumeRanges(volumes []sourcetypes.Volume) string {
 // should use when the source offers both. Only an explicit answer
 // picks volumes; everything else keeps the chapter flow.
 func PromptChaptersOrVolumes(log *logger.Logger) bool {
-	reader := bufio.NewReader(os.Stdin)
+	reader := common.StdinReader
 
 	log.Info(
 		"This work splits into volumes on this source.\n",
@@ -187,7 +186,7 @@ func PromptVolumeRange(
 ) (RangeSelection, error) {
 	var selection RangeSelection
 
-	reader := bufio.NewReader(os.Stdin)
+	reader := common.StdinReader
 
 	log.Info(
 		"Found %d volume(s).\n",
