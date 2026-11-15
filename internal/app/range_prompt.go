@@ -1,12 +1,11 @@
 package app
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/EliasLd/goweeb/internal/logger"
+	"github.com/EliasLd/goweeb/internal/source/common"
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
 )
 
@@ -16,7 +15,7 @@ func PromptChapterRange(
 ) (RangeSelection, error) {
 	var selection RangeSelection
 
-	reader := bufio.NewReader(os.Stdin)
+	reader := common.StdinReader
 
 	log.Info(
 		"Found %d chapter(s).\n",

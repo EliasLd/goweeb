@@ -10,6 +10,11 @@ import (
 	"github.com/EliasLd/goweeb/internal/logger"
 )
 
+// StdinReader is the process-wide reader all interactive prompts read
+// from: a fresh reader per prompt would slurp the queued lines and
+// lose them for every prompt after the first.
+var StdinReader = bufio.NewReader(os.Stdin)
+
 // Displays a list and asks user to pick one item.
 // Returns selected Value, empty string if cancelled.
 func PromptUserToSelect(items []SelectableItem, title string, prompt string, log *logger.Logger) (string, error) {
@@ -28,7 +33,7 @@ func PromptUserToSelect(items []SelectableItem, title string, prompt string, log
 	}
 	log.Info("")
 
-	reader := bufio.NewReader(os.Stdin)
+	reader := StdinReader
 	for {
 		log.Info(prompt, len(items))
 
