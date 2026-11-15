@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/EliasLd/goweeb/internal/source"
+	"github.com/EliasLd/goweeb/internal/version"
 )
 
 type RangeMode int
@@ -147,6 +148,10 @@ func configureUsage() {
 		fmt.Fprintln(out)
 
 		fmt.Fprintln(out, "Other:")
+		fmt.Fprintln(out, "  --version")
+		fmt.Fprintln(out, "      Show the running version and exit")
+		fmt.Fprintln(out)
+
 		fmt.Fprintln(out, "  --debug")
 		fmt.Fprintln(out, "      Enable verbose debug logging")
 		fmt.Fprintln(out)
@@ -170,6 +175,7 @@ func ParseFlags() Options {
 		cbz           bool
 		customDomain  string
 		debug         bool
+		showVersion   bool
 		layoutStr     string
 		cont          bool
 
@@ -297,7 +303,19 @@ func ParseFlags() Options {
 		"Enable verbose debug logging",
 	)
 
+	flag.BoolVar(
+		&showVersion,
+		"version",
+		false,
+		"Show the running version and exit",
+	)
+
 	flag.Parse()
+
+	if showVersion {
+		fmt.Printf("goweeb %s\n", version.String())
+		os.Exit(0)
+	}
 
 	args := flag.Args()
 
