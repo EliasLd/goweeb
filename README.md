@@ -196,6 +196,21 @@ The workflow is straightforward:
 
 When only one manga or scan version is available, goweeb selects it automatically.
 
+The running version stays in the terminal's bottom-left corner.
+
+## Automatic updates
+
+On startup, both UIs check the project's [GitHub releases](https://github.com/EliasLd/goweeb/releases/latest) for a newer version. The check takes at most a few seconds, never blocks the app when offline, and builds made from source (no release tag) skip it.
+
+When one is available:
+
+- The **TUI** opens a small box over the interface: `Yes` installs, `No` or `Esc` keeps the current version.
+- The **CLI** prompts `Update now? [y/N]`; pressing Enter (empty answer) keeps the current version.
+
+Accepting downloads the release archive, verifies it against the checksum the GitHub release API publishes for it, and replaces the running binary in place — `/usr/bin/goweeb` stays `/usr/bin/goweeb`, Windows included (a running `.exe` is renamed aside first, its leftover copy disappearing on the run after that). The replacement takes effect on the next start, and the binary directory must be writable: elevate or install to a location you can write when needed.
+
+On the CLI, `--no-update-check` skips the check entirely, and `--version` prints the running version.
+
 ## Command-Line Interface
 
 The CLI is useful for scripting, automation, or quickly downloading known chapters.
@@ -227,6 +242,8 @@ When using an unquoted title, place it after all CLI options.
 | `--continue` | `-c` | Skip chapters already downloaded in the output directory. See [Resuming downloads](#resuming-downloads). |
 | `--no-external-covers` | — | Disable the external database fallback (AniList) when no provider carries a work cover. See [Work metadata](#work-metadata). |
 | `--domain <url>` | `-u` | Override the selected provider's default domain. |
+| `--version` | — | Show the running version and exit. |
+| `--no-update-check` | — | Skip the version update check on startup. See [Automatic updates](#automatic-updates). |
 | `--debug` | — | Enable verbose debug logging. |
 
 Inside the official container, the output directory is fixed to:
