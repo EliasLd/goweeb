@@ -206,5 +206,6 @@ func viewInteractiveSearch(
 		"↓/Tab results • ↑ back to search • Enter select • Ctrl+P provider • Esc back to main",
 		lipgloss.Center,
 		lipgloss.Top,
+		hasUpdateOffer(m),
 	)
 }

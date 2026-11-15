@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/EliasLd/goweeb/internal/source"
+	"github.com/EliasLd/goweeb/internal/version"
 )
 
 type RangeMode int
@@ -60,6 +61,10 @@ type Options struct {
 	CBZ           bool
 	Source        string
 	Layout        Layout
+
+	// NoUpdateCheck skips the startup version check: interactive
+	// runs prompt anyway, this is for scripts and offline use.
+	NoUpdateCheck bool
 
 	MangaURL string
 	ScanPath string
@@ -147,6 +152,14 @@ func configureUsage() {
 		fmt.Fprintln(out)
 
 		fmt.Fprintln(out, "Other:")
+		fmt.Fprintln(out, "  --version")
+		fmt.Fprintln(out, "      Show the running version and exit")
+		fmt.Fprintln(out)
+
+		fmt.Fprintln(out, "  --no-update-check")
+		fmt.Fprintln(out, "      Skip the version update check")
+		fmt.Fprintln(out)
+
 		fmt.Fprintln(out, "  --debug")
 		fmt.Fprintln(out, "      Enable verbose debug logging")
 		fmt.Fprintln(out)
@@ -170,6 +183,8 @@ func ParseFlags() Options {
 		cbz           bool
 		customDomain  string
 		debug         bool
+		showVersion   bool
+		noUpdateCheck bool
 		layoutStr     string
 		cont          bool
 
@@ -297,7 +312,26 @@ func ParseFlags() Options {
 		"Enable verbose debug logging",
 	)
 
+	flag.BoolVar(
+		&showVersion,
+		"version",
+		false,
+		"Show the running version and exit",
+	)
+
+	flag.BoolVar(
+		&noUpdateCheck,
+		"no-update-check",
+		false,
+		"Skip the version update check on startup",
+	)
+
 	flag.Parse()
+
+	if showVersion {
+		fmt.Printf("goweeb %s\n", version.String())
+		os.Exit(0)
+	}
 
 	args := flag.Args()
 
@@ -483,5 +517,6 @@ func ParseFlags() Options {
 		EbookFriendly:    ebookFriendly,
 		CBZ:              cbz,
 		Layout:           layout,
+		NoUpdateCheck:    noUpdateCheck,
 	}
 }

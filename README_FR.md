@@ -196,6 +196,21 @@ Le fonctionnement est simple :
 
 Lorsqu'un seul manga ou une seule version de scan est disponible, goweeb le sélectionne automatiquement.
 
+La version en cours d'exécution s'affiche en bas à gauche du terminal.
+
+## Mises à jour automatiques
+
+Au démarrage, les deux interfaces vérifient si une version plus récente existe sur les [releases GitHub](https://github.com/EliasLd/goweeb/releases/latest) du projet. La vérification prend au plus quelques secondes, ne bloque jamais l'application hors ligne, et les binaires compilés depuis les sources (sans tag de version) l'ignorent.
+
+Lorsqu'une nouvelle version existe :
+
+- Le **TUI** ouvre une petite boîte au-dessus de l'interface : `Yes` installe, `No` ou `Esc` conserve la version actuelle.
+- Le **CLI** demande `Update now? [y/N]` ; Entrée sans saisie conserve la version actuelle.
+
+Accepter télécharge l'archive de la release, la vérifie contre la somme de contrôle que l'API GitHub joint à chaque release, puis remplace le binaire en cours d'exécution à sa place — `/usr/bin/goweeb` reste `/usr/bin/goweeb`, Windows compris (le `.exe` en cours d'exécution est d'abord renommé à part, sa copie restante disparaissant au lancement suivant). Le remplacement prend effet au prochain lancement, et le dossier du binaire doit être inscriptible : élever les droits ou installer dans un emplacement inscriptible si nécessaire.
+
+Avec le CLI, `--no-update-check` ignore la vérification et `--version` affiche la version en cours d'exécution.
+
 ## Interface en ligne de commande
 
 Le CLI est utile pour les scripts, l'automatisation ou pour télécharger rapidement des chapitres connus à l'avance.
@@ -227,6 +242,8 @@ Lorsque vous utilisez un titre sans guillemets, placez-le après toutes les opti
 | `--continue` | `-c` | Ignorer les chapitres déjà téléchargés dans le dossier de sortie. Voir [Reprendre les téléchargements](#reprendre-les-téléchargements). |
 | `--no-external-covers` | — | Désactiver la recherche de couverture en base externe (AniList) quand aucun fournisseur n'en propose. Voir [Métadonnées des œuvres](#métadonnées-des-œuvres). |
 | `--domain <url>` | `-u` | Remplacer le domaine par défaut du fournisseur sélectionné. |
+| `--version` | — | Afficher la version en cours d'exécution et quitter. |
+| `--no-update-check` | — | Ignorer la vérification de mise à jour au démarrage. Voir [Mises à jour automatiques](#mises-à-jour-automatiques). |
 | `--debug` | — | Activer les logs de debug détaillés. |
 
 Dans le conteneur officiel, le dossier de sortie est fixé à :

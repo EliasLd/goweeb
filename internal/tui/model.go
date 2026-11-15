@@ -6,6 +6,7 @@ import (
 
 	"github.com/EliasLd/goweeb/internal/app"
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
+	"github.com/EliasLd/goweeb/internal/update"
 	"github.com/charmbracelet/bubbles/filepicker"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -130,6 +131,15 @@ type Model struct {
 	// Mouse interaction.
 	HoveredAction string
 
+	// Startup update offer: fetched asynchronously, offered in a
+	// small overlay, and installed on confirmation. No is the
+	// default of the yes/no choice; UpdateRunning keeps the box
+	// open while the installation works.
+	UpdateOffer         *update.Release
+	UpdatePromptVisible bool
+	UpdatePromptCursor  int
+	UpdateRunning       bool
+
 	// Notifications.
 	AlertModel bubbleup.AlertModel
 
@@ -138,7 +148,10 @@ type Model struct {
 }
 
 func (m Model) Init() tea.Cmd {
-	return m.AlertModel.Init()
+	return tea.Batch(
+		m.AlertModel.Init(),
+		fetchUpdateOffer(),
+	)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

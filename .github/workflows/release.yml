@@ -20,7 +20,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.25"
 
       - name: Get version from tag
         id: get_version
@@ -44,7 +44,7 @@ jobs:
             fi
 
             local bin="goweeb${ext}"
-            GOOS="${os}" GOARCH="${arch}" go build -ldflags="-s -w" -o "${bin}" ./cmd/goweeb-cli
+            GOOS="${os}" GOARCH="${arch}" go build -ldflags="-s -w -X github.com/EliasLd/goweeb/internal/version.Version=${VERSION}" -o "${bin}" ./cmd/goweeb-cli
 
             if [ "${os}" = "windows" ]; then
               zip "dist/goweeb-${VERSION}-${os}-${arch}.zip" "${bin}"
@@ -66,7 +66,7 @@ jobs:
             fi
 
             local bin="goweeb${ext}"
-            GOOS="${os}" GOARCH="${arch}" go build -ldflags="-s -w" -o "${bin}" ./cmd/goweeb-tui
+            GOOS="${os}" GOARCH="${arch}" go build -ldflags="-s -w -X github.com/EliasLd/goweeb/internal/version.Version=${VERSION}" -o "${bin}" ./cmd/goweeb-tui
 
             if [ "${os}" = "windows" ]; then
               zip "dist/goweeb-tui-${VERSION}-${os}-${arch}.zip" "${bin}"

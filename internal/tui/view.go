@@ -55,6 +55,17 @@ func View(m Model) string {
 			)
 	}
 
+	if m.UpdatePromptVisible {
+		// The offer is the topmost surface while it shows.
+		base =
+			renderCenteredOverlay(
+				base,
+				viewUpdatePrompt(m),
+				m.Width,
+				m.Height,
+			)
+	}
+
 	rendered :=
 		m.AlertModel.Render(base)
 

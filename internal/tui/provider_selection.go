@@ -253,6 +253,8 @@ func (m ProviderSelectionModel) View() string {
 		"↑/↓ navigate • Space/Enter select • Ctrl+C/Esc cancel",
 		lipgloss.Center,
 		lipgloss.Center,
+		// The offer box is answered before these screens render.
+		false,
 	)
 }
 
