@@ -54,8 +54,13 @@ func ExtractMangaName(scanPageURL string, log *logger.Logger) (string, error) {
 
 	html := string(result.Body)
 
-	// Method 1: Extract from <h3 id="titreOeuvre">One Piece Couleur</h3>
-	titleRegex := regexp.MustCompile(`<h3[^>]+id="titreOeuvre"[^>]*>([^<]+)</h3>`)
+	// Method 1: Extract from the work title heading, currently
+	// `<h1 id="titreOeuvre" class="ct-titre">Naruto  </h1>` (was an
+	// h3). The text is returned verbatim on purpose: the chapter-list
+	// API matches the heading text byte-for-byte, trailing whitespace
+	// included — trimming breaks works whose key carries it (Naruto,
+	// Bleach).
+	titleRegex := regexp.MustCompile(`<h[1-6][^>]+id="titreOeuvre"[^>]*>([^<]+)</h[1-6]>`)
 	match := titleRegex.FindStringSubmatch(html)
 
 	if len(match) >= 2 {
