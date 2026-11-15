@@ -80,5 +80,6 @@ func viewDestinationPicker(
 		"↑/k ↓/j navigate • →/l open • ←/h back • Enter select • Esc back",
 		lipgloss.Center,
 		lipgloss.Center,
+		hasUpdateOffer(m),
 	)
 }

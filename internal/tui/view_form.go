@@ -46,5 +46,6 @@ func viewForm(
 		"↑/↓ navigate • Space/Enter select • Ctrl+L logs • Ctrl+C/Esc quit",
 		lipgloss.Center,
 		lipgloss.Center,
+		hasUpdateOffer(m),
 	)
 }

@@ -209,6 +209,7 @@ func viewRangeSelection(m Model) string {
 		"↑/↓ navigate • Space/Enter select • Ctrl+C/Esc quit",
 		lipgloss.Center,
 		lipgloss.Center,
+		hasUpdateOffer(m),
 	)
 }
 

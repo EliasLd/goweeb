@@ -14,9 +14,22 @@ var footerStyle = lipgloss.NewStyle().
 var footerVersionStyle = lipgloss.NewStyle().
 	Faint(true)
 
+// footerVersionAccentStyle lifts the version out of the helper tone
+// while an update waits for the user's answer.
+var footerVersionAccentStyle = lipgloss.NewStyle().
+	Foreground(accentColor).
+	Bold(true)
+
+// hasUpdateOffer reports whether the footer version carries the
+// accent: an offer is being shown or waits behind the box.
+func hasUpdateOffer(m Model) bool {
+	return m.UpdateOffer != nil
+}
+
 // renderViewWithFooter lays the work out above a footer row that
 // carries the helper text centered and the running version in the
-// bottom-left corner.
+// bottom-left corner; the version turns accent while an update is
+// on offer.
 func renderViewWithFooter(
 	width int,
 	height int,
@@ -24,8 +37,9 @@ func renderViewWithFooter(
 	footerText string,
 	horizontalAlignment lipgloss.Position,
 	verticalAlignment lipgloss.Position,
+	versionAccent bool,
 ) string {
-	footer := renderFooterRow(width, footerText)
+	footer := renderFooterRow(width, footerText, versionAccent)
 
 	footerHeight := lipgloss.Height(footer)
 	bodyHeight := max(0, height-footerHeight)
@@ -69,8 +83,16 @@ func renderViewWithFooter(
 // the version label in its blank left margin, keeping the helper
 // untouched in the middle. On terminals too narrow to carry both,
 // the label is dropped rather than pushed into the view.
-func renderFooterRow(width int, helperText string) string {
+func renderFooterRow(
+	width int,
+	helperText string,
+	versionAccent bool,
+) string {
 	label := footerVersionStyle.Render(version.String())
+
+	if versionAccent {
+		label = footerVersionAccentStyle.Render(version.String())
+	}
 	labelWidth := lipgloss.Width(label)
 
 	row := footerStyle.

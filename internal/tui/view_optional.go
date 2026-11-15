@@ -161,5 +161,6 @@ func viewOptionalSettings(m Model) string {
 		"↑/↓ navigate • Space/Enter select • Ctrl+C/Esc back",
 		lipgloss.Left,
 		lipgloss.Top,
+		hasUpdateOffer(m),
 	)
 }

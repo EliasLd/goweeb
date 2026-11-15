@@ -5,6 +5,7 @@ import (
 
 	"github.com/EliasLd/goweeb/internal/source/common"
 	sourcetypes "github.com/EliasLd/goweeb/internal/source/types"
+	"github.com/EliasLd/goweeb/internal/update"
 )
 
 // A line received from the download logger.
@@ -49,4 +50,17 @@ type entriesResultMsg struct {
 type volumesResultMsg struct {
 	volumes []sourcetypes.Volume
 	err     error
+}
+
+// The startup update check outcome: an offer, nothing, or the
+// failure of the check itself (silently dropped).
+type updateCheckResultMsg struct {
+	release *update.Release
+	err     error
+}
+
+// The update installation has finished: success or failure for the
+// alert layer to show.
+type updateApplyDoneMsg struct {
+	err error
 }

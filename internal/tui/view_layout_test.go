@@ -14,7 +14,7 @@ func TestRenderFooterRowRidesTheVersionInTheLeftMargin(t *testing.T) {
 
 	version.Version = "v4.6.3"
 
-	row := renderFooterRow(40, "helper text")
+	row := renderFooterRow(40, "helper text", false)
 
 	if !strings.Contains(row, "v4.6.3") {
 		t.Errorf("footer row missing the version: %q", row)
@@ -35,7 +35,7 @@ func TestRenderFooterRowRidesTheVersionInTheLeftMargin(t *testing.T) {
 }
 
 func TestRenderFooterRowSkipsTheLabelOnNarrowTerminals(t *testing.T) {
-	row := renderFooterRow(12, "this helper text is long")
+	row := renderFooterRow(12, "this helper text is long", false)
 
 	// The label is dropped, the helper still shown (wrapped).
 	if strings.Contains(row, version.String()) {

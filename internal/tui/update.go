@@ -49,6 +49,13 @@ func updateApp(
 	msg tea.Msg,
 	m Model,
 ) (Model, tea.Cmd) {
+	// The update offer box is the topmost surface of the
+	// application: while it shows it consumes every message until
+	// the choice is made or the installation completes.
+	if m.UpdatePromptVisible {
+		return handleUpdatePrompt(msg, m)
+	}
+
 	// Interactive search results must still be consumed
 	// after leaving the search screen so an old in-flight
 	// request cannot leave SearchInFlight stuck forever.
@@ -60,6 +67,12 @@ func updateApp(
 	}
 
 	switch msg := msg.(type) {
+	case updateCheckResultMsg:
+		return handleUpdateCheckResult(
+			msg,
+			m,
+		)
+
 	case setupLogPipeMsg:
 		return handleSetupLogPipe(
 			msg,
