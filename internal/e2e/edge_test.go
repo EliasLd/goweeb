@@ -8,8 +8,11 @@ package e2e
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/EliasLd/goweeb/internal/httpx"
 )
 
 // Edge challenge markers, taken from the managed challenge the
@@ -32,6 +35,12 @@ const (
 func edgeChallenge(err error) bool {
 	if err == nil {
 		return false
+	}
+
+	// Short-circuited answers carry the sentinel; body-excerpted
+	// ones reach the string markers below.
+	if errors.Is(err, httpx.ErrEdgeChallenge) {
+		return true
 	}
 
 	message := err.Error()
@@ -74,6 +83,19 @@ func TestEdgeChallengeRecognizesTheChallengePage(t *testing.T) {
 	// answer, not the whole challenge page.
 	if got := shortEdgeMessage(blocked); len(got) > 172 {
 		t.Errorf("shortEdgeMessage() = %d bytes, want the trimmed form", len(got))
+	}
+}
+
+// The typed sentinel from the httpx short-circuit reaches the
+// detector through any wrapping, e.g. the page download chain.
+func TestEdgeChallengeRecognizesTheSentinel(t *testing.T) {
+	wrapped := fmt.Errorf(
+		"failed to download page 1: GET https://mangadot.net/x.webp: %w",
+		httpx.ErrEdgeChallenge,
+	)
+
+	if !edgeChallenge(wrapped) {
+		t.Errorf("the sentinel went unrecognized: %v", wrapped)
 	}
 }
 
