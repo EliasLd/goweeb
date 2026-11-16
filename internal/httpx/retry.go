@@ -132,6 +132,20 @@ func run[T any](
 			continue
 		}
 
+		// A challenge or block answer comes from the edge, not
+		// the application: retrying can never pass it, so fail
+		// fast with a typed error callers detect.
+		if challenge := challengeResponse(resp); challenge != nil {
+			resp.Body.Close()
+
+			return zero, fmt.Errorf(
+				"%s %s: %w",
+				req.Method,
+				req.URL,
+				challenge,
+			)
+		}
+
 		if retryableStatus(resp.StatusCode) && attempt < MaxAttempts {
 			delay, allowed := statusRetryDelay(resp, attempt)
 			if allowed {
