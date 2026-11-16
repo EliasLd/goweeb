@@ -63,7 +63,7 @@ var liveQueries = map[string]string{
 	"mangaball":   "childhood friend complex",
 	"mangafreak":  "one piece",
 	"mangataro":   "berserk",
-	"weebcentral": "berserk",
+	"weebcentral": "gachiakuta",
 	"mangadex":    "berserk",
 	"mangadotnet": "solo leveling",
 	"mangavyvy":   "one piece",
