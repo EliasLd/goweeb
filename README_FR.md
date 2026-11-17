@@ -305,7 +305,9 @@ goweeb --source mangadex --volume 1-5 --cbz "berserk"
 
 Avec `--cbz`, chaque tome est téléchargé sous forme d'une archive unique, `{Series} Vol. 01.cbz` : à l'intérieur, chaque chapitre garde un dossier préfixé (l'architecture disque est reflétée dans l'archive), avec un `ComicInfo.xml` décrivant le tome.
 
-Avec une sortie PDF, `--epub` ou `--ebook-friendly`, les chapitres restent des fichiers ou dossiers individuels, regroupés dans un dossier de tome :
+Avec `--epub`, les tomes sont regroupés de la même façon en un e-book unique, `{Series} Vol. 01.epub` : un spine continu d'un chapitre à l'autre, une table des matières listant chaque chapitre et les métadonnées du tome dans le document de paquetage.
+
+Avec une sortie PDF ou `--ebook-friendly`, les chapitres restent des fichiers ou dossiers individuels, regroupés dans un dossier de tome :
 
 ```text
 scan/
@@ -559,7 +561,7 @@ Chaque livre est un EPUB à mise en page fixe : une page par entrée du spine, r
 
 Contrairement au CBZ, les pages ne sont pas conservées verbatim : les pages WebP sont volontairement converties en JPEG, car le firmware des liseuses (Kobo notamment) affiche le WebP en blanc.
 
-C'est le format que consomment directement les liseuses : [KOReader](https://koreader.rocks) sur Kobo, Kindle ou tout appareil ouvre ces fichiers tels quels, et le lecteur natif Kobo les gère aussi. En mode tome, les chapitres restent des fichiers EPUB individuels regroupés dans le dossier du tome.
+C'est le format que consomment directement les liseuses : [KOReader](https://koreader.rocks) sur Kobo, Kindle ou tout appareil ouvre ces fichiers tels quels, et le lecteur natif Kobo les gère aussi. En mode tome, les chapitres fusionnent en un seul livre par tome, chaque chapitre étant accessible par la table des matières.
 
 Exemple :
 

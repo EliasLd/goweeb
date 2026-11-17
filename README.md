@@ -305,7 +305,9 @@ goweeb --source mangadex --volume 1-5 --cbz "berserk"
 
 With `--cbz`, each volume is downloaded as a single archive, `{Series} Vol. 01.cbz`: inside, every chapter keeps a zero-padded folder (mirroring the on-disk layout), with one series-wide `ComicInfo.xml` describing the volume.
 
-With PDF, `--epub` or `--ebook-friendly` output, chapters stay individual files or folders, grouped under a volume directory:
+With `--epub`, volumes are bundled the same way into one e-book per volume, `{Series} Vol. 01.epub`: one spine continuous across chapters, a table of contents listing every chapter, and the volume metadata inside the package document.
+
+With PDF or `--ebook-friendly` output, chapters stay individual files or folders, grouped under a volume directory:
 
 ```text
 scan/
@@ -559,7 +561,7 @@ Each book is a fixed-layout EPUB: one page per spine entry, rendered full-bleed 
 
 Unlike CBZ, pages are not kept verbatim: WebP pages are transcoded to JPEG on purpose, because e-reader firmware (Kobo notably) renders WebP blank.
 
-This is the format e-readers consume directly: [KOReader](https://koreader.rocks) on Kobo, Kindle or any device opens these files as-is, and the Kobo stock reader handles them too. In volume mode, chapters stay individual EPUB files grouped under the volume directory.
+This is the format e-readers consume directly: [KOReader](https://koreader.rocks) on Kobo, Kindle or any device opens these files as-is, and the Kobo stock reader handles them too. In volume mode the chapters merge into one book per volume, with every chapter reachable through the table of contents.
 
 Example:
 
