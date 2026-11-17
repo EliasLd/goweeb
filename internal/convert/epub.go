@@ -7,6 +7,7 @@ import (
 	"image"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -85,6 +86,144 @@ func ImagesToEPUB(
 
 	cover := epubCover(coverPath, imagesDir, log)
 
+	return epubWrite(
+		epubPath,
+		info,
+		pages,
+		[]epubNavItem{{label: epubTitle(info), href: pages[0].docHref}},
+		cover,
+	)
+}
+
+// ImagesTreeToEPUB packs the staged pages of several chapter folders
+// into one fixed layout EPUB book, mirroring ImageTreeToCBZ for
+// volume bundles. treeDir holds one zero-padded folder per chapter;
+// labels maps each folder name to its reader-facing title in the
+// book's table of contents - the caller owns the labels, the folder
+// names are internal numbers. The spine continues across chapters
+// and images are embedded under their chapter folder, so pages with
+// the same staged name never collide. info carries the bundle's
+// volume metadata. coverPath points at the recorded series cover
+// file when one exists: it becomes the cover-image, otherwise the
+// first page does.
+//
+// Transcoding follows the single-chapter writer; a chapter whose
+// pages all fail is dropped from the book with a log line, and a
+// book with no readable pages at all fails the archive.
+func ImagesTreeToEPUB(
+	treeDir string,
+	epubPath string,
+	info *ComicInfo,
+	coverPath string,
+	labels map[string]string,
+	log *logger.Logger,
+) error {
+	entries, err := os.ReadDir(treeDir)
+	if err != nil {
+		return fmt.Errorf(
+			"failed to read image dir: %w",
+			err,
+		)
+	}
+
+	var chapters []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			chapters = append(chapters, entry.Name())
+		}
+	}
+	sort.Strings(chapters)
+
+	if len(chapters) == 0 {
+		return fmt.Errorf(
+			"no chapter folders found in %s",
+			treeDir,
+		)
+	}
+
+	// The spine continues across chapters: one book, pages numbered
+	// gaplessly from the first page of the first chapter.
+	pages := make([]epubPage, 0, len(chapters))
+	nav := make([]epubNavItem, 0, len(chapters))
+
+	for _, chapter := range chapters {
+		label, ok := labels[chapter]
+		if !ok {
+			return fmt.Errorf(
+				"no table of contents label for the chapter folder %s",
+				chapter,
+			)
+		}
+
+		names, err := listImageFiles(
+			filepath.Join(treeDir, chapter),
+		)
+		if err != nil {
+			return fmt.Errorf(
+				"failed to read the chapter folder %s: %w",
+				chapter,
+				err,
+			)
+		}
+
+		first := len(pages) + 1
+
+		for _, name := range names {
+			page, usable := epubPageFrom(
+				filepath.Join(treeDir, chapter),
+				name,
+				fmt.Sprintf(
+					"OEBPS/images/%s/%s",
+					chapter,
+					strings.TrimSuffix(name, filepath.Ext(name)),
+				),
+				len(pages)+1,
+				log,
+			)
+
+			if usable {
+				pages = append(pages, page)
+			}
+		}
+
+		if len(pages) < first {
+			log.Error(
+				"Chapter %s has no readable pages, leaving it out of the book\n",
+				chapter,
+			)
+
+			continue
+		}
+
+		nav = append(nav, epubNavItem{
+			label: label,
+			href:  pages[first-1].docHref,
+		})
+	}
+
+	if len(pages) == 0 {
+		return fmt.Errorf(
+			"no readable images found in %s",
+			treeDir,
+		)
+	}
+
+	cover := epubCover(coverPath, treeDir, log)
+
+	return epubWrite(epubPath, info, pages, nav, cover)
+}
+
+// epubWrite assembles the container shared by the single-chapter and
+// the volume writer: the mimetype entry first and stored, the
+// container document, then the package, the navigation document and
+// every page with its image.
+func epubWrite(
+	epubPath string,
+	info *ComicInfo,
+	pages []epubPage,
+	nav []epubNavItem,
+	cover *epubImage,
+) error {
 	out, err := os.Create(epubPath)
 	if err != nil {
 		return fmt.Errorf(
@@ -149,7 +288,7 @@ func ImagesToEPUB(
 	if err := addEPUBDocument(
 		zipWriter,
 		epubNavPath,
-		epubNav(info, pages),
+		epubNav(epubTitle(info), nav),
 	); err != nil {
 		return abort(err)
 	}
@@ -215,9 +354,88 @@ func ImagesToEPUB(
 	return nil
 }
 
-// epubPages normalizes the staged pages and measures them: WebP and
+// epubPageFrom validates one staged image and returns the page the
+// container embeds: the file transcodes like the PDF writer's pages,
+// gets measured for its fixed-layout viewport and takes the archive
+// path imagePrefix (the zip path without extension) under the
+// corrected media-type extension. page is the continuous page
+// number; the spine stays gapless when a page is dropped. The bool
+// reports usability: an unusable page logs its reason and stays out
+// of the book.
+func epubPageFrom(
+	dir string,
+	name string,
+	imagePrefix string,
+	page int,
+	log *logger.Logger,
+) (epubPage, bool) {
+	path := filepath.Join(dir, name)
+
+	if transcodePage(path, log) {
+		return epubPage{}, false
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		log.Error(
+			"Failed to open %s: %v\n",
+			name,
+			err,
+		)
+
+		return epubPage{}, false
+	}
+
+	config, format, err := image.DecodeConfig(file)
+	file.Close()
+
+	if err != nil {
+		log.Error(
+			"Failed to decode image %s: %v\n",
+			name,
+			err,
+		)
+
+		return epubPage{}, false
+	}
+
+	mediaType, supported := epubImageFormat(format)
+	if !supported {
+		log.Error(
+			"Unsupported image format %s in %s\n",
+			format,
+			name,
+		)
+
+		return epubPage{}, false
+	}
+
+	imageZip := imagePrefix + epubImageExtension(mediaType)
+	docZip := fmt.Sprintf("OEBPS/text/page-%03d.xhtml", page)
+
+	return epubPage{
+		docZipName: docZip,
+		docHref: strings.TrimPrefix(
+			docZip,
+			epubFolderPrefix,
+		),
+		image: epubImage{
+			sourcePath: path,
+			zipName:    imageZip,
+			href: strings.TrimPrefix(
+				imageZip,
+				epubFolderPrefix,
+			),
+			mediaType: mediaType,
+		},
+		width:  config.Width,
+		height: config.Height,
+	}, true
+}
+
+// epubPages measures the staged pages of one chapter: WebP and
 // 16-bit PNG pages become JPEGs like in the PDF writer, and the
-// format, dimensions and archive names of every readable page are
+// format, dimensions and archive names of every usable page are
 // collected for the package document.
 func epubPages(
 	imagesDir string,
@@ -227,81 +445,17 @@ func epubPages(
 	pages := make([]epubPage, 0, len(names))
 
 	for _, name := range names {
-		path := filepath.Join(imagesDir, name)
-
-		if transcodePage(path, log) {
-			continue
-		}
-
-		file, err := os.Open(path)
-		if err != nil {
-			log.Error(
-				"Failed to open %s: %v\n",
-				name,
-				err,
-			)
-
-			continue
-		}
-
-		config, format, err := image.DecodeConfig(file)
-		file.Close()
-
-		if err != nil {
-			log.Error(
-				"Failed to decode image %s: %v\n",
-				name,
-				err,
-			)
-
-			continue
-		}
-
-		mediaType, supported := epubImageFormat(format)
-		if !supported {
-			log.Error(
-				"Unsupported image format %s in %s\n",
-				format,
-				name,
-			)
-
-			continue
-		}
-
-		// Page numbers count readable pages only, so the spine
-		// stays gapless when one page is dropped.
-		index := len(pages) + 1
-
-		base := strings.TrimSuffix(name, filepath.Ext(name))
-
-		imageZip := fmt.Sprintf(
-			"OEBPS/images/%s%s",
-			base,
-			epubImageExtension(mediaType),
-		)
-		docZip := fmt.Sprintf(
-			"OEBPS/text/page-%03d.xhtml",
-			index,
+		page, usable := epubPageFrom(
+			imagesDir,
+			name,
+			"OEBPS/images/"+strings.TrimSuffix(name, filepath.Ext(name)),
+			len(pages)+1,
+			log,
 		)
 
-		pages = append(pages, epubPage{
-			docZipName: docZip,
-			docHref: strings.TrimPrefix(
-				docZip,
-				epubFolderPrefix,
-			),
-			image: epubImage{
-				sourcePath: path,
-				zipName:    imageZip,
-				href: strings.TrimPrefix(
-					imageZip,
-					epubFolderPrefix,
-				),
-				mediaType: mediaType,
-			},
-			width:  config.Width,
-			height: config.Height,
-		})
+		if usable {
+			pages = append(pages, page)
+		}
 	}
 
 	return pages
@@ -487,8 +641,14 @@ func epubTitle(info *ComicInfo) string {
 
 // epubIdentifier names the publication uniquely. Stable naming per
 // (series, entry) needs no UUID scheme; the URN marks goweeb's own.
+// Volume bundles carry their number in Volume: chapters spell it
+// out, volumes get the v-prefixed form.
 func epubIdentifier(info *ComicInfo) string {
 	number := info.Number
+
+	if number == "" && info.Volume != 0 {
+		number = fmt.Sprintf("v%d", info.Volume)
+	}
 
 	if number == "" {
 		number = info.Title
@@ -650,12 +810,17 @@ func epubPackage(
 
 // epubNav builds the mandatory navigation document. A chapter holds
 // no table of contents beyond its pages, so the single entry stays
-// minimal and valid.
+// minimal and valid; a volume bundle lists one entry per chapter.
+type epubNavItem struct {
+	label string
+	href  string
+}
+
 func epubNav(
-	info *ComicInfo,
-	pages []epubPage,
+	title string,
+	items []epubNavItem,
 ) string {
-	title := epubXMLText(epubTitle(info))
+	title = epubXMLText(title)
 
 	var nav strings.Builder
 
@@ -669,10 +834,14 @@ func epubNav(
 	nav.WriteString(`<nav epub:type="toc" id="toc">`)
 	nav.WriteString(`<h1>` + title + `</h1>`)
 	nav.WriteString(`<ol>`)
-	nav.WriteString(
-		`<li><a href="` + pages[0].docHref + `">` +
-			title + `</a></li>`,
-	)
+
+	for _, item := range items {
+		nav.WriteString(
+			`<li><a href="` + item.href + `">` +
+				epubXMLText(item.label) + `</a></li>`,
+		)
+	}
+
 	nav.WriteString(`</ol>`)
 	nav.WriteString(`</nav>`)
 	nav.WriteString(`</body>`)

@@ -503,3 +503,286 @@ func TestImagesToEPUBEmptyDir(t *testing.T) {
 		t.Error("an empty image dir must fail the archive")
 	}
 }
+
+// writeTestChapter stages one chapter folder holding two pages,
+// named the way the volume bundle names them.
+func writeTestChapter(
+	t *testing.T,
+	dir string,
+	name string,
+	shade byte,
+) {
+	t.Helper()
+
+	chapterDir := filepath.Join(dir, name)
+
+	if err := os.MkdirAll(chapterDir, os.ModePerm); err != nil {
+		t.Fatalf("failed to stage %s: %v", chapterDir, err)
+	}
+
+	encodeTestJPEG(
+		t,
+		filepath.Join(chapterDir, "001.jpg"),
+		color.RGBA{R: shade, A: 0xFF},
+	)
+	encodeTestJPEG(
+		t,
+		filepath.Join(chapterDir, "002.jpg"),
+		color.RGBA{R: shade + 0x10, A: 0xFF},
+	)
+}
+
+// The volume bundle: pages continue across chapters in one spine,
+// images are namespaced per chapter folder, the table of contents
+// carries one entry per chapter and the metadata is the volume's.
+func TestImagesTreeToEPUBBundlesChapters(t *testing.T) {
+	dir := t.TempDir()
+	writeTestChapter(t, dir, "000.01", 0x10)
+	writeTestChapter(t, dir, "000.02", 0x30)
+
+	epubPath := filepath.Join(dir, "out.epub")
+
+	if err := ImagesTreeToEPUB(
+		dir,
+		epubPath,
+		&ComicInfo{
+			Series: "Berserk",
+			Title:  "Vol. 01",
+			Volume: 1,
+		},
+		"",
+		map[string]string{
+			"000.01": "Chapter 0.01",
+			"000.02": "Chapter 0.02",
+		},
+		epubTestLogger(),
+	); err != nil {
+		t.Fatalf("ImagesTreeToEPUB() error: %v", err)
+	}
+
+	reader := readTestZip(t, epubPath)
+	opf := parseTestOPF(
+		t,
+		readTestZipEntry(
+			t,
+			findTestZipEntry(t, reader, epubPackagePath),
+		),
+	)
+
+	// nav, 2 pages per chapter, 2 images per chapter.
+	if len(opf.Items) != 1+4+4 {
+		t.Fatalf("manifest holds %d items", len(opf.Items))
+	}
+
+	if metadata := opf.Metadata; metadata.Title != "Berserk - Vol. 01" ||
+		metadata.Identifier != "urn:goweeb:Berserk:v1" {
+		t.Errorf(
+			"title = %q, identifier = %q, want the volume book identity",
+			metadata.Title,
+			metadata.Identifier,
+		)
+	}
+
+	if len(opf.IDRefs) != 4 || opf.IDRefs[0].IDRef != "page-001" ||
+		opf.IDRefs[3].IDRef != "page-004" {
+		t.Errorf(
+			"spine = %v, want four gapless pages across chapters",
+			opf.IDRefs,
+		)
+	}
+
+	for _, name := range []string{
+		"OEBPS/text/page-001.xhtml",
+		"OEBPS/text/page-003.xhtml",
+		"OEBPS/images/000.01/001.jpg",
+		"OEBPS/images/000.02/001.jpg",
+	} {
+		if content := readTestZipEntry(
+			t,
+			findTestZipEntry(t, reader, name),
+		); content == nil {
+			t.Fatal("chapter page missing from the container")
+		}
+	}
+
+	nav := string(
+		readTestZipEntry(
+			t,
+			findTestZipEntry(t, reader, epubNavPath),
+		),
+	)
+
+	if !strings.Contains(
+		nav,
+		`<li><a href="text/page-001.xhtml">Chapter 0.01</a></li>`,
+	) || !strings.Contains(
+		nav,
+		`<li><a href="text/page-003.xhtml">Chapter 0.02</a></li>`,
+	) {
+		t.Errorf(
+			"the table of contents must list one entry per chapter: %s",
+			nav,
+		)
+	}
+}
+
+// The volume writer transcodes like the chapter one: a WebP page
+// inside a chapter folder embeds as JPEG under the folder.
+func TestImagesTreeToEPUBTranscodesWebP(t *testing.T) {
+	fixture, err := os.ReadFile(
+		filepath.Join("testdata", "page.webp"),
+	)
+	if err != nil {
+		t.Fatalf("webp fixture missing: %v", err)
+	}
+
+	dir := t.TempDir()
+	writeTestChapter(t, dir, "000.01", 0x10)
+
+	if err := os.MkdirAll(
+		filepath.Join(dir, "000.02"),
+		os.ModePerm,
+	); err != nil {
+		t.Fatalf("failed to stage 000.02: %v", err)
+	}
+
+	writeTestFile(
+		t,
+		filepath.Join(dir, "000.02", "001.webp"),
+		fixture,
+	)
+	encodeTestJPEG(
+		t,
+		filepath.Join(dir, "000.02", "002.jpg"),
+		color.RGBA{B: 0x30, A: 0xFF},
+	)
+
+	epubPath := filepath.Join(dir, "out.epub")
+
+	if err := ImagesTreeToEPUB(
+		dir,
+		epubPath,
+		&ComicInfo{Series: "Berserk", Title: "Vol. 01"},
+		"",
+		map[string]string{
+			"000.01": "Chapter 0.01",
+			"000.02": "Chapter 0.02",
+		},
+		epubTestLogger(),
+	); err != nil {
+		t.Fatalf("ImagesTreeToEPUB() error: %v", err)
+	}
+
+	reader := readTestZip(t, epubPath)
+
+	if content := readTestZipEntry(
+		t,
+		findTestZipEntry(t, reader, "OEBPS/images/000.02/001.jpg"),
+	); content == nil {
+		t.Fatal("the transcoded chapter page is missing")
+	}
+
+	for _, file := range reader.File {
+		if strings.HasSuffix(file.Name, ".webp") {
+			t.Error("the webp page must not be embedded verbatim")
+		}
+	}
+}
+
+// A chapter whose pages all fail to transcode leaves the book; the
+// spine and the table of contents stay usable for the rest.
+func TestImagesTreeToEPUBDropsUnreadableChapter(t *testing.T) {
+	dir := t.TempDir()
+	writeTestChapter(t, dir, "000.01", 0x10)
+
+	if err := os.MkdirAll(
+		filepath.Join(dir, "000.02"),
+		os.ModePerm,
+	); err != nil {
+		t.Fatalf("failed to stage 000.02: %v", err)
+	}
+
+	writeTestFile(
+		t,
+		filepath.Join(dir, "000.02", "001.jpg"),
+		[]byte("neither jpeg nor png nor webp"),
+	)
+
+	epubPath := filepath.Join(dir, "out.epub")
+
+	if err := ImagesTreeToEPUB(
+		dir,
+		epubPath,
+		&ComicInfo{Series: "Berserk", Title: "Vol. 01"},
+		"",
+		map[string]string{
+			"000.01": "Chapter 0.01",
+			"000.02": "Chapter 0.02",
+		},
+		epubTestLogger(),
+	); err != nil {
+		t.Fatalf("ImagesTreeToEPUB() error: %v", err)
+	}
+
+	reader := readTestZip(t, epubPath)
+	opf := parseTestOPF(
+		t,
+		readTestZipEntry(
+			t,
+			findTestZipEntry(t, reader, epubPackagePath),
+		),
+	)
+
+	// nav, chapter 1's two pages and their images.
+	if len(opf.Items) != 1+2+2 {
+		t.Fatalf("manifest holds %d items", len(opf.Items))
+	}
+
+	nav := string(
+		readTestZipEntry(
+			t,
+			findTestZipEntry(t, reader, epubNavPath),
+		),
+	)
+
+	if strings.Contains(nav, "Chapter 0.02") {
+		t.Error("the unreadable chapter must leave the book")
+	}
+}
+
+// Every chapter folder needs a table of contents label.
+func TestImagesTreeToEPUBMissingLabel(t *testing.T) {
+	dir := t.TempDir()
+	writeTestChapter(t, dir, "000.01", 0x10)
+	writeTestChapter(t, dir, "000.02", 0x30)
+
+	err := ImagesTreeToEPUB(
+		dir,
+		filepath.Join(dir, "out.epub"),
+		&ComicInfo{Series: "Berserk", Title: "Vol. 01"},
+		"",
+		map[string]string{"000.01": "Chapter 0.01"},
+		epubTestLogger(),
+	)
+
+	if err == nil {
+		t.Error("a bundle with an unlabeled chapter must fail")
+	}
+}
+
+func TestImagesTreeToEPUBNoChapters(t *testing.T) {
+	dir := t.TempDir()
+
+	err := ImagesTreeToEPUB(
+		dir,
+		filepath.Join(dir, "out.epub"),
+		nil,
+		"",
+		map[string]string{},
+		epubTestLogger(),
+	)
+
+	if err == nil {
+		t.Error("an empty tree must fail the archive")
+	}
+}
