@@ -17,6 +17,8 @@ func outputFormat(opts Options) ledger.Format {
 	switch {
 	case opts.CBZ:
 		return ledger.FormatCBZ
+	case opts.EPUB:
+		return ledger.FormatEPUB
 	case opts.EbookFriendly:
 		return ledger.FormatFolder
 	default:

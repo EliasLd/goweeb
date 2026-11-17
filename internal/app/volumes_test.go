@@ -82,6 +82,32 @@ func TestVolumeLabel(t *testing.T) {
 	}
 }
 
+// The EPUB bundle's table of contents maps staged chapter folders to
+// their reader-facing labels.
+func TestVolumeEntryLabels(t *testing.T) {
+	volume := sourcetypes.Volume{
+		Number: "1",
+		Entries: []sourcetypes.Entry{
+			{Label: "Chapter 1", Number: common.ChapterNumber("1")},
+			{Label: "Chapter 2.5", Number: common.ChapterNumber("2.5")},
+		},
+	}
+
+	labels := volumeEntryLabels(volume, 3)
+
+	if got := labels["001"]; got != "Chapter 1" {
+		t.Errorf("labels[001] = %q, want Chapter 1", got)
+	}
+
+	if got := labels["002.5"]; got != "Chapter 2.5" {
+		t.Errorf("labels[002.5] = %q, want Chapter 2.5", got)
+	}
+
+	if _, ok := labels["003"]; ok {
+		t.Error("labels must only cover the volume's own chapters")
+	}
+}
+
 func TestLayoutVolumePaths(t *testing.T) {
 	cbzSeries := layoutVolumePath(
 		LayoutSeries, "/out", "Berserk", "1", 2, ".cbz",

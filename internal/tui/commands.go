@@ -263,6 +263,7 @@ func startDownload(m Model) tea.Cmd {
 
 			EbookFriendly: m.EbookCheckbox.Checked,
 			CBZ:           m.CBZCheckbox.Checked,
+			EPUB:          m.EPUBCheckbox.Checked,
 			Layout:        app.DefaultLayout,
 		}
 

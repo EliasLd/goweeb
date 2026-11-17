@@ -93,9 +93,38 @@ func viewOptionalSettings(m Model) string {
 
 	view.WriteString("\n")
 
+	epubCheckbox :=
+		m.EPUBCheckbox.View(
+			m.OptionalCursor == 2,
+		)
+
+	epubCheckbox = markMouseZone(
+		mouseZoneOptionalEPUB,
+		epubCheckbox,
+	)
+
+	view.WriteString(
+		epubCheckbox,
+	)
+
+	view.WriteString("\n")
+
+	epubDescription := optionalDescriptionStyle.
+		Width(contentWidth).
+		Render(
+			"Save manga chapters as EPUB e-books " +
+				"(one .epub file per chapter) instead of generating " +
+				"PDF files. Useful for e-readers; pages are converted " +
+				"to JPEG so devices like the Kobo render them.",
+		)
+
+	view.WriteString(epubDescription)
+
+	view.WriteString("\n")
+
 	continueCheckbox :=
 		m.ContinueCheckbox.View(
-			m.OptionalCursor == 2,
+			m.OptionalCursor == 3,
 		)
 
 	continueCheckbox =
@@ -124,7 +153,7 @@ func viewOptionalSettings(m Model) string {
 
 	externalCoversCheckbox :=
 		m.ExternalCoversCheckbox.View(
-			m.OptionalCursor == 3,
+			m.OptionalCursor == 4,
 		)
 
 	externalCoversCheckbox =

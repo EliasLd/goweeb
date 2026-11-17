@@ -59,6 +59,7 @@ type Options struct {
 	Debug         bool
 	EbookFriendly bool
 	CBZ           bool
+	EPUB          bool
 	Source        string
 	Layout        Layout
 
@@ -139,6 +140,10 @@ func configureUsage() {
 		fmt.Fprintln(out, "      Save chapters as CBZ archives instead of PDF files")
 		fmt.Fprintln(out)
 
+		fmt.Fprintln(out, "  --epub")
+		fmt.Fprintln(out, "      Save chapters as EPUB e-books instead of PDF files")
+		fmt.Fprintln(out)
+
 		fmt.Fprintln(out, "  --layout <scheme>")
 		fmt.Fprintln(out, "      Naming scheme of downloaded files")
 		fmt.Fprintln(out, "      series (default): {output}/{Series}/{Series} - c{number}")
@@ -181,6 +186,7 @@ func ParseFlags() Options {
 		scanDir       string
 		ebookFriendly bool
 		cbz           bool
+		epub          bool
 		customDomain  string
 		debug         bool
 		showVersion   bool
@@ -295,6 +301,13 @@ func ParseFlags() Options {
 		"cbz",
 		false,
 		"Save chapters as CBZ archives instead of PDF files",
+	)
+
+	flag.BoolVar(
+		&epub,
+		"epub",
+		false,
+		"Save chapters as EPUB e-books instead of PDF files",
 	)
 
 	flag.StringVar(
@@ -423,6 +436,24 @@ func ParseFlags() Options {
 		os.Exit(2)
 	}
 
+	if ebookFriendly && epub {
+		fmt.Fprintln(
+			os.Stderr,
+			"--ebook-friendly and --epub cannot be used together",
+		)
+
+		os.Exit(2)
+	}
+
+	if cbz && epub {
+		fmt.Fprintln(
+			os.Stderr,
+			"--cbz and --epub cannot be used together",
+		)
+
+		os.Exit(2)
+	}
+
 	layout, err := ParseLayout(layoutStr)
 	if err != nil {
 		fmt.Fprintln(
@@ -516,6 +547,7 @@ func ParseFlags() Options {
 		Debug:            debug,
 		EbookFriendly:    ebookFriendly,
 		CBZ:              cbz,
+		EPUB:             epub,
 		Layout:           layout,
 		NoUpdateCheck:    noUpdateCheck,
 	}

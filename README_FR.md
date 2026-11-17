@@ -21,7 +21,7 @@ goweeb est un téléchargeur de mangas multiplateforme disponible à la fois sou
 - Recherche interactive multi-fournisseurs : interrogez tous les fournisseurs à la fois, ou filtrez sur un seul.
 - Prise en charge des numéros de chapitre entiers et décimaux.
 - Gestion automatique des chapitres indisponibles à l'intérieur des plages demandées.
-- Sortie en PDF, archives CBZ (avec métadonnées ComicInfo.xml) ou dossiers d'images adaptés aux liseuses.
+- Sortie en PDF, archives CBZ (avec métadonnées ComicInfo.xml), e-books EPUB ou dossiers d'images adaptés aux liseuses.
 - `--continue` reprend là où vous en étiez, grâce à un manifeste par œuvre dont les enregistrements sont revérifiés sur disque à chaque exécution.
 - Métadonnées par œuvre : auteur, couverture, description, tags et année attachées au ComicInfo.xml et au manifeste quand le fournisseur les publie, avec une recherche de couverture dégradée (fournisseur → AniList).
 - Nouvelles tentatives HTTP automatiques en cas de connexion instable ou d'erreurs temporaires côté serveur.
@@ -237,7 +237,8 @@ Lorsque vous utilisez un titre sans guillemets, placez-le après toutes les opti
 | `--volume <selection>` | — | Télécharger les tomes listés par le fournisseur au lieu des chapitres, même syntaxe que `--range`. Uniquement sur les fournisseurs qui connaissent les tomes. Voir [Téléchargement des tomes](#téléchargement-des-tomes). |
 | `--scan-dir <folder>` | `-d` | Dossier de sortie. Par défaut : `scan` avec le CLI natif. |
 | `--ebook-friendly` | — | Enregistrer les images des chapitres dans des dossiers `Chapter XXX/` au lieu de générer des PDF. |
-| `--cbz` | — | Enregistrer chaque chapitre sous forme d'archive CBZ (pages numérotées `001.jpg`, `002.jpg`, …) au lieu de générer des PDF. Ne peut pas être combinée avec `--ebook-friendly`. |
+| `--cbz` | — | Enregistrer chaque chapitre sous forme d'archive CBZ (pages numérotées `001.jpg`, `002.jpg`, …) au lieu de générer des PDF. Ne peut pas être combinée avec `--ebook-friendly` ou `--epub`. |
+| `--epub` | — | Enregistrer chaque chapitre sous forme d'e-book EPUB 3 au lieu de générer des PDF. Ne peut pas être combinée avec `--ebook-friendly` ou `--cbz`. Voir [Mode EPUB](#mode-epub). |
 | `--layout <scheme>` | — | Schéma de nommage des fichiers téléchargés. `series` (par défaut) regroupe les fichiers par œuvre avec des noms adaptés aux lecteurs ; `flat` conserve le nommage d'origine. Voir [Disposition de la sortie](#disposition-de-la-sortie). |
 | `--continue` | `-c` | Ignorer les chapitres déjà téléchargés dans le dossier de sortie. Voir [Reprendre les téléchargements](#reprendre-les-téléchargements). |
 | `--no-external-covers` | — | Désactiver la recherche de couverture en base externe (AniList) quand aucun fournisseur n'en propose. Voir [Métadonnées des œuvres](#métadonnées-des-œuvres). |
@@ -304,6 +305,8 @@ goweeb --source mangadex --volume 1-5 --cbz "berserk"
 
 Avec `--cbz`, chaque tome est téléchargé sous forme d'une archive unique, `{Series} Vol. 01.cbz` : à l'intérieur, chaque chapitre garde un dossier préfixé (l'architecture disque est reflétée dans l'archive), avec un `ComicInfo.xml` décrivant le tome.
 
+Avec `--epub`, les tomes sont regroupés de la même façon en un e-book unique, `{Series} Vol. 01.epub` : un spine continu d'un chapitre à l'autre, une table des matières listant chaque chapitre et les métadonnées du tome dans le document de paquetage.
+
 Avec une sortie PDF ou `--ebook-friendly`, les chapitres restent des fichiers ou dossiers individuels, regroupés dans un dossier de tome :
 
 ```text
@@ -344,7 +347,7 @@ scan/
 └── One Piece_10.cbz
 ```
 
-Le schéma `series` s'applique à tous les modes de sortie : archives CBZ et PDF, ainsi que les dossiers de chapitres en mode ebook-friendly.
+Le schéma `series` s'applique à tous les modes de sortie : archives CBZ, PDF et EPUB, ainsi que les dossiers de chapitres en mode ebook-friendly.
 
 ## Reprendre les téléchargements
 
@@ -539,6 +542,34 @@ goweeb \
   --source weebcentral \
   --all \
   --cbz \
+  "one piece"
+```
+
+## Mode EPUB
+
+Avec `--epub`, goweeb enregistre chaque chapitre sélectionné sous forme d'e-book EPUB 3, un fichier par chapitre :
+
+```text
+scan/
+└── One Piece/
+    ├── One Piece - c001.epub
+    ├── One Piece - c002.epub
+    └── ...
+```
+
+Chaque livre est un EPUB à mise en page fixe : une page par entrée du spine, rendue plein cadre aux dimensions réelles de la page, pour que les liseuses la feuillètent comme un livre imprimé. Le document de paquetage porte les métadonnées de l'œuvre (série, titre du chapitre, auteur, description, tags, année) et la couverture de la série enregistrée — ou la première page quand aucune couverture n'existe — devient la couverture du livre.
+
+Contrairement au CBZ, les pages ne sont pas conservées verbatim : les pages WebP sont volontairement converties en JPEG, car le firmware des liseuses (Kobo notamment) affiche le WebP en blanc.
+
+C'est le format que consomment directement les liseuses : [KOReader](https://koreader.rocks) sur Kobo, Kindle ou tout appareil ouvre ces fichiers tels quels, et le lecteur natif Kobo les gère aussi. En mode tome, les chapitres fusionnent en un seul livre par tome, chaque chapitre étant accessible par la table des matières.
+
+Exemple :
+
+```bash
+goweeb \
+  --source weebcentral \
+  --all \
+  --epub \
   "one piece"
 ```
 

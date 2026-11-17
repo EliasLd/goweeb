@@ -4,7 +4,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-const optionalSettingCount = 4
+const optionalSettingCount = 5
 
 func handleOptionalSettingsUpdate(
 	msg tea.KeyMsg,
@@ -31,9 +31,10 @@ func handleOptionalSettingsUpdate(
 		case 0:
 			m.EbookCheckbox.Toggle()
 
-			// The two output modes are mutually exclusive.
+			// The output modes are mutually exclusive.
 			if m.EbookCheckbox.Checked {
 				m.CBZCheckbox.Checked = false
+				m.EPUBCheckbox.Checked = false
 			}
 
 		case 1:
@@ -41,13 +42,22 @@ func handleOptionalSettingsUpdate(
 
 			if m.CBZCheckbox.Checked {
 				m.EbookCheckbox.Checked = false
+				m.EPUBCheckbox.Checked = false
 			}
 
 		case 2:
+			m.EPUBCheckbox.Toggle()
+
+			if m.EPUBCheckbox.Checked {
+				m.EbookCheckbox.Checked = false
+				m.CBZCheckbox.Checked = false
+			}
+
+		case 3:
 			// Independent of the output mode.
 			m.ContinueCheckbox.Toggle()
 
-		case 3:
+		case 4:
 			// Independent of the output mode.
 			m.ExternalCoversCheckbox.Toggle()
 		}

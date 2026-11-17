@@ -170,6 +170,25 @@ func coverFilePresent(coverBase string, name string) bool {
 	return err == nil && !info.IsDir() && info.Size() > 0
 }
 
+// epubCoverPath returns the recorded series cover file to embed in
+// EPUB output, or the empty string when no cover landed on disk: the
+// writer then uses the first page as the cover-image. No fetch
+// happens here; the cover download is the metadata ladder's job.
+func epubCoverPath(
+	ledgerFile *ledger.Ledger,
+	opts Options,
+	series string,
+) string {
+	coverBase := coverBasePath(opts.Layout, opts.ScanDir, series)
+	name := ledgerFile.CoverFile()
+
+	if !coverFilePresent(coverBase, name) {
+		return ""
+	}
+
+	return filepath.Join(filepath.Dir(coverBase), name)
+}
+
 // newMetadataService assembles the ladder: the external database
 // layer according to the run's options. The provider's own first-party
 // data needs no assembly.

@@ -215,7 +215,7 @@ func downloadEntries(
 		)
 	}
 
-	if opts.EbookFriendly || opts.CBZ {
+	if opts.EbookFriendly || opts.CBZ || opts.EPUB {
 		if err := os.MkdirAll(
 			opts.ScanDir,
 			os.ModePerm,
@@ -398,6 +398,94 @@ func downloadEntries(
 			continue
 		}
 
+		// Handle EPUB output, staged and cleaned up like CBZ.
+		if opts.EPUB {
+			imageDir := filepath.Join(
+				homeDir,
+				"Images",
+				opts.Slug,
+				chStr,
+			)
+
+			if err := fetch.DownloadImagesWithHeaders(
+				imageURLs,
+				imageDir,
+				requestHeaders,
+				transform,
+				log,
+			); err != nil {
+				log.Error(
+					"Failed to download %s: %v\n",
+					entry.Label,
+					err,
+				)
+
+				continue
+			}
+
+			epubPath := layoutEntryPath(
+				opts.Layout,
+				opts.ScanDir,
+				work.Title,
+				entry.Number,
+				digits,
+				".epub",
+			)
+
+			// The archive may sit in a per-series subdirectory.
+			if err := os.MkdirAll(
+				filepath.Dir(epubPath),
+				os.ModePerm,
+			); err != nil {
+				log.Error(
+					"Failed to create output dir: %v\n",
+					err,
+				)
+
+				return
+			}
+
+			if err := convert.ImagesToEPUB(
+				imageDir,
+				epubPath,
+				buildComicInfo(
+					work,
+					entry,
+					totalEntries,
+					workMeta,
+					languageCode,
+				),
+				epubCoverPath(ledgerFile, opts, work.Title),
+				log,
+			); err != nil {
+				log.Error(
+					"Failed to create EPUB: %v\n",
+					err,
+				)
+
+				continue
+			}
+
+			// The staged images live inside the archive now.
+			_ = os.RemoveAll(imageDir)
+
+			log.Info(
+				"%s saved as %s\n",
+				entry.Label,
+				epubPath,
+			)
+
+			recordDownloaded(
+				ledgerFile,
+				entry,
+				ledger.FormatEPUB,
+				epubPath,
+				log,
+			)
+
+			continue
+		}
+
 		imageDir := filepath.Join(
 			homeDir,
 			"Images",
@@ -471,7 +559,7 @@ func downloadEntries(
 		)
 	}
 
-	if !opts.EbookFriendly && !opts.CBZ {
+	if !opts.EbookFriendly && !opts.CBZ && !opts.EPUB {
 		rootImagesDir := filepath.Join(
 			homeDir,
 			"Images",

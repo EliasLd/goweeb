@@ -34,6 +34,7 @@ type Format string
 const (
 	FormatCBZ    Format = "cbz"
 	FormatPDF    Format = "pdf"
+	FormatEPUB   Format = "epub"
 	FormatFolder Format = "folder"
 )
 

@@ -94,6 +94,11 @@ func InitialModel() Model {
 			Checked: false,
 		},
 
+		EPUBCheckbox: Checkbox{
+			Label:   "EPUB output",
+			Checked: false,
+		},
+
 		ContinueCheckbox: Checkbox{
 			Label:   "Skip already downloaded chapters",
 			Checked: false,

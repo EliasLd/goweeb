@@ -23,6 +23,10 @@ func TestOutputFormat(t *testing.T) {
 		opts: Options{CBZ: true},
 		want: ledger.FormatCBZ,
 	}, {
+		name: "epub",
+		opts: Options{EPUB: true},
+		want: ledger.FormatEPUB,
+	}, {
 		name: "ebook-friendly folders",
 		opts: Options{EbookFriendly: true},
 		want: ledger.FormatFolder,
