@@ -732,6 +732,80 @@ func downloadVolumeArtifacts(
 			continue
 		}
 
+		// Handle EPUB output: one EPUB per chapter inside the volume
+		// directory, staged and cleaned up like the chapter flow's
+		// CBZ output.
+		if opts.EPUB {
+			imageDir := filepath.Join(
+				homeDir,
+				"Images",
+				opts.Slug,
+				entry.Number.String(),
+			)
+
+			if err := fetch.DownloadImagesWithHeaders(
+				imageURLs,
+				imageDir,
+				requestHeaders,
+				transform,
+				log,
+			); err != nil {
+				log.Error(
+					"Failed to download %s: %v\n",
+					entry.Label,
+					err,
+				)
+
+				continue
+			}
+
+			epubPath := filepath.Join(
+				volumeDir,
+				volumeChapterBaseName(work.Title, entry.Number, chDigits)+".epub",
+			)
+
+			// The per-chapter EPUB is a chapter artifact: its
+			// metadata carries the chapter number, not the volume
+			// mapping the run works with, and the series chapter
+			// total is unknown here.
+			chapterWork := work
+			chapterWork.Kind = sourcetypes.ItemChapter
+
+			if err := convert.ImagesToEPUB(
+				imageDir,
+				epubPath,
+				buildComicInfo(chapterWork, entry, 0, workMeta, languageISO),
+				epubCoverPath(ledgerFile, opts, work.Title),
+				log,
+			); err != nil {
+				log.Error(
+					"Failed to create EPUB: %v\n",
+					err,
+				)
+
+				continue
+			}
+
+			// The staged images live inside the archive now.
+			_ = os.RemoveAll(imageDir)
+
+			log.Info(
+				"%s saved as %s\n",
+				entry.Label,
+				epubPath,
+			)
+
+			recordDownloaded(
+				ledgerFile,
+				entry,
+				ledger.FormatEPUB,
+				epubPath,
+				log,
+			)
+
+			continue
+		}
+
 		// PDF output. Files are staged like the chapter flow: pages
 		// download into a per-chapter folder, get packed, then the
 		// folder is removed.

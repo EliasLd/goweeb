@@ -59,6 +59,7 @@ type Options struct {
 	Debug         bool
 	EbookFriendly bool
 	CBZ           bool
+	EPUB          bool
 	Source        string
 	Layout        Layout
 
