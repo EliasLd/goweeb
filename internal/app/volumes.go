@@ -355,7 +355,7 @@ func downloadVolumes(
 		}
 	}
 
-	if opts.CBZ || opts.EbookFriendly {
+	if opts.CBZ || opts.EPUB || opts.EbookFriendly {
 		if err := os.MkdirAll(
 			opts.ScanDir,
 			os.ModePerm,
@@ -376,7 +376,7 @@ func downloadVolumes(
 			// The bundled archive skips whole; per-chapter
 			// artifacts skip chapter by chapter, downloading only
 			// the missing ones into the volume directory.
-			if opts.CBZ {
+			if opts.CBZ || opts.EPUB {
 				if volumeComplete(ledgerFile, format, volume.Entries) {
 					log.Info(
 						"Skipping %s: already downloaded.\n",
@@ -404,8 +404,8 @@ func downloadVolumes(
 			label,
 		)
 
-		if opts.CBZ {
-			bundleVolumeCBZ(
+		if opts.CBZ || opts.EPUB {
+			bundleVolume(
 				provider,
 				work,
 				volume,
@@ -420,6 +420,7 @@ func downloadVolumes(
 				ledgerFile,
 				opts,
 				homeDir,
+				format,
 				log,
 			)
 
@@ -443,7 +444,7 @@ func downloadVolumes(
 		)
 	}
 
-	if !opts.EbookFriendly && !opts.CBZ {
+	if !opts.EbookFriendly && !opts.CBZ && !opts.EPUB {
 		rootImagesDir := filepath.Join(
 			homeDir,
 			"Images",
@@ -459,13 +460,14 @@ func downloadVolumes(
 	}
 }
 
-// bundleVolumeCBZ stages every chapter of one volume in order, then
-// packs the whole volume into a single archive whose layout mirrors
-// the on-disk series layout: one zero-padded folder per chapter.
-// Staging into the same tree the chapters will occupy later keeps
-// the archive reading order stable. Any failure abandons the bundle:
-// no partial archive lands, no record is written.
-func bundleVolumeCBZ(
+// bundleVolume stages every chapter of one volume in order, then
+// packs the whole volume into a single archive - CBZ comic book or
+// EPUB e-book - whose layout mirrors the on-disk series layout: one
+// zero-padded folder per chapter. Staging into the same tree the
+// chapters will occupy later keeps the archive reading order stable.
+// Any failure abandons the bundle: no partial archive lands, no
+// record is written.
+func bundleVolume(
 	provider sourcetypes.Provider,
 	work sourcetypes.Work,
 	volume sourcetypes.Volume,
@@ -480,6 +482,7 @@ func bundleVolumeCBZ(
 	ledgerFile *ledger.Ledger,
 	opts Options,
 	homeDir string,
+	format ledger.Format,
 	log *logger.Logger,
 ) bool {
 	staging := filepath.Join(
@@ -549,18 +552,48 @@ func bundleVolumeCBZ(
 		}
 	}
 
-	cbzPath := layoutVolumePath(
+	info := buildVolumeComicInfo(
+		work,
+		volume,
+		totalVolumes,
+		label,
+		workMeta,
+		languageISO,
+	)
+
+	extension := ".cbz"
+
+	pack := func(archivePath string) error {
+		return convert.ImageTreeToCBZ(staging, archivePath, info)
+	}
+
+	if format == ledger.FormatEPUB {
+		extension = ".epub"
+
+		pack = func(archivePath string) error {
+			return convert.ImagesTreeToEPUB(
+				staging,
+				archivePath,
+				info,
+				epubCoverPath(ledgerFile, opts, work.Title),
+				volumeEntryLabels(volume, chDigits),
+				log,
+			)
+		}
+	}
+
+	archivePath := layoutVolumePath(
 		opts.Layout,
 		opts.ScanDir,
 		work.Title,
 		volume.Number,
 		volDigits,
-		".cbz",
+		extension,
 	)
 
 	// The archive may sit in a per-series subdirectory.
 	if err := os.MkdirAll(
-		filepath.Dir(cbzPath),
+		filepath.Dir(archivePath),
 		os.ModePerm,
 	); err != nil {
 		log.Error(
@@ -573,18 +606,7 @@ func bundleVolumeCBZ(
 		return false
 	}
 
-	if err := convert.ImageTreeToCBZ(
-		staging,
-		cbzPath,
-		buildVolumeComicInfo(
-			work,
-			volume,
-			totalVolumes,
-			label,
-			workMeta,
-			languageISO,
-		),
-	); err != nil {
+	if err := pack(archivePath); err != nil {
 		log.Error(
 			"%s not bundled: %v\n",
 			label,
@@ -593,7 +615,7 @@ func bundleVolumeCBZ(
 
 		// A failed packing may leave the file behind; volume
 		// bundles are all-or-nothing on disk too.
-		_ = os.Remove(cbzPath)
+		_ = os.Remove(archivePath)
 		_ = os.RemoveAll(staging)
 
 		return false
@@ -605,20 +627,35 @@ func bundleVolumeCBZ(
 	log.Info(
 		"%s saved as %s\n",
 		label,
-		cbzPath,
+		archivePath,
 	)
 
 	for _, entry := range volume.Entries {
 		recordDownloaded(
 			ledgerFile,
 			entry,
-			ledger.FormatCBZ,
-			cbzPath,
+			format,
+			archivePath,
 			log,
 		)
 	}
 
 	return true
+}
+
+// volumeEntryLabels maps each staged chapter folder to its
+// reader-facing label for the book's table of contents.
+func volumeEntryLabels(
+	volume sourcetypes.Volume,
+	chDigits int,
+) map[string]string {
+	labels := make(map[string]string, len(volume.Entries))
+
+	for _, entry := range volume.Entries {
+		labels[entry.Number.Padded(chDigits)] = entry.Label
+	}
+
+	return labels
 }
 
 // downloadVolumeArtifacts writes one volume as per-chapter artifacts
@@ -726,80 +763,6 @@ func downloadVolumeArtifacts(
 				entry,
 				ledger.FormatFolder,
 				entryDir,
-				log,
-			)
-
-			continue
-		}
-
-		// Handle EPUB output: one EPUB per chapter inside the volume
-		// directory, staged and cleaned up like the chapter flow's
-		// CBZ output.
-		if opts.EPUB {
-			imageDir := filepath.Join(
-				homeDir,
-				"Images",
-				opts.Slug,
-				entry.Number.String(),
-			)
-
-			if err := fetch.DownloadImagesWithHeaders(
-				imageURLs,
-				imageDir,
-				requestHeaders,
-				transform,
-				log,
-			); err != nil {
-				log.Error(
-					"Failed to download %s: %v\n",
-					entry.Label,
-					err,
-				)
-
-				continue
-			}
-
-			epubPath := filepath.Join(
-				volumeDir,
-				volumeChapterBaseName(work.Title, entry.Number, chDigits)+".epub",
-			)
-
-			// The per-chapter EPUB is a chapter artifact: its
-			// metadata carries the chapter number, not the volume
-			// mapping the run works with, and the series chapter
-			// total is unknown here.
-			chapterWork := work
-			chapterWork.Kind = sourcetypes.ItemChapter
-
-			if err := convert.ImagesToEPUB(
-				imageDir,
-				epubPath,
-				buildComicInfo(chapterWork, entry, 0, workMeta, languageISO),
-				epubCoverPath(ledgerFile, opts, work.Title),
-				log,
-			); err != nil {
-				log.Error(
-					"Failed to create EPUB: %v\n",
-					err,
-				)
-
-				continue
-			}
-
-			// The staged images live inside the archive now.
-			_ = os.RemoveAll(imageDir)
-
-			log.Info(
-				"%s saved as %s\n",
-				entry.Label,
-				epubPath,
-			)
-
-			recordDownloaded(
-				ledgerFile,
-				entry,
-				ledger.FormatEPUB,
-				epubPath,
 				log,
 			)
 
