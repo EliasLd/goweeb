@@ -21,7 +21,7 @@ goweeb is a cross-platform manga downloader available as both an interactive **T
 - Multi-provider interactive search: query every provider at once, or filter by a single one.
 - Integer and decimal chapter support.
 - Automatic handling of unavailable chapters inside requested ranges.
-- PDF output, CBZ archives (with ComicInfo.xml metadata) or ebook-friendly image folders.
+- PDF output, CBZ archives (with ComicInfo.xml metadata), EPUB e-books or ebook-friendly image folders.
 - `--continue` resumes where you left off, backed by a per-work manifest whose records are re-verified against the files on disk on every run.
 - Work metadata: author, cover, description, tags and year attached to ComicInfo.xml and the manifest when the provider publishes them, with a provider → AniList cover fallback.
 - Automatic HTTP retries for unstable connections and temporary server failures.
@@ -237,7 +237,8 @@ When using an unquoted title, place it after all CLI options.
 | `--volume <selection>` | — | Download the volumes the provider lists instead of chapters, same syntax as `--range`. Only on providers carrying volume data. See [Volume downloads](#volume-downloads). |
 | `--scan-dir <folder>` | `-d` | Output directory. Default: `scan` in the native CLI. |
 | `--ebook-friendly` | — | Store chapter images in `Chapter XXX/` folders instead of generating PDFs. |
-| `--cbz` | — | Save each chapter as a CBZ archive (pages numbered `001.jpg`, `002.jpg`, …) instead of generating PDFs. Cannot be combined with `--ebook-friendly`. |
+| `--cbz` | — | Save each chapter as a CBZ archive (pages numbered `001.jpg`, `002.jpg`, …) instead of generating PDFs. Cannot be combined with `--ebook-friendly` or `--epub`. |
+| `--epub` | — | Save each chapter as an EPUB 3 e-book instead of generating PDFs. Cannot be combined with `--ebook-friendly` or `--cbz`. See [EPUB mode](#epub-mode). |
 | `--layout <scheme>` | — | Naming scheme of downloaded files. `series` (default) groups files per work with reader-friendly names; `flat` keeps the original naming. See [Output layout](#output-layout). |
 | `--continue` | `-c` | Skip chapters already downloaded in the output directory. See [Resuming downloads](#resuming-downloads). |
 | `--no-external-covers` | — | Disable the external database fallback (AniList) when no provider carries a work cover. See [Work metadata](#work-metadata). |
@@ -304,7 +305,7 @@ goweeb --source mangadex --volume 1-5 --cbz "berserk"
 
 With `--cbz`, each volume is downloaded as a single archive, `{Series} Vol. 01.cbz`: inside, every chapter keeps a zero-padded folder (mirroring the on-disk layout), with one series-wide `ComicInfo.xml` describing the volume.
 
-With PDF or `--ebook-friendly` output, chapters stay individual files or folders, grouped under a volume directory:
+With PDF, `--epub` or `--ebook-friendly` output, chapters stay individual files or folders, grouped under a volume directory:
 
 ```text
 scan/
@@ -344,7 +345,7 @@ scan/
 └── One Piece_10.cbz
 ```
 
-The `series` layout applies to every output mode: CBZ and PDF archives, and ebook-friendly chapters folders.
+The `series` layout applies to every output mode: CBZ, PDF and EPUB archives, and ebook-friendly chapters folders.
 
 ## Resuming downloads
 
@@ -539,6 +540,34 @@ goweeb \
   --source weebcentral \
   --all \
   --cbz \
+  "one piece"
+```
+
+## EPUB mode
+
+With `--epub`, goweeb saves each selected chapter as an EPUB 3 e-book, one file per chapter:
+
+```text
+scan/
+└── One Piece/
+    ├── One Piece - c001.epub
+    ├── One Piece - c002.epub
+    └── ...
+```
+
+Each book is a fixed-layout EPUB: one page per spine entry, rendered full-bleed at the page's real dimensions, so e-readers page through it like a print book. The package document carries the work metadata (series, chapter title, author, description, tags, year) and the recorded series cover - or the first page when no cover was recorded - becomes the book cover.
+
+Unlike CBZ, pages are not kept verbatim: WebP pages are transcoded to JPEG on purpose, because e-reader firmware (Kobo notably) renders WebP blank.
+
+This is the format e-readers consume directly: [KOReader](https://koreader.rocks) on Kobo, Kindle or any device opens these files as-is, and the Kobo stock reader handles them too. In volume mode, chapters stay individual EPUB files grouped under the volume directory.
+
+Example:
+
+```bash
+goweeb \
+  --source weebcentral \
+  --all \
+  --epub \
   "one piece"
 ```
 
