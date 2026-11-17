@@ -357,6 +357,74 @@ func TestFindArtifactTruncatedCBZ(t *testing.T) {
 	}
 }
 
+// EPUB is a zip container like CBZ: the same verification ladder
+// applies under its own format label.
+func TestFindArtifactValidEPUB(t *testing.T) {
+	dir := t.TempDir()
+	led := openLedgerIn(t, dir)
+
+	writeTestCBZ(t, filepath.Join(dir, "One Piece - c010.epub"))
+
+	led.Record(Chapter{
+		Number: common.ChapterNumber("10"),
+		Format: FormatEPUB,
+		File:   "One Piece - c010.epub",
+	})
+
+	if err := led.FindArtifact(
+		common.ChapterNumber("10"),
+		FormatEPUB,
+	); err != nil {
+		t.Errorf(
+			"FindArtifact() = %v, want a usable archive",
+			err,
+		)
+	}
+}
+
+func TestFindArtifactTruncatedEPUB(t *testing.T) {
+	dir := t.TempDir()
+	led := openLedgerIn(t, dir)
+
+	epubPath := filepath.Join(dir, "One Piece - c010.epub")
+
+	writeTestCBZ(t, epubPath)
+
+	led.Record(Chapter{
+		Number: common.ChapterNumber("10"),
+		Format: FormatEPUB,
+		File:   "One Piece - c010.epub",
+	})
+
+	full, err := os.ReadFile(epubPath)
+	if err != nil {
+		t.Fatalf("failed to read the EPUB: %v", err)
+	}
+
+	if err := os.WriteFile(
+		epubPath,
+		full[:len(full)/2],
+		testCBZPerm,
+	); err != nil {
+		t.Fatalf("failed to truncate the EPUB: %v", err)
+	}
+
+	err = led.FindArtifact(
+		common.ChapterNumber("10"),
+		FormatEPUB,
+	)
+	if err == nil {
+		t.Fatal("expected a truncated archive to be unusable")
+	}
+
+	if !strings.Contains(err.Error(), "EPUB") {
+		t.Errorf(
+			"expected the EPUB label in the reason: %v",
+			err,
+		)
+	}
+}
+
 func TestFindArtifactMissingFile(t *testing.T) {
 	led := openTestLedger(t)
 

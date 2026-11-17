@@ -53,7 +53,10 @@ func checkArtifact(path string, format Format) error {
 		return checkFolder(stat, path)
 
 	case FormatCBZ:
-		return checkCBZ(stat, path)
+		return checkArchive(stat, path, "CBZ")
+
+	case FormatEPUB:
+		return checkArchive(stat, path, "EPUB")
 	}
 
 	return nil
@@ -76,7 +79,9 @@ func checkFolder(stat os.FileInfo, path string) error {
 	return nil
 }
 
-func checkCBZ(stat os.FileInfo, path string) error {
+// checkArchive validates zip-based artifacts: a reader must be able
+// to open the central directory, or the file was truncated mid-write.
+func checkArchive(stat os.FileInfo, path, label string) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("file unreadable: %w", err)
@@ -84,7 +89,7 @@ func checkCBZ(stat os.FileInfo, path string) error {
 	defer file.Close()
 
 	if _, err := zip.NewReader(file, stat.Size()); err != nil {
-		return fmt.Errorf("not a valid CBZ archive: %w", err)
+		return fmt.Errorf("not a valid %s archive: %w", label, err)
 	}
 
 	return nil
