@@ -405,10 +405,31 @@ func TestOptionalSettingsToggleCBZ(t *testing.T) {
 	}
 }
 
-func TestOptionalSettingsToggleContinue(t *testing.T) {
+func TestOptionalSettingsToggleEPUB(t *testing.T) {
 	m := InitialModel()
 	m.State = StateOptionalSettings
 	m.OptionalCursor = 2
+
+	initial := m.EPUBCheckbox.Checked
+
+	next, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeySpace,
+		},
+		m,
+	)
+
+	if next.EPUBCheckbox.Checked == initial {
+		t.Fatal(
+			"EPUB checkbox was not toggled",
+		)
+	}
+}
+
+func TestOptionalSettingsToggleContinue(t *testing.T) {
+	m := InitialModel()
+	m.State = StateOptionalSettings
+	m.OptionalCursor = 3
 
 	next, _ := Update(
 		tea.KeyMsg{
@@ -450,7 +471,7 @@ func TestOptionalSettingsToggleExternalCovers(t *testing.T) {
 		t.Fatal("external covers should start enabled")
 	}
 
-	m.OptionalCursor = 3
+	m.OptionalCursor = 4
 
 	next, _ := Update(
 		tea.KeyMsg{
@@ -894,5 +915,46 @@ func TestProviderSelectionCanSelectAllProvidersAgain(
 			"selected provider label = %q, want All providers",
 			confirmed.SelectedProviderLabel,
 		)
+	}
+}
+
+func TestOptionalSettingsEPUBIsExclusive(t *testing.T) {
+	m := InitialModel()
+	m.State = StateOptionalSettings
+
+	// Checking CBZ, then EPUB: EPUB must uncheck CBZ.
+	m.OptionalCursor = 1
+
+	checkedCBZ, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeySpace,
+		},
+		m,
+	)
+
+	if !checkedCBZ.CBZCheckbox.Checked {
+		t.Fatal("CBZ checkbox should be checked")
+	}
+
+	m = checkedCBZ
+	m.OptionalCursor = 2
+
+	checkedEPUB, _ := Update(
+		tea.KeyMsg{
+			Type: tea.KeySpace,
+		},
+		m,
+	)
+
+	if !checkedEPUB.EPUBCheckbox.Checked {
+		t.Fatal("EPUB checkbox should be checked")
+	}
+
+	if checkedEPUB.CBZCheckbox.Checked {
+		t.Error("checking EPUB should uncheck CBZ")
+	}
+
+	if checkedEPUB.EbookCheckbox.Checked {
+		t.Error("checking EPUB should uncheck ebook-friendly")
 	}
 }

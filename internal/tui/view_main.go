@@ -188,6 +188,13 @@ func mainOptionsSummary(
 		)
 	}
 
+	if m.EPUBCheckbox.Checked {
+		options = append(
+			options,
+			"EPUB",
+		)
+	}
+
 	if strings.TrimSpace(
 		m.DomainInput.Value(),
 	) != "" {

@@ -25,6 +25,7 @@ const (
 
 	mouseZoneOptionalEbook    = "optional-ebook"
 	mouseZoneOptionalCBZ      = "optional-cbz"
+	mouseZoneOptionalEPUB     = "optional-epub"
 	mouseZoneOptionalContinue = "optional-continue"
 
 	mouseZoneOptionalExternalCovers = "optional-external-covers"
@@ -524,7 +525,7 @@ func handleOptionalMouse(
 	}
 
 	if mouseZoneHit(
-		mouseZoneOptionalContinue,
+		mouseZoneOptionalEPUB,
 		msg,
 	) {
 		return toggleOptionalSetting(
@@ -534,11 +535,21 @@ func handleOptionalMouse(
 	}
 
 	if mouseZoneHit(
-		mouseZoneOptionalExternalCovers,
+		mouseZoneOptionalContinue,
 		msg,
 	) {
 		return toggleOptionalSetting(
 			3,
+			m,
+		)
+	}
+
+	if mouseZoneHit(
+		mouseZoneOptionalExternalCovers,
+		msg,
+	) {
+		return toggleOptionalSetting(
+			4,
 			m,
 		)
 	}
@@ -760,6 +771,7 @@ func hoveredMouseZone(
 			msg,
 			mouseZoneOptionalEbook,
 			mouseZoneOptionalCBZ,
+			mouseZoneOptionalEPUB,
 			mouseZoneOptionalContinue,
 			mouseZoneOptionalExternalCovers,
 		)

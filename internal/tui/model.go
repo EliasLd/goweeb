@@ -42,6 +42,7 @@ type Model struct {
 	DomainInput   textinput.Model
 	EbookCheckbox Checkbox
 	CBZCheckbox   Checkbox
+	EPUBCheckbox  Checkbox
 
 	ContinueCheckbox Checkbox
 
