@@ -38,15 +38,24 @@ func edgeChallenge(err error) bool {
 	}
 
 	// Short-circuited answers carry the sentinel; body-excerpted
-	// ones reach the string markers below.
+	// ones reach the markers below.
 	if errors.Is(err, httpx.ErrEdgeChallenge) {
 		return true
 	}
 
-	message := err.Error()
+	return matchesChallengeText(err.Error())
+}
 
-	return strings.Contains(message, challengeTitle) ||
-		strings.Contains(message, challengeHost)
+// matchesChallengeText reports whether a message or a recorded log
+// trail identifies an edge challenge: the httpx sentinel error, the
+// managed-challenge page title or its script host. Beside the error-
+// path detector, the live suite sniffs each check's own trail with
+// it — a challenge caught mid-download never reaches the test as an
+// error, only as the run's log text.
+func matchesChallengeText(s string) bool {
+	return strings.Contains(s, httpx.ErrEdgeChallenge.Error()) ||
+		strings.Contains(s, challengeTitle) ||
+		strings.Contains(s, challengeHost)
 }
 
 // shortEdgeMessage trims a blocked-response error to the leading
@@ -123,5 +132,55 @@ func TestEdgeChallengeMatchesRegardlessOfPosition(t *testing.T) {
 
 	if !edgeChallenge(suffix) {
 		t.Error("expected a trailing marker to match")
+	}
+}
+
+// The live suite matches recorded trails the same way it detects
+// error-path challenges: the sentinel text survives any wrapping.
+func TestMatchesChallengeText(t *testing.T) {
+	trails := []struct {
+		name    string
+		trail   string
+		matches bool
+	}{
+		{
+			name: "sentinel from a download failure",
+			trail: fmt.Sprintf(
+				"not bundled: failed to download page 16: %s (cf-mitigated: challenge)",
+				httpx.ErrEdgeChallenge,
+			),
+			matches: true,
+		},
+		{
+			name:    "challenge page title",
+			trail:   "GET https://x/: <title>Just a moment...</title>",
+			matches: true,
+		},
+		{
+			name:    "challenge script host",
+			trail:   "script-src https://challenges.cloudflare.com",
+			matches: true,
+		},
+		{
+			name:    "ordinary download failure",
+			trail:   "not bundled: unexpected status 403 for https://x/016.bin",
+			matches: false,
+		},
+		{
+			name:    "empty trail",
+			trail:   "",
+			matches: false,
+		},
+	}
+
+	for _, tc := range trails {
+		if got := matchesChallengeText(tc.trail); got != tc.matches {
+			t.Errorf(
+				"matchesChallengeText(%s) = %v, want %v",
+				tc.name,
+				got,
+				tc.matches,
+			)
+		}
 	}
 }
