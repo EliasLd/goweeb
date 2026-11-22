@@ -37,6 +37,7 @@ import (
 
 	"github.com/EliasLd/goweeb/internal/app"
 	"github.com/EliasLd/goweeb/internal/convert"
+	"github.com/EliasLd/goweeb/internal/httpx"
 	"github.com/EliasLd/goweeb/internal/logger"
 	"github.com/EliasLd/goweeb/internal/source"
 	"github.com/EliasLd/goweeb/internal/source/common"
@@ -59,8 +60,9 @@ func TestMain(m *testing.M) {
 // liveLog records one check's log trail in a buffer and replays it
 // into the test's output when the check fails or is skipped. A green
 // nightly prints nothing; a red one carries the run's own failure
-// reason, which RunWithWorkflow otherwise only logs away.
-func liveLog(t *testing.T) *logger.Logger {
+// reason, which RunWithWorkflow otherwise only logs away. The caller
+// keeps the buffer to sniff it for edge challenges.
+func liveLog(t *testing.T) (*logger.Logger, *bytes.Buffer) {
 	t.Helper()
 
 	var record bytes.Buffer
@@ -71,7 +73,7 @@ func liveLog(t *testing.T) *logger.Logger {
 		}
 	})
 
-	return logger.New(&record, logger.LevelDebug)
+	return logger.New(&record, logger.LevelDebug), &record
 }
 
 // Popular, stable search per provider. When a provider stops
@@ -117,7 +119,7 @@ func providerHealthCheck(
 ) {
 	t.Helper()
 
-	log := liveLog(t)
+	log, record := liveLog(t)
 
 	provider, err := source.New(providerID, "")
 	if err != nil {
@@ -190,6 +192,8 @@ func providerHealthCheck(
 	}
 
 	if len(pdfs) != 1 {
+		skipIfEdgeChallenged(t, record, "chapter download")
+
 		t.Fatalf(
 			"got %d pdf file(s), want 1; RunWithWorkflow did not complete for %s",
 			len(pdfs),
@@ -295,7 +299,7 @@ func volumeHealthCheck(
 ) {
 	t.Helper()
 
-	log := liveLog(t)
+	log, record := liveLog(t)
 
 	provider, err := source.New(providerID, "")
 	if err != nil {
@@ -390,6 +394,8 @@ func volumeHealthCheck(
 	}
 
 	if len(cbzFiles) != 1 {
+		skipIfEdgeChallenged(t, record, "volume bundle")
+
 		t.Fatalf(
 			"got %d cbz file(s), want 1; RunWithWorkflow did not bundle %s for %s",
 			len(cbzFiles),
@@ -491,4 +497,24 @@ func liveFailure(t *testing.T, context string, err error) {
 	}
 
 	t.Fatalf("%s: %v", context, err)
+}
+
+// skipIfEdgeChallenged skips a download-phase check when its own
+// recorded trail shows the edge served a bot-protection challenge —
+// unanswerable by design and keyed to the requester's IP reputation,
+// like the listing-phase skips through liveFailure. The recorded
+// trail is the only channel: RunWithWorkflow logs and returns instead
+// of surfacing the failure.
+func skipIfEdgeChallenged(
+	t *testing.T,
+	record *bytes.Buffer,
+	context string,
+) {
+	t.Helper()
+
+	if !matchesChallengeText(record.String()) {
+		return
+	}
+
+	t.Skipf("%s: %v", context, httpx.ErrEdgeChallenge)
 }
