@@ -25,6 +25,7 @@ package e2e
 
 import (
 	"archive/zip"
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -53,6 +54,24 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(m.Run())
+}
+
+// liveLog records one check's log trail in a buffer and replays it
+// into the test's output when the check fails or is skipped. A green
+// nightly prints nothing; a red one carries the run's own failure
+// reason, which RunWithWorkflow otherwise only logs away.
+func liveLog(t *testing.T) *logger.Logger {
+	t.Helper()
+
+	var record bytes.Buffer
+
+	t.Cleanup(func() {
+		if t.Failed() || t.Skipped() {
+			t.Logf("live run log:\n%s", record.String())
+		}
+	})
+
+	return logger.New(&record, logger.LevelDebug)
 }
 
 // Popular, stable search per provider. When a provider stops
@@ -98,10 +117,7 @@ func providerHealthCheck(
 ) {
 	t.Helper()
 
-	log := logger.New(
-		io.Discard,
-		logger.LevelInfo,
-	)
+	log := liveLog(t)
 
 	provider, err := source.New(providerID, "")
 	if err != nil {
@@ -279,10 +295,7 @@ func volumeHealthCheck(
 ) {
 	t.Helper()
 
-	log := logger.New(
-		io.Discard,
-		logger.LevelInfo,
-	)
+	log := liveLog(t)
 
 	provider, err := source.New(providerID, "")
 	if err != nil {
@@ -312,6 +325,15 @@ func volumeHealthCheck(
 					shortEdgeMessage(listErr),
 				)
 			}
+
+			// A listing error stays silent otherwise; a run
+			// whose every path errors would end as a bare
+			// "no volume data" skip below.
+			t.Logf(
+				"list volumes (%s): %v",
+				path.Value,
+				listErr,
+			)
 
 			continue
 		}
