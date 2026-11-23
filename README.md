@@ -487,11 +487,11 @@ Instead of creating one PDF per chapter, goweeb saves manga pages into separate 
 ```text
 scan/
 └── One Piece/
-    ├── One Piece - c001/
+    ├── Chapter 001/
     │   ├── 001.jpg
     │   ├── 002.jpg
     │   └── ...
-    ├── One Piece - c002/
+    ├── Chapter 002/
     │   ├── 001.jpg
     │   └── ...
     └── ...
@@ -507,7 +507,7 @@ goweeb \
   "one piece"
 ```
 
-This structure can then be processed by tools such as [Kindle Comic Converter](https://github.com/ciromattia/kcc) for Kindle, Kobo and other e-readers.
+This structure can then be processed by tools such as [Kindle Comic Converter](https://github.com/ciromattia/kcc) for Kindle, Kobo and other e-readers: point KCC at the work's folder and it picks up each `Chapter NNN` folder as a chapter.
 
 ## CBZ mode
 

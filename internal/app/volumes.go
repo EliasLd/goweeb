@@ -730,8 +730,6 @@ func downloadVolumeArtifacts(
 		if opts.EbookFriendly {
 			entryDir := volumeEntryImageDir(
 				volumeDir,
-				opts.Layout,
-				work.Title,
 				entry.Number,
 				chDigits,
 			)

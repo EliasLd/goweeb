@@ -252,21 +252,21 @@ func TestLayoutEntryImageDir(t *testing.T) {
 		digits int
 		want   string
 	}{{
-		name:   "series reuses the archive name for image folders",
+		name:   "series reads reader-friendly chapter folders",
 		layout: LayoutSeries,
 		series: "One Piece",
 		prefix: "Chapter",
 		number: "10",
 		digits: 3,
-		want:   filepath.Join("scan", "One Piece", "One Piece - c010"),
+		want:   filepath.Join("scan", "One Piece", "Chapter 010"),
 	}, {
-		name:   "series names volumes like chapters",
+		name:   "series names volume-kind rows like volumes",
 		layout: LayoutSeries,
 		series: "One Piece",
 		prefix: "Volume",
 		number: "12",
 		digits: 3,
-		want:   filepath.Join("scan", "One Piece", "One Piece - c012"),
+		want:   filepath.Join("scan", "One Piece", "Volume 012"),
 	}, {
 		name:   "flat keeps the historical prefix folders",
 		layout: LayoutFlat,

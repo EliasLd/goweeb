@@ -166,9 +166,13 @@ func layoutEntryPath(
 }
 
 // layoutEntryImageDir returns the per-entry image folder used by the
-// ebook-friendly mode. The series layout reuses the same
-// "{series} - c{number}" name as archives; the flat layout keeps the
-// historical "{prefix} {number}" folders next to each other.
+// ebook-friendly mode. The series layout nests the reader-friendly
+// "Chapter NNN" name — "Volume NNN" for a volume-kind work — inside
+// the work's folder, zero-padded so folders sort in reading order:
+// that name is what Kindle Comic Converter and similar tools consume
+// directly. The flat layout keeps its historical folders at the
+// output root. Unlike the archives, the folder name carries no
+// series prefix: the surrounding work folder is the series.
 func layoutEntryImageDir(
 	layout Layout,
 	scanDir string,
@@ -190,7 +194,12 @@ func layoutEntryImageDir(
 
 	return filepath.Join(
 		scanDir,
-		seriesBaseName(series, number, digits),
+		sanitizeSegment(series),
+		fmt.Sprintf(
+			"%s %s",
+			prefix,
+			number.Padded(digits),
+		),
 	)
 }
 
@@ -296,25 +305,19 @@ func volumeChapterBaseName(
 }
 
 // volumeEntryImageDir names one chapter image folder inside a volume
-// directory. The series layout keeps the "{series} - c{number}" name
-// of its archives; the flat layout keeps its historical
-// "{prefix} {number}" folders.
+// directory. Both layouts use the reader-friendly padded "Chapter
+// NNN" form, since the surrounding "Vol. NN" directory already
+// carries the layout distinction.
 func volumeEntryImageDir(
 	volumeDir string,
-	layout Layout,
-	series string,
 	number common.ChapterNumber,
 	digits int,
 ) string {
-	if layout == LayoutFlat {
-		return filepath.Join(
-			volumeDir,
-			fmt.Sprintf("Chapter %s", number.Padded(digits)),
-		)
-	}
-
 	return filepath.Join(
 		volumeDir,
-		volumeChapterBaseName(series, number, digits),
+		fmt.Sprintf(
+			"Chapter %s",
+			number.Padded(digits),
+		),
 	)
 }
