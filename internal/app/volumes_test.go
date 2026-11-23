@@ -138,14 +138,14 @@ func TestLayoutVolumePaths(t *testing.T) {
 	}
 
 	seriesPages := volumeEntryImageDir(
-		dirSeries, LayoutSeries, "Berserk", "10", 3,
+		dirSeries, "10", 3,
 	)
-	if want := filepath.Join(dirSeries, "Berserk - c010"); seriesPages != want {
+	if want := filepath.Join(dirSeries, "Chapter 010"); seriesPages != want {
 		t.Errorf("series chapter folder = %q, want %q", seriesPages, want)
 	}
 
 	flatPages := volumeEntryImageDir(
-		dirFlat, LayoutFlat, "Berserk", "10", 3,
+		dirFlat, "10", 3,
 	)
 	if want := filepath.Join(dirFlat, "Chapter 010"); flatPages != want {
 		t.Errorf("flat chapter folder = %q, want %q", flatPages, want)
